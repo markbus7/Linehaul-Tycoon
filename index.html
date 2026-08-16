@@ -49,10 +49,10 @@
   .side{width:340px;flex:0 0 auto;border-left:1px solid var(--line);background:var(--asphalt-2);display:flex;flex-direction:column;min-height:0}
   @media(max-width:860px){.side{width:auto;border-left:none;border-top:1px solid var(--line);height:44%}}
   .tabs{display:flex;flex:0 0 auto;border-bottom:1px solid var(--line);background:var(--asphalt-3)}
-  .tabs button{flex:1;padding:10px 3px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;font-family:'Archivo';color:var(--muted);position:relative}
+  .tabs button{flex:1;padding:10px 2px;font-size:10px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;font-family:'Archivo';color:var(--muted);position:relative}
   .tabs button.on{color:var(--amber)}
   .tabs button.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--amber)}
-  .tabs button .badge{display:inline-block;min-width:15px;padding:0 4px;margin-left:2px;font-family:'IBM Plex Mono';background:var(--amber);color:#1a1206;border-radius:8px;font-size:10px;line-height:15px}
+  .tabs button .badge{display:inline-block;min-width:14px;padding:0 3px;margin-left:1px;font-family:'IBM Plex Mono';background:var(--amber);color:#1a1206;border-radius:8px;font-size:10px;line-height:15px}
   .tabbody{flex:1;overflow-y:auto;padding:10px;-webkit-overflow-scrolling:touch}
   .card{background:#171A21;border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:7px;transition:border-color .12s,background .12s}
   .card.go:hover,.card:hover{background:#1A1E26}
@@ -150,6 +150,37 @@
   .brf-cap{color:var(--signal);font-weight:600}
   .brf-nb{font-size:12px;line-height:1.9}
   .brf-nb span{background:var(--asphalt-3);border:1px solid var(--line);border-radius:6px;padding:2px 6px;margin:0 3px 3px 0;display:inline-block;white-space:nowrap}
+  /* --- lines tab --- */
+  .lndot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+  .lnchain{font-family:'IBM Plex Mono';font-size:11px;color:var(--muted);margin-top:3px;line-height:1.45;overflow-wrap:anywhere}
+  .lnstats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:9px}
+  .lnstats div{background:#12151B;border:1px solid var(--line);border-radius:7px;padding:5px 7px}
+  .lnstats span{display:block;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .lnstats b{font-family:'IBM Plex Mono';font-size:12px;color:var(--paper)}
+  .lnwarn{margin-top:8px;font-size:11px;color:#f0b46a;background:#2a1f10;border:1px solid #4a3818;border-radius:7px;padding:6px 8px;line-height:1.4}
+  .lnhead{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+  .lnhead .lnback{background:var(--asphalt-3);border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:11px;font-weight:600;white-space:nowrap}
+  .lnhead .lnname{flex:1;min-width:0;background:#12151B;border:1px solid var(--line);border-radius:7px;color:var(--paper);padding:7px 9px;font-family:'Archivo';font-weight:700;font-size:13px}
+  .lnhead .lndel{background:#2a1512;border:1px solid #5a2a22;color:#ff9b8a;border-radius:7px;padding:6px 9px;font-size:11px;font-weight:600}
+  .stoprow{padding:8px 9px}
+  .stopn{width:20px;height:20px;border-radius:50%;background:var(--asphalt-3);border:1px solid var(--line);display:grid;place-items:center;font-family:'IBM Plex Mono';font-size:10px;flex:0 0 auto;color:var(--amber)}
+  .stopbtns{display:flex;gap:3px;flex:0 0 auto}
+  .stopbtns button{width:26px;height:26px;border-radius:6px;background:var(--asphalt-3);border:1px solid var(--line);font-size:12px;display:grid;place-items:center}
+  .stopbtns button:disabled{opacity:.3}
+  .addstop{padding:7px 9px}
+  /* --- locate challenge --- */
+  .loc-banner{position:absolute;left:10px;right:10px;top:10px;z-index:6;background:linear-gradient(180deg,#241a08,#1b1408);border:1px solid var(--amber);border-radius:11px;padding:11px 13px;box-shadow:0 8px 26px rgba(0,0,0,.5)}
+  .loc-k{font-family:'Archivo';font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber)}
+  .loc-city{font-family:'Archivo';font-weight:800;font-size:20px;letter-spacing:.02em;margin-top:2px}
+  .loc-hint{font-size:11px;color:#C9CDD6;margin-top:3px;line-height:1.4}
+  .loc-cancel{position:absolute;right:9px;top:9px;background:var(--asphalt-3);border:1px solid var(--line);border-radius:6px;width:24px;height:24px;font-size:12px}
+  .loc-guess{fill:none;stroke:#E5634D;stroke-width:2;vector-effect:non-scaling-stroke}
+  .loc-true{fill:var(--signal)}
+  .loc-link{stroke:#E5634D;stroke-width:1.5;stroke-dasharray:4 4;vector-effect:non-scaling-stroke}
+  .loc-res{font-family:'Archivo';font-weight:800;font-size:22px;text-align:center;margin:2px 0 6px}
+  .loc-err{text-align:center;font-family:'IBM Plex Mono';font-size:12px;color:var(--muted);margin-bottom:10px}
+  .tender{border-color:var(--amber)!important;background:linear-gradient(180deg,#1e1810,#171A21)}
+  .tender .ttl{color:var(--amber)}
   .hbtn.off{opacity:.36}
   .loadhead{font-size:14px;margin-bottom:10px}
   .capmeter{margin-bottom:12px}
@@ -178,6 +209,7 @@
   .land.on{fill:#262A2A;stroke:#6A5B33}
   .hubglow{fill:url(#hubGlow)}
   .road{stroke:#26303c;stroke-width:1;fill:none;opacity:.5;vector-effect:non-scaling-stroke}
+  .lineway{fill:none;stroke-width:3;opacity:.8;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
   .routeline{stroke:var(--amber);stroke-width:1.6;fill:none;opacity:.34;stroke-dasharray:5 5;vector-effect:non-scaling-stroke}
   .routeline.air{stroke:var(--blue);stroke-dasharray:2 6}
   .routeline.pickup{opacity:.18;stroke-dasharray:2 6}
@@ -214,7 +246,7 @@
   <div class="spacer"></div>
   <button class="hbtn" id="musicBtn" title="Music">🎵</button><button class="hbtn" id="sfxBtn" title="Sound effects">🔊</button><button class="hbtn" id="statsBtn" title="Stats">📊</button><button class="hbtn" id="goalsBtn" title="Goals"><span>🏆</span><span class="hbadge" id="bGoals"></span></button><button class="hbtn cloudbtn" id="cloudBtn" title="Cloud sync">☁️</button><button class="hbtn" id="backupBtn" title="Backup / Restore">💾</button>
   <button class="hbtn" id="helpBtn" title="How to play">❔</button>
-  <button class="autotgl locked" id="autoBtn"><span>Auto</span><span class="switch" id="autoSw"><i></i></span></button>
+  <button class="autotgl locked" id="autoBtn" style="display:none"><span>Auto</span><span class="switch" id="autoSw"><i></i></span></button>
 </header>
 <div class="xpstrip" id="xpstrip">
   <span class="lv" id="lvTxt">LVL 1</span>
@@ -231,7 +263,7 @@
       </defs>
       <rect class="sea-rect" x="-1000" y="-1000" width="4400" height="2900"/>
       <g id="gWorld">
-        <g id="gLand"></g><g id="gGrid"></g><g id="gRoads"></g><g id="gRoutes"></g><g id="gHubs"></g><g id="gVeh"></g><g id="gSel"></g><g id="gFly"></g>
+        <g id="gLand"></g><g id="gGrid"></g><g id="gRoads"></g><g id="gLines"></g><g id="gRoutes"></g><g id="gHubs"></g><g id="gVeh"></g><g id="gSel"></g><g id="gFly"></g>
       </g>
     </svg>
     <div class="mapctl"><button id="zoomIn">+</button><button id="zoomOut">−</button><button id="zoomFit" title="Reset view">⊙</button></div>
@@ -241,6 +273,7 @@
   <aside class="side">
     <div class="tabs" id="tabs">
       <button data-tab="contracts" class="on">Contracts<span class="badge" id="bContracts">0</span></button>
+      <button data-tab="lines">Lines<span class="badge" id="bLines" style="display:none"></span></button>
       <button data-tab="fleet">Fleet</button>
       <button data-tab="network">Network</button>
       <button data-tab="upgrades">Upgrades<span class="badge" id="bUpg" style="display:none"></span></button>
@@ -265,15 +298,7 @@
 <div class="modal" id="focusModal"><div class="modalbox"><div class="modalhead"><h2>🎯 Cargo focus</h2><button data-close>✕</button></div><div class="modalbody" id="focusBody"></div></div></div>
 <div class="modal" id="goalsModal"><div class="modalbox"><div class="modalhead"><h2>🏆 Goals</h2><button data-close>✕</button></div><div class="modalbody" id="goalsBody"></div></div></div>
 <div class="modal" id="helpModal"><div class="modalbox"><div class="modalhead"><h2>How to play</h2><button data-close>✕</button></div><div class="modalbody help">
-  <h3>The goal</h3><p>Build a freight empire across Europe. Contracts appear at your hubs — move the cargo, get paid, level up, grow your network and fleet.</p>
-  <h3>Contracts</h3><p>Each contract is a load going <span class="em">from one hub to another</span>, showing cargo type, <span class="em">weight (t)</span> and payout. Tap <span class="em">Dispatch</span> and your nearest suitable idle vehicle drives to pick it up, then delivers. You're paid on delivery.</p>
-  <h3>Capacity &amp; cargo</h3><p>A vehicle can take a contract only if its <span class="em">capacity ≥ the load's weight</span>. Bigger vehicles carry heavier, higher-paying loads. <span class="em">Refrigerated</span> 🧊 loads need a <span class="em">Reefer</span> vehicle.</p>
-  <h3>Loading runs (the real game)</h3><p>Tap an <span class="em">idle vehicle</span> → <span class="em">Load / move</span>. Fill it with several contracts from its hub (even to different cities) and it runs an efficient <span class="em">multi-stop delivery</span>, paying on each drop. The load screen shows <span class="em">gross, fuel and net</span> so you can judge if a run is worth it.</p><h3>Every choice is a trade-off</h3><p><span class="em">Bigger capacity</span> = more profit per run — but the vehicle is <span class="em">slower</span>, <span class="em">burns more fuel</span>, and takes <span class="em">longer to load</span> (load time grows with the tonnes aboard). <span class="em">Small / express</span> vehicles carry less but cycle faster and sip fuel — best for short, frequent, high-value loads. Fuel is charged per leg (distance × how full you are); even empty <span class="em">repositioning</span> burns some. So the <span class="em">Loading bays</span> and <span class="em">Fuel cards</span> upgrades really pay off once you run big rigs.</p><h3>Hub tiers &amp; vehicle class</h3><p>Hubs come in three sizes — 🟠 major, 🔵 regional, ⚪ feeder. Big vehicles can only serve larger hubs; small vans serve everywhere. So you build a <span class="em">mix</span>: vans feeding small towns, big rigs running the trunk lanes between major hubs.</p><h3>Four ways to move freight</h3><p><span class="em">🚚 Road</span> — flexible, reaches every hub, low–mid capacity. <span class="em">🚂 Rail</span> — cheap per-tonne overland bulk, fast-ish, but only between <span class="em">rail hubs</span> on the same continent. <span class="em">🚢 Sea</span> — massive, cheapest per tonne, very slow, <span class="em">ports only</span>, crosses oceans. <span class="em">✈️ Air</span> — fast and ocean-crossing, low capacity, pricey fuel.</p><h3>The whole world 🌍</h3><p>Six continents: Europe, the Americas, Africa, Asia and Oceania. Each is its own landmass — <span class="em">road and rail stay within a continent</span>; to cross any ocean you need a <span class="em">plane or ship</span>. Loads that must go sea/air show a 🌊 tag. The map opens on your hubs and zooms out as you expand — unlock outward from the Benelux and build a global network.</p>
-  <h3>Auto-dispatch 🤖</h3><p>When ON, every idle vehicle <span class="em">automatically grabs the best contract it can carry</span>, so you don't tap Dispatch yourself. Unlock it in <span class="em">Upgrades</span> (Level 3), then toggle it in the top bar. Great once your fleet is large — it also keeps earning while you're away.</p>
-  <h3>Upkeep ⛽</h3><p>Every vehicle costs a little per second to run (more for planes). Idle vehicles still cost money, so keep them busy. <span class="em">Fuel cards</span> lower this.</p>
-  <h3>Hubs &amp; network</h3><p>Open new hubs in <span class="em">Network</span> for more routes. You can also <span class="em">upgrade a hub</span> (★) so its contracts pay more and appear more often — upgrade your busiest ones.</p>
-  <h3>Learning the map 🌍</h3><p>Every hub belongs to a real country. Contracts, fleet cards and the map all show the <span class="em">flag and country</span> of each city, so you pick them up just by playing. Open a new hub and you get a <span class="em">briefing</span>: the country, its capital, which countries it borders, and why that city matters in freight. Tap any hub you already own in <span class="em">Network</span> to read its briefing again. Your <span class="em">Countries served</span> count is in Goals and company stats.</p>
-  <h3>Levels</h3><p>Delivering earns XP. Leveling unlocks new vehicles, hubs and upgrades, plus a cash bonus. XP is in the bar under the top menu — tap it for full stats.</p>
+  <h3>The goal</h3><p>Build a freight network across the world. You do <span class="em">not</span> move loads one at a time — you <span class="em">design lines</span>, and the shape of your network decides whether you make money.</p><h3>Lines — the whole game</h3><p>A <span class="em">line</span> is an ordered loop of cities. Vehicles you assign to it run that loop forever, picking up any freight waiting at a stop that is heading <span class="em">further round the loop</span>, and dropping it when they reach it.</p><p><span class="em">The order of the stops is the game.</span> On a loop A→B→C→D, a load from A to D rides three legs. Order it A→D→C→B and the same load rides one. You pay fuel for every leg, on every cycle, forever — so a careless loop bleeds money quietly.</p><h3>Reading a line</h3><p>Each line shows its <span class="em">loop distance</span>, <span class="em">cycle time</span>, how many vehicles run it, and how full they are. A <span class="em">quiet stop</span> warning means that stop has never produced a load worth carrying — it is costing you a detour for nothing. Cut it, or add a city that feeds it.</p><h3>Freight</h3><p>Loads pile up at your hubs and wait. Each one shows which of your lines will collect it, or <span class="em">no line</span> if nothing you have built goes that way. That tag is your to-do list: unserved freight is money sitting on a dock.</p><p>A vehicle can only take a load if its <span class="em">capacity ≥ the weight</span>. <span class="em">Refrigerated</span> 🧊 loads need a reefer. Ships need ports at both ends, trains need rail — if a vehicle cannot run a loop, the line editor says so and refuses it.</p><h3>Urgent tenders 🎯</h3><p>Now and then a tender names a city and shows you <span class="em">no pin</span>. Tap where you think it is on the map. Land within ~120km and it pays <span class="em">triple</span>; the further off, the smaller the premium — but a wrong guess still pays the normal rate, so there is never a reason not to try.</p><p>Early tenders stay near your network and favour capitals. As your company grows the horizon widens, until it is asking you for cities on the other side of the world.</p><h3>Learning the map 🌍</h3><p>Every hub sits in a real country, shown with its flag throughout. Opening a hub gives you a <span class="em">briefing</span> — country, capital, land borders, and why that city matters in freight. Tap any hub you own in <span class="em">Network</span> to read it again. Countries you operate in light up on the map.</p><h3>Fuel &amp; upkeep ⛽</h3><p>Fuel is charged per leg on the weight actually aboard, so empty legs still cost you. Every vehicle also costs a little per second whether it moves or not. Long loops with light loads are how companies go broke.</p><h3>Levels</h3><p>Delivering earns XP. Leveling unlocks new vehicles, hubs and upgrades, plus a cash bonus. XP is in the bar under the top menu — tap it for full stats.</p>
   <h3>The map</h3><p><span class="em">Pinch or scroll</span> to zoom, <span class="em">drag</span> to pan. <span class="em">Tap a moving vehicle</span> to select it and have the camera follow it around Europe. Use ⊙ to reset the view.</p>
 </div></div></div>
 <div class="modal" id="briefModal"><div class="modalbox"><div class="modalhead"><h2 id="briefTitle">Route briefing</h2><button data-close>✕</button></div><div class="modalbody" id="briefBody"></div></div></div>
@@ -450,6 +475,9 @@ var HUB_GEO={
  auckland:{c:"NZ",fact:"New Zealand's largest city and port — but Wellington is the capital."}
 };
 HUBS.forEach(function(h){var g=HUB_GEO[h.id]||{};h.iso=g.c||"";h.fact=g.fact||"";});
+var CITY_COUNTRY={"AR":"Argentina","MX":"Mexico","CN":"People's Republic of China","RU":"Russia","BD":"Bangladesh","KR":"South Korea","ID":"Indonesia","JP":"Japan","TW":"Taiwan, Province of China","CD":"DR Congo","PE":"Peru","EG":"Egypt","CO":"Colombia","GB":"United Kingdom","IQ":"Iraq","IR":"Iran","HK":"Hong Kong","TH":"Thailand","CL":"Chile","SA":"Saudi Arabia","SG":"Singapore","TR":"Türkiye","DE":"Germany","ES":"Spain","KP":"North Korea","AF":"Afghanistan","VE":"Venezuela","UA":"Ukraine","AO":"Angola","ET":"Ethiopia","KE":"Kenya","SO":"Somalia","SN":"Senegal","IT":"Italy","BR":"Brazil","DO":"Dominican Republic","CU":"Cuba","FR":"France","UZ":"Uzbekistan","DZ":"Algeria","SD":"Sudan","GH":"Ghana","YE":"Yemen","LB":"Lebanon","RO":"Romania","GN":"Guinea","BY":"Belarus","HU":"Hungary","PL":"Poland","AT":"Austria","MA":"Morocco","ZA":"South Africa","PH":"Philippines","KH":"Cambodia","SY":"Syria","ZW":"Zimbabwe","SE":"Sweden","PY":"Paraguay","MY":"Malaysia","NP":"Nepal","VN":"Vietnam","EC":"Ecuador","MG":"Madagascar","UG":"Uganda","CM":"Cameroon","ML":"Mali","CG":"Republic of the Congo","JO":"Jordan","RS":"Serbia","UY":"Uruguay","ZM":"Zambia","HT":"Haiti","MZ":"Mozambique","CZ":"Czechia","DK":"Denmark","BG":"Bulgaria","LY":"Libya","AZ":"Azerbaijan","AM":"Armenia","BF":"Burkina Faso","GE":"Georgia","IE":"Ireland","BE":"Belgium","GT":"Guatemala","NI":"Nicaragua","LR":"Liberia","JM":"Jamaica","MM":"Myanmar","KG":"Kyrgyzstan","HN":"Honduras","MN":"Mongolia","CA":"Canada","SL":"Sierra Leone","OM":"Oman","NE":"Niger","TG":"Togo","RW":"Rwanda","LV":"Latvia","NL":"Netherlands","TM":"Turkmenistan","TD":"Chad","HR":"Croatia","BA":"Bosnia and Herzegovina","TN":"Tunisia","TJ":"Tajikistan","GR":"Greece","MR":"Mauritania","LK":"Sri Lanka","MW":"Malawi","MD":"Moldova","DJ":"Djibouti","AE":"United Arab Emirates","US":"United States","PK":"Pakistan","NG":"Nigeria","NO":"Norway","GA":"Gabon","ER":"Eritrea","FI":"Finland","XK":"Kosovo","CF":"Central African Republic","LT":"Lithuania","SV":"El Salvador","MO":"Macao","PT":"Portugal","MK":"North Macedonia","SS":"South Sudan","SK":"Slovakia","PR":"Puerto Rico","PA":"Panama","EE":"Estonia","GW":"Guinea-Bissau","NZ":"New Zealand","AL":"Albania","AU":"Australia","KZ":"Kazakhstan","QA":"Qatar","CR":"Costa Rica","IN":"India","PG":"Papua New Guinea","SI":"Slovenia","NA":"Namibia","GY":"Guyana","BJ":"Benin","BS":"Bahamas","BO":"Bolivia","SR":"Suriname","BW":"Botswana","CY":"Cyprus","LA":"Laos","CI":"Ivory Coast","TZ":"Tanzania","GQ":"Equatorial Guinea","MU":"Mauritius","TL":"Timor-Leste","BH":"Bahrain","RE":"Reunion","ME":"Montenegro","CW":"Curaçao","CH":"Switzerland","IS":"Iceland","LS":"Lesotho","CV":"Cape Verde","MV":"Maldives","BT":"Bhutan","BB":"Barbados","NC":"New Caledonia","MQ":"Martinique","FJ":"Fiji","LU":"Luxembourg","SZ":"Eswatini","BN":"Brunei","GF":"French Guiana","KW":"Kuwait","IL":"Israel","PS":"Palestine"};
+var LOCATE_CITIES=[{"n":"Abu Dhabi","c":"AE","g":54.4,"t":24.45,"cap":1},{"n":"Dubai","c":"AE","g":55.31,"t":25.08,"hub":1},{"n":"Sharjah","c":"AE","g":55.41,"t":25.34},{"n":"Kabul","c":"AF","g":69.17,"t":34.53,"cap":1},{"n":"Tirana","c":"AL","g":19.82,"t":41.33,"cap":1},{"n":"Yerevan","c":"AM","g":44.51,"t":40.18,"cap":1},{"n":"Luanda","c":"AO","g":13.23,"t":-8.84,"cap":1},{"n":"Buenos Aires","c":"AR","g":-58.38,"t":-34.61,"cap":1,"hub":1},{"n":"Córdoba","c":"AR","g":-64.18,"t":-31.41},{"n":"Rosario","c":"AR","g":-60.64,"t":-32.95},{"n":"Mendoza","c":"AR","g":-68.83,"t":-32.89},{"n":"Vienna","c":"AT","g":16.37,"t":48.21,"cap":1,"hub":1},{"n":"Canberra","c":"AU","g":149.13,"t":-35.28,"cap":1},{"n":"Sydney","c":"AU","g":151.21,"t":-33.87,"hub":1},{"n":"Melbourne","c":"AU","g":144.96,"t":-37.81,"hub":1},{"n":"Brisbane","c":"AU","g":153.03,"t":-27.47},{"n":"Baku","c":"AZ","g":49.89,"t":40.38,"cap":1},{"n":"Sarajevo","c":"BA","g":18.36,"t":43.85,"cap":1},{"n":"Bridgetown","c":"BB","g":-59.62,"t":13.11,"cap":1},{"n":"Dhaka","c":"BD","g":90.41,"t":23.71,"cap":1},{"n":"Chittagong","c":"BD","g":91.83,"t":22.34},{"n":"Khulna","c":"BD","g":89.56,"t":22.81},{"n":"Rājshāhi","c":"BD","g":88.6,"t":24.37},{"n":"Brussels","c":"BE","g":4.35,"t":50.85,"cap":1,"hub":1},{"n":"Ouagadougou","c":"BF","g":-1.53,"t":12.37,"cap":1},{"n":"Sofia","c":"BG","g":23.32,"t":42.7,"cap":1},{"n":"Manama","c":"BH","g":50.59,"t":26.23,"cap":1},{"n":"Porto-Novo","c":"BJ","g":2.6,"t":6.5,"cap":1},{"n":"Cotonou","c":"BJ","g":2.42,"t":6.37},{"n":"Bandar Seri Begawan","c":"BN","g":114.94,"t":4.89,"cap":1},{"n":"Sucre","c":"BO","g":-65.26,"t":-19.03,"cap":1},{"n":"Santa Cruz de la Sierra","c":"BO","g":-63.18,"t":-17.79},{"n":"Cochabamba","c":"BO","g":-66.16,"t":-17.39},{"n":"La Paz","c":"BO","g":-68.15,"t":-16.5},{"n":"Brasília","c":"BR","g":-47.93,"t":-15.78,"cap":1},{"n":"São Paulo","c":"BR","g":-46.64,"t":-23.55,"hub":1},{"n":"Rio de Janeiro","c":"BR","g":-43.18,"t":-22.91,"hub":1},{"n":"Salvador","c":"BR","g":-38.51,"t":-12.97},{"n":"Nassau","c":"BS","g":-77.34,"t":25.06,"cap":1},{"n":"Thimphu","c":"BT","g":89.64,"t":27.47,"cap":1},{"n":"Gaborone","c":"BW","g":25.91,"t":-24.65,"cap":1},{"n":"Minsk","c":"BY","g":27.57,"t":53.9,"cap":1},{"n":"Ottawa","c":"CA","g":-75.7,"t":45.41,"cap":1},{"n":"Toronto","c":"CA","g":-79.42,"t":43.7,"hub":1},{"n":"Montréal","c":"CA","g":-73.59,"t":45.51},{"n":"Calgary","c":"CA","g":-114.09,"t":51.05},{"n":"Kinshasa","c":"CD","g":15.31,"t":-4.33,"cap":1},{"n":"Lubumbashi","c":"CD","g":27.48,"t":-11.66},{"n":"Mbuji-Mayi","c":"CD","g":23.59,"t":-6.14},{"n":"Bangui","c":"CF","g":18.55,"t":4.36,"cap":1},{"n":"Brazzaville","c":"CG","g":15.28,"t":-4.27,"cap":1},{"n":"Bern","c":"CH","g":7.45,"t":46.95,"cap":1},{"n":"Yamoussoukro","c":"CI","g":-5.28,"t":6.82,"cap":1},{"n":"Abidjan","c":"CI","g":-4,"t":5.35},{"n":"Abobo","c":"CI","g":-4.02,"t":5.42},{"n":"Santiago","c":"CL","g":-70.65,"t":-33.46,"cap":1,"hub":1},{"n":"Yaoundé","c":"CM","g":11.52,"t":3.87,"cap":1},{"n":"Douala","c":"CM","g":9.7,"t":4.05},{"n":"Beijing","c":"CN","g":116.4,"t":39.91,"cap":1,"hub":1},{"n":"Shanghai","c":"CN","g":121.46,"t":31.22,"hub":1},{"n":"Tianjin","c":"CN","g":117.18,"t":39.14},{"n":"Guangzhou","c":"CN","g":113.25,"t":23.12},{"n":"Bogotá","c":"CO","g":-74.08,"t":4.61,"cap":1,"hub":1},{"n":"Cali","c":"CO","g":-76.52,"t":3.44},{"n":"Medellín","c":"CO","g":-75.56,"t":6.25},{"n":"Barranquilla","c":"CO","g":-74.78,"t":10.97},{"n":"San José","c":"CR","g":-84.08,"t":9.93,"cap":1},{"n":"Havana","c":"CU","g":-82.38,"t":23.13,"cap":1},{"n":"Praia","c":"CV","g":-23.51,"t":14.93,"cap":1},{"n":"Willemstad","c":"CW","g":-68.93,"t":12.11,"cap":1},{"n":"Nicosia","c":"CY","g":33.36,"t":35.18,"cap":1},{"n":"Prague","c":"CZ","g":14.42,"t":50.09,"cap":1},{"n":"Berlin","c":"DE","g":13.41,"t":52.52,"cap":1,"hub":1},{"n":"Hamburg","c":"DE","g":9.99,"t":53.55,"hub":1},{"n":"Munich","c":"DE","g":11.58,"t":48.14},{"n":"Köln","c":"DE","g":6.95,"t":50.93,"hub":1},{"n":"Djibouti","c":"DJ","g":43.15,"t":11.59,"cap":1},{"n":"Copenhagen","c":"DK","g":12.57,"t":55.68,"cap":1,"hub":1},{"n":"Santo Domingo","c":"DO","g":-69.89,"t":18.47,"cap":1},{"n":"Santiago de los Caballeros","c":"DO","g":-70.7,"t":19.45},{"n":"Santo Domingo Oeste","c":"DO","g":-70,"t":18.5},{"n":"Santo Domingo Este","c":"DO","g":-69.86,"t":18.49},{"n":"Algiers","c":"DZ","g":3.09,"t":36.73,"cap":1},{"n":"Boumerdas","c":"DZ","g":3.48,"t":36.77},{"n":"Quito","c":"EC","g":-78.52,"t":-0.23,"cap":1},{"n":"Guayaquil","c":"EC","g":-79.89,"t":-2.2},{"n":"Tallinn","c":"EE","g":24.75,"t":59.44,"cap":1},{"n":"Cairo","c":"EG","g":31.25,"t":30.06,"cap":1,"hub":1},{"n":"Alexandria","c":"EG","g":29.92,"t":31.2},{"n":"Giza","c":"EG","g":31.21,"t":30.01},{"n":"Asmara","c":"ER","g":38.93,"t":15.34,"cap":1},{"n":"Madrid","c":"ES","g":-3.7,"t":40.42,"cap":1,"hub":1},{"n":"Barcelona","c":"ES","g":2.16,"t":41.39,"hub":1},{"n":"Valencia","c":"ES","g":-0.38,"t":39.47},{"n":"Sevilla","c":"ES","g":-5.97,"t":37.38},{"n":"Addis Ababa","c":"ET","g":38.75,"t":9.02,"cap":1},{"n":"Helsinki","c":"FI","g":24.94,"t":60.17,"cap":1},{"n":"Suva","c":"FJ","g":178.44,"t":-18.14,"cap":1},{"n":"Paris","c":"FR","g":2.35,"t":48.85,"cap":1,"hub":1},{"n":"Marseille","c":"FR","g":5.38,"t":43.3},{"n":"Libreville","c":"GA","g":9.45,"t":0.39,"cap":1},{"n":"London","c":"GB","g":-0.13,"t":51.51,"cap":1,"hub":1},{"n":"Birmingham","c":"GB","g":-1.9,"t":52.48},{"n":"Liverpool","c":"GB","g":-2.98,"t":53.41},{"n":"Nottingham","c":"GB","g":-1.15,"t":52.95},{"n":"Tbilisi","c":"GE","g":44.83,"t":41.69,"cap":1},{"n":"Cayenne","c":"GF","g":-52.33,"t":4.93,"cap":1},{"n":"Accra","c":"GH","g":-0.2,"t":5.56,"cap":1},{"n":"Kumasi","c":"GH","g":-1.62,"t":6.69},{"n":"Conakry","c":"GN","g":-13.68,"t":9.54,"cap":1},{"n":"Camayenne","c":"GN","g":-13.69,"t":9.54},{"n":"Malabo","c":"GQ","g":8.78,"t":3.76,"cap":1},{"n":"Athens","c":"GR","g":23.73,"t":37.98,"cap":1,"hub":1},{"n":"Guatemala City","c":"GT","g":-90.51,"t":14.64,"cap":1},{"n":"Bissau","c":"GW","g":-15.6,"t":11.86,"cap":1},{"n":"Georgetown","c":"GY","g":-58.16,"t":6.8,"cap":1},{"n":"Hong Kong","c":"HK","g":114.17,"t":22.28,"cap":1,"hub":1},{"n":"Kowloon","c":"HK","g":114.18,"t":22.32},{"n":"Tegucigalpa","c":"HN","g":-87.21,"t":14.08,"cap":1},{"n":"Zagreb","c":"HR","g":15.98,"t":45.81,"cap":1},{"n":"Port-au-Prince","c":"HT","g":-72.34,"t":18.54,"cap":1},{"n":"Budapest","c":"HU","g":19.04,"t":47.5,"cap":1},{"n":"Jakarta","c":"ID","g":106.85,"t":-6.21,"cap":1},{"n":"Surabaya","c":"ID","g":112.75,"t":-7.25},{"n":"Medan","c":"ID","g":98.67,"t":3.58},{"n":"Bandung","c":"ID","g":107.61,"t":-6.92},{"n":"Dublin","c":"IE","g":-6.25,"t":53.33,"cap":1},{"n":"Jerusalem","c":"IL","g":35.22,"t":31.77},{"n":"New Delhi","c":"IN","g":77.22,"t":28.64,"cap":1,"hub":1},{"n":"Mumbai","c":"IN","g":72.88,"t":19.07,"hub":1},{"n":"Delhi","c":"IN","g":77.23,"t":28.65,"hub":1},{"n":"Bengaluru","c":"IN","g":77.59,"t":12.97},{"n":"Baghdad","c":"IQ","g":44.4,"t":33.34,"cap":1},{"n":"Basrah","c":"IQ","g":47.78,"t":30.51},{"n":"Al Mawşil al Jadīdah","c":"IQ","g":43.11,"t":36.33},{"n":"Al Başrah al Qadīmah","c":"IQ","g":47.82,"t":30.5},{"n":"Tehran","c":"IR","g":51.42,"t":35.69,"cap":1},{"n":"Mashhad","c":"IR","g":59.57,"t":36.32},{"n":"Isfahan","c":"IR","g":51.67,"t":32.65},{"n":"Karaj","c":"IR","g":50.99,"t":35.83},{"n":"Reykjavík","c":"IS","g":-21.9,"t":64.14,"cap":1},{"n":"Rome","c":"IT","g":12.51,"t":41.89,"cap":1,"hub":1},{"n":"Milan","c":"IT","g":9.19,"t":45.46,"hub":1},{"n":"Naples","c":"IT","g":14.27,"t":40.85},{"n":"Turin","c":"IT","g":7.69,"t":45.07},{"n":"Kingston","c":"JM","g":-76.79,"t":18,"cap":1},{"n":"Amman","c":"JO","g":35.95,"t":31.96,"cap":1},{"n":"Zarqa","c":"JO","g":36.09,"t":32.07},{"n":"Tokyo","c":"JP","g":139.69,"t":35.69,"cap":1,"hub":1},{"n":"Yokohama","c":"JP","g":139.65,"t":35.43},{"n":"Osaka","c":"JP","g":135.5,"t":34.69},{"n":"Nagoya","c":"JP","g":136.91,"t":35.18},{"n":"Nairobi","c":"KE","g":36.82,"t":-1.28,"cap":1,"hub":1},{"n":"Mombasa","c":"KE","g":39.66,"t":-4.05},{"n":"Bishkek","c":"KG","g":74.59,"t":42.87,"cap":1},{"n":"Phnom Penh","c":"KH","g":104.92,"t":11.56,"cap":1},{"n":"Takeo","c":"KH","g":104.78,"t":10.99},{"n":"Pyongyang","c":"KP","g":125.75,"t":39.03,"cap":1},{"n":"Seoul","c":"KR","g":126.98,"t":37.57,"cap":1,"hub":1},{"n":"Busan","c":"KR","g":129.03,"t":35.1},{"n":"Incheon","c":"KR","g":126.71,"t":37.46},{"n":"Daegu","c":"KR","g":128.59,"t":35.87},{"n":"Kuwait City","c":"KW","g":47.98,"t":29.37,"cap":1},{"n":"Nur-Sultan","c":"KZ","g":71.45,"t":51.18,"cap":1},{"n":"Almaty","c":"KZ","g":76.93,"t":43.26},{"n":"Vientiane","c":"LA","g":102.6,"t":17.97,"cap":1},{"n":"Beirut","c":"LB","g":35.5,"t":33.89,"cap":1},{"n":"Ra’s Bayrūt","c":"LB","g":35.48,"t":33.9},{"n":"Colombo","c":"LK","g":79.85,"t":6.94,"cap":1},{"n":"Monrovia","c":"LR","g":-10.8,"t":6.3,"cap":1},{"n":"Maseru","c":"LS","g":27.48,"t":-29.32,"cap":1},{"n":"Vilnius","c":"LT","g":25.28,"t":54.69,"cap":1},{"n":"Luxembourg","c":"LU","g":6.13,"t":49.61,"cap":1},{"n":"Riga","c":"LV","g":24.11,"t":56.95,"cap":1},{"n":"Tripoli","c":"LY","g":13.19,"t":32.89,"cap":1},{"n":"Rabat","c":"MA","g":-6.83,"t":34.01,"cap":1},{"n":"Casablanca","c":"MA","g":-7.61,"t":33.59,"hub":1},{"n":"Fès","c":"MA","g":-5,"t":34.03},{"n":"Sale","c":"MA","g":-6.8,"t":34.05},{"n":"Chisinau","c":"MD","g":28.86,"t":47.01,"cap":1},{"n":"Podgorica","c":"ME","g":19.26,"t":42.44,"cap":1},{"n":"Antananarivo","c":"MG","g":47.54,"t":-18.91,"cap":1},{"n":"Skopje","c":"MK","g":21.43,"t":42,"cap":1},{"n":"Bamako","c":"ML","g":-8,"t":12.65,"cap":1},{"n":"Nay Pyi Taw","c":"MM","g":96.13,"t":19.75,"cap":1},{"n":"Yangon","c":"MM","g":96.16,"t":16.81},{"n":"Mandalay","c":"MM","g":96.08,"t":21.97},{"n":"Ulan Bator","c":"MN","g":106.88,"t":47.91,"cap":1},{"n":"Macau","c":"MO","g":113.55,"t":22.2,"cap":1},{"n":"Fort-de-France","c":"MQ","g":-61.07,"t":14.6,"cap":1},{"n":"Nouakchott","c":"MR","g":-15.98,"t":18.09,"cap":1},{"n":"Port Louis","c":"MU","g":57.5,"t":-20.16,"cap":1},{"n":"Male","c":"MV","g":73.51,"t":4.18,"cap":1},{"n":"Lilongwe","c":"MW","g":33.79,"t":-13.97,"cap":1},{"n":"Mexico City","c":"MX","g":-99.13,"t":19.43,"cap":1},{"n":"Iztapalapa","c":"MX","g":-99.06,"t":19.36},{"n":"Ecatepec de Morelos","c":"MX","g":-99.06,"t":19.6},{"n":"Guadalajara","c":"MX","g":-103.39,"t":20.67},{"n":"Kuala Lumpur","c":"MY","g":101.69,"t":3.14,"cap":1},{"n":"Kota Bharu","c":"MY","g":102.24,"t":6.12},{"n":"Klang","c":"MY","g":101.44,"t":3.04},{"n":"Kampung Baru Subang","c":"MY","g":101.53,"t":3.15},{"n":"Maputo","c":"MZ","g":32.58,"t":-25.97,"cap":1},{"n":"Windhoek","c":"NA","g":17.08,"t":-22.56,"cap":1},{"n":"Nouméa","c":"NC","g":166.45,"t":-22.27,"cap":1},{"n":"Niamey","c":"NE","g":2.11,"t":13.51,"cap":1},{"n":"Abuja","c":"NG","g":7.5,"t":9.06,"cap":1},{"n":"Lagos","c":"NG","g":3.39,"t":6.45,"hub":1},{"n":"Kano","c":"NG","g":8.52,"t":12},{"n":"Ibadan","c":"NG","g":3.91,"t":7.38},{"n":"Managua","c":"NI","g":-86.25,"t":12.13,"cap":1},{"n":"Amsterdam","c":"NL","g":4.89,"t":52.37,"cap":1,"hub":1},{"n":"Oslo","c":"NO","g":10.75,"t":59.91,"cap":1},{"n":"Kathmandu","c":"NP","g":85.32,"t":27.7,"cap":1},{"n":"Wellington","c":"NZ","g":174.78,"t":-41.29,"cap":1},{"n":"Muscat","c":"OM","g":58.41,"t":23.58,"cap":1},{"n":"Panamá","c":"PA","g":-79.52,"t":8.99,"cap":1},{"n":"Lima","c":"PE","g":-77.03,"t":-12.04,"cap":1,"hub":1},{"n":"Arequipa","c":"PE","g":-71.53,"t":-16.4},{"n":"Callao","c":"PE","g":-77.12,"t":-12.06},{"n":"Trujillo","c":"PE","g":-79.03,"t":-8.12},{"n":"Port Moresby","c":"PG","g":147.15,"t":-9.48,"cap":1},{"n":"Manila","c":"PH","g":120.98,"t":14.6,"cap":1},{"n":"Quezon City","c":"PH","g":121.05,"t":14.65},{"n":"Caloocan City","c":"PH","g":120.97,"t":14.65},{"n":"Budta","c":"PH","g":124.44,"t":7.2},{"n":"Islamabad","c":"PK","g":73.04,"t":33.72,"cap":1},{"n":"Karachi","c":"PK","g":67.01,"t":24.86},{"n":"Lahore","c":"PK","g":74.35,"t":31.56},{"n":"Faisalabad","c":"PK","g":73.09,"t":31.42},{"n":"Warsaw","c":"PL","g":21.01,"t":52.23,"cap":1,"hub":1},{"n":"Łódź","c":"PL","g":19.47,"t":51.77},{"n":"Kraków","c":"PL","g":19.94,"t":50.06},{"n":"San Juan","c":"PR","g":-66.11,"t":18.47,"cap":1},{"n":"Lisbon","c":"PT","g":-9.13,"t":38.72,"cap":1,"hub":1},{"n":"Asunción","c":"PY","g":-57.65,"t":-25.29,"cap":1},{"n":"Doha","c":"QA","g":51.53,"t":25.29,"cap":1},{"n":"Saint-Denis","c":"RE","g":55.45,"t":-20.88,"cap":1},{"n":"Bucharest","c":"RO","g":26.11,"t":44.43,"cap":1},{"n":"Belgrade","c":"RS","g":20.47,"t":44.8,"cap":1},{"n":"Moscow","c":"RU","g":37.62,"t":55.75,"cap":1,"hub":1},{"n":"Saint Petersburg","c":"RU","g":30.31,"t":59.94},{"n":"Novosibirsk","c":"RU","g":82.93,"t":55.04},{"n":"Yekaterinburg","c":"RU","g":60.61,"t":56.85},{"n":"Kigali","c":"RW","g":30.06,"t":-1.95,"cap":1},{"n":"Riyadh","c":"SA","g":46.72,"t":24.69,"cap":1},{"n":"Jeddah","c":"SA","g":39.19,"t":21.49},{"n":"Mecca","c":"SA","g":39.83,"t":21.43},{"n":"Medina","c":"SA","g":39.61,"t":24.47},{"n":"Khartoum","c":"SD","g":32.53,"t":15.55,"cap":1},{"n":"Omdurman","c":"SD","g":32.48,"t":15.64},{"n":"Stockholm","c":"SE","g":18.07,"t":59.33,"cap":1,"hub":1},{"n":"Singapore","c":"SG","g":103.85,"t":1.29,"cap":1,"hub":1},{"n":"Ljubljana","c":"SI","g":14.51,"t":46.05,"cap":1},{"n":"Bratislava","c":"SK","g":17.11,"t":48.15,"cap":1},{"n":"Freetown","c":"SL","g":-13.24,"t":8.49,"cap":1},{"n":"Dakar","c":"SN","g":-17.44,"t":14.69,"cap":1},{"n":"Pikine","c":"SN","g":-17.39,"t":14.76},{"n":"Mogadishu","c":"SO","g":45.34,"t":2.04,"cap":1},{"n":"Paramaribo","c":"SR","g":-55.17,"t":5.87,"cap":1},{"n":"Juba","c":"SS","g":31.58,"t":4.85,"cap":1},{"n":"San Salvador","c":"SV","g":-89.19,"t":13.69,"cap":1},{"n":"Damascus","c":"SY","g":36.29,"t":33.51,"cap":1},{"n":"Aleppo","c":"SY","g":37.16,"t":36.2},{"n":"Homs","c":"SY","g":36.72,"t":34.73},{"n":"Mbabane","c":"SZ","g":31.13,"t":-26.32,"cap":1},{"n":"N'Djamena","c":"TD","g":15.04,"t":12.11,"cap":1},{"n":"Lomé","c":"TG","g":1.22,"t":6.13,"cap":1},{"n":"Bangkok","c":"TH","g":100.5,"t":13.75,"cap":1,"hub":1},{"n":"Dushanbe","c":"TJ","g":68.78,"t":38.54,"cap":1},{"n":"Dili","c":"TL","g":125.57,"t":-8.56,"cap":1},{"n":"Ashgabat","c":"TM","g":58.38,"t":37.95,"cap":1},{"n":"Tunis","c":"TN","g":10.17,"t":36.82,"cap":1},{"n":"Ankara","c":"TR","g":32.85,"t":39.92,"cap":1},{"n":"Istanbul","c":"TR","g":28.95,"t":41.01,"hub":1},{"n":"İzmir","c":"TR","g":27.14,"t":38.41},{"n":"Bursa","c":"TR","g":29.06,"t":40.2},{"n":"Taipei","c":"TW","g":121.53,"t":25.05,"cap":1},{"n":"Kaohsiung","c":"TW","g":120.31,"t":22.62},{"n":"Taichung","c":"TW","g":120.68,"t":24.15},{"n":"Tainan","c":"TW","g":120.21,"t":22.99},{"n":"Dodoma","c":"TZ","g":35.74,"t":-6.17,"cap":1},{"n":"Dar es Salaam","c":"TZ","g":39.27,"t":-6.82},{"n":"Kyiv","c":"UA","g":30.52,"t":50.45,"cap":1},{"n":"Kharkiv","c":"UA","g":36.25,"t":49.98},{"n":"Dnipro","c":"UA","g":35.04,"t":48.46},{"n":"Donetsk","c":"UA","g":37.8,"t":48.02},{"n":"Kampala","c":"UG","g":32.58,"t":0.32,"cap":1},{"n":"Washington, D.C.","c":"US","g":-77.04,"t":38.9,"cap":1},{"n":"New York City","c":"US","g":-74.01,"t":40.71,"hub":1},{"n":"Los Angeles","c":"US","g":-118.24,"t":34.05},{"n":"Chicago","c":"US","g":-87.65,"t":41.85,"hub":1},{"n":"Montevideo","c":"UY","g":-56.19,"t":-34.9,"cap":1},{"n":"Tashkent","c":"UZ","g":69.22,"t":41.26,"cap":1},{"n":"Caracas","c":"VE","g":-66.88,"t":10.49,"cap":1},{"n":"Maracaibo","c":"VE","g":-71.61,"t":10.67},{"n":"Maracay","c":"VE","g":-67.59,"t":10.24},{"n":"Valencia","c":"VE","g":-68.01,"t":10.16},{"n":"Hanoi","c":"VN","g":105.84,"t":21.02,"cap":1},{"n":"Ho Chi Minh City","c":"VN","g":106.63,"t":10.82},{"n":"Da Nang","c":"VN","g":108.22,"t":16.07},{"n":"Pristina","c":"XK","g":21.17,"t":42.67,"cap":1},{"n":"Sanaa","c":"YE","g":44.21,"t":15.35,"cap":1},{"n":"Pretoria","c":"ZA","g":28.19,"t":-25.74,"cap":1},{"n":"Cape Town","c":"ZA","g":18.42,"t":-33.93,"hub":1},{"n":"Durban","c":"ZA","g":31.03,"t":-29.86},{"n":"Johannesburg","c":"ZA","g":28.04,"t":-26.2,"hub":1},{"n":"Lusaka","c":"ZM","g":28.29,"t":-15.41,"cap":1},{"n":"Harare","c":"ZW","g":31.05,"t":-17.83,"cap":1}];
+
 function ctryOf(h){return COUNTRIES[(typeof h==="string"?(HUBMAP[h]||{}):h).iso]||null;}
 function flagOf(h){var c=ctryOf(h);return c?c.flag:"";}
 function ctryName(h){var c=ctryOf(h);return c?c.name:"";}
@@ -493,20 +521,20 @@ var UPG=[
  {id:"upkeep",name:"Maintenance depot",ic:"🔧",desc:"-10% fleet upkeep per level.",max:5,base:15000,mul:2.5,reqLvl:3},
  {id:"cap",name:"Trailer mods",ic:"📐",desc:"+1 capacity to every vehicle per level.",max:6,base:30000,mul:3.0,reqLvl:3},
  {id:"fuel",name:"Fuel cards",ic:"⛽",desc:"-15% fuel cost & -20% upkeep per level.",max:6,base:12000,mul:2.6,reqLvl:3},
- {id:"auto",name:"Auto-dispatch",ic:"🤖",desc:"Unlock automatic dispatching.",max:1,base:25000,mul:1,reqLvl:3},
+ {id:"auto",name:"Traffic office",ic:"🗺️",desc:"Run one more standing line per level.",max:4,base:25000,mul:2.6,reqLvl:2},
  {id:"hubcost",name:"Acquisitions team",ic:"🤝",desc:"-8% cost to open new hubs per level.",max:5,base:50000,mul:2.6,reqLvl:4},
  {id:"longhaul",name:"Priority routes",ic:"🛣️",desc:"+12% pay on long hauls (2500km+) per level.",max:5,base:40000,mul:2.6,reqLvl:4},
  {id:"value",name:"Premium clients",ic:"💎",desc:"+10% pay on high-value cargo per level.",max:5,base:45000,mul:2.6,reqLvl:4},
  {id:"railtune",name:"Rail upgrades",ic:"🚄",desc:"+10% train speed per level.",max:5,base:30000,mul:2.5,reqLvl:5},
  {id:"aero",name:"Aero kits",ic:"🪶",desc:"-12% fuel for aircraft per level.",max:5,base:60000,mul:2.6,reqLvl:5},
  {id:"marine",name:"Hull coating",ic:"🛟",desc:"-12% fuel for ships per level.",max:5,base:60000,mul:2.6,reqLvl:5},
- {id:"smart",name:"Smart routing",ic:"🧭",desc:"Auto-dispatch +10% pay per level.",max:4,base:120000,mul:2.8,reqLvl:4}
+ {id:"smart",name:"Smart routing",ic:"🧭",desc:"+10% pay on every line delivery per level.",max:4,base:120000,mul:2.8,reqLvl:4}
 ];
 function upgCost(u){return Math.round(u.base*Math.pow(u.mul,lv(u.id)));}
 function speedMult(){return 1+0.12*lv("speed");}function vehSpeedBonus(t){return vehMode(t)==="rail"?1+0.10*lv("railtune"):1;}
-function payMult(){return (1+0.15*lv("pay"))*(state.autoOn?(1+0.10*lv("smart")):1);}
+function payMult(){return 1+0.15*lv("pay");}
 function loadTime(){return Math.max(0.4,2.0*Math.pow(0.85,lv("load")));}
-function maxContracts(){return 6+2*lv("slots");}
+function maxContracts(){return 14+3*lv("slots");}
 function spawnEvery(){return Math.max(1.1,3.4*Math.pow(0.82,lv("spawn")));}function cargoWeights(){var p=Math.max(0,Math.min(1,(state.level-1)/9));var early=[40,22,16,10,6,3,2,1],late=[24,16,13,13,9,11,7,7],w=[];for(var i=0;i<8;i++){w[i]=early[i]+(late[i]-early[i])*p;}var f=lv("focus");if(f>0&&state.focusCargo!=null&&w[state.focusCargo]!=null){w[state.focusCargo]*=(1+f*0.6);}return w;}function pickCargoIdx(){var w=cargoWeights(),tot=0;for(var i=0;i<w.length;i++)tot+=w[i];var r=Math.random()*tot;for(var i=0;i<w.length;i++){r-=w[i];if(r<=0)return i;}return w.length-1;}function focusPay(idx){return (lv("focus")>0&&state.focusCargo===idx)?(1+lv("focus")*0.08):1;}
 function capBonus(){return lv("cap");}
 function upkeepMult(){return Math.pow(0.8,lv("fuel"));}
@@ -516,10 +544,10 @@ function hubLvl(id){return (state.hubLvl&&state.hubLvl[id])||0;}
 function hubPay(id){return 1+0.12*hubLvl(id);}
 function hubUpCost(h){var l=hubLvl(h.id);if(l>=3)return null;return Math.round((Math.max(2000,h.unlockCost*0.5+2000))*Math.pow(4,l));}function hubUnlockCost(h){return Math.round(h.unlockCost*Math.pow(0.92,lv("hubcost")));}
 var state=null,nextId=1,nextCid=1;
-function fresh(){var s={cash:600,xp:0,level:1,upg:{},autoOn:false,focusCargo:null,unlocked:{},hubLvl:{},veh:[],contracts:[],lastSaved:Date.now(),incomeEMA:0,stats:{earned:0,deliveries:0,km:0,fuel:0},goals:{},goalTiers:{},demand:{},transit:[]};var starters={duiven:1,rotterdam:1,amsterdam:1,brussels:1,koln:1};HUBS.forEach(function(h){s.unlocked[h.id]=!!starters[h.id];});return s;}
+function fresh(){var s={cash:600,xp:0,level:1,upg:{},autoOn:false,focusCargo:null,unlocked:{},hubLvl:{},veh:[],contracts:[],lastSaved:Date.now(),incomeEMA:0,stats:{earned:0,deliveries:0,km:0,fuel:0},goals:{},goalTiers:{},demand:{},transit:[],lines:[],tenders:[],loc:{done:0,best:null,perfect:0,seen:{}}};var starters={duiven:1,rotterdam:1,amsterdam:1,brussels:1,koln:1};HUBS.forEach(function(h){s.unlocked[h.id]=!!starters[h.id];});return s;}
 function xpNeed(L){return Math.floor(120*Math.pow(L,1.5));}
 var $=function(i){return document.getElementById(i);};
-var svg=$("map"),gWorld=$("gWorld"),gLand=$("gLand"),gGrid=$("gGrid"),gRoads=$("gRoads"),gRoutes=$("gRoutes"),gHubs=$("gHubs"),gVeh=$("gVeh"),gSel=$("gSel"),gFly=$("gFly");
+var svg=$("map"),gWorld=$("gWorld"),gLand=$("gLand"),gGrid=$("gGrid"),gRoads=$("gRoads"),gLines=$("gLines"),gRoutes=$("gRoutes"),gHubs=$("gHubs"),gVeh=$("gVeh"),gSel=$("gSel"),gFly=$("gFly");
 var NS="http://www.w3.org/2000/svg";
 function el(tag,attrs){var e=document.createElementNS(NS,tag);for(var k in attrs)e.setAttribute(k,attrs[k]);return e;}
 var curTab="contracts",selectedHub=null,selVeh=null,follow=false;
@@ -638,7 +666,7 @@ wrap.addEventListener("pointerdown",onDown);wrap.addEventListener("pointermove",
   });
 });
 wrap.addEventListener("wheel",function(e){e.preventDefault();var p=screenToSvg(e.clientX,e.clientY);zoomAt(p.x,p.y,cam.s*(e.deltaY<0?1.15:0.87));follow=false;},{passive:false});
-function handleTap(cx,cy){var p=screenToSvg(cx,cy);var wx=(p.x-cam.tx)/cam.s,wy=(p.y-cam.ty)/cam.s;var bv=null,bd=14;state.veh.forEach(function(v){var d=Math.hypot(v.x-wx,v.y-wy);if(d<bd){bd=d;bv=v;}});if(bv){selVeh=bv.uid;follow=true;selectedHub=null;updateSelPanel();return;}var bh=null,bhd=18;HUBS.forEach(function(h){var d=Math.hypot(h.x-wx,h.y-wy);if(d<bhd){bhd=d;bh=h;}});if(bh){selVeh=null;follow=false;updateSelPanel();selectHub(bh.id);return;}selVeh=null;follow=false;updateSelPanel();}
+function handleTap(cx,cy){var p=screenToSvg(cx,cy);var wx=(p.x-cam.tx)/cam.s,wy=(p.y-cam.ty)/cam.s;if(locate){resolveLocate(wx,wy);return;}var bv=null,bd=14;state.veh.forEach(function(v){var d=Math.hypot(v.x-wx,v.y-wy);if(d<bd){bd=d;bv=v;}});if(bv){selVeh=bv.uid;follow=true;selectedHub=null;updateSelPanel();return;}var bh=null,bhd=18;HUBS.forEach(function(h){var d=Math.hypot(h.x-wx,h.y-wy);if(d<bhd){bhd=d;bh=h;}});if(bh){selVeh=null;follow=false;updateSelPanel();selectHub(bh.id);return;}selVeh=null;follow=false;updateSelPanel();}
 var CTRY_EL={};
 function buildLand(){
   COUNTRY_PATHS.forEach(function(p){
@@ -725,7 +753,7 @@ function beginLeg(v){var stop=v.route[v.legIdx];var b=HUBMAP[stop.hub];v.heading
 function arriveStop(v){var stop=v.route[v.legIdx];var hub=HUBMAP[stop.hub];v.x=hub.x;v.y=hub.y;var onboard=0;for(var k=v.legIdx;k<v.route.length;k++){(v.route[k].drops||[]).forEach(function(c){onboard+=c.w;});(v.route[k].xfer||[]).forEach(function(c){onboard+=c.w;});}if(v._fromHub&&HUBMAP[v._fromHub]){var prev=HUBMAP[v._fromHub];var dkm=haversine(prev,hub);state.stats.km+=dkm;var fc=Math.round(fuelFor(v.type,dkm,onboard));if(fc>0){state.cash=Math.max(0,state.cash-fc);state.stats.fuel=(state.stats.fuel||0)+fc;incomeBucket-=fc;if(dkm>1)spawnFly(hub.x,hub.y+16,"-"+eur(fc));}}v._fromHub=stop.hub;if(stop.drops&&stop.drops.length){var earn=0;stop.drops.forEach(function(c){var rew=Math.round(c.reward*payMult());earn+=rew;state.cash+=rew;state.stats.earned+=rew;state.stats.deliveries++;gainXP(Math.max(1,Math.round(rew/3)));incomeBucket+=rew;if(HUBMAP[stop.hub])decayDemand(HUBMAP[stop.hub].cont,c.cargo);});if(earn>0){spawnFly(hub.x,hub.y,"+"+eur(earn));sfxPay();}}if(stop.xfer&&stop.xfer.length){if(!state.transit)state.transit=[];stop.xfer.forEach(function(c){c.at=stop.hub;state.transit.push(c);});spawnFly(hub.x,hub.y,"⇄");}if(stop.pickups&&stop.pickups.length&&!stop.loaded){stop.loaded=true;var tons=0;stop.pickups.forEach(function(c){tons+=c.w;});v.status="loading";v.loadUntil=performance.now()+loadTimeFor(v.type,tons)*1000;return;}advanceStop(v);}
 function advanceStop(v){v.legIdx++;if(!v.route||v.legIdx>=v.route.length){finishRun(v);return;}v.hub=null;v.status="enroute";beginLeg(v);}
 function finishRun(v){var last=v.route[v.route.length-1];v.status="idle";v.hub=last.hub;v.x=HUBMAP[last.hub].x;v.y=HUBMAP[last.hub].y;v.route=null;v.leg=null;v.legIdx=0;v._fromHub=null;}
-function tickLoading(v){if(performance.now()>=v.loadUntil)advanceStop(v);}
+function tickLoading(v){if(performance.now()<v.loadUntil)return;if(v.line)lineAdvance(v);else advanceStop(v);}
 function eligibleIdleQ(c){var best=null,bd=Infinity;for(var i=0;i<state.veh.length;i++){var v=state.veh[i];if(v.status!=="idle")continue;if(vehCap(v.type)<c.w)continue;if(c.reefer&&!vehReefer(v.type))continue;if(!legOk(v.type,c.from,c.to))continue;if(!legOk(v.type,v.hub,c.from))continue;var d=pxDist(v,HUBMAP[c.from]);if(v.hub===c.from)d-=10000;if(d<bd){bd=d;best=v;}}return best;}
 function dispatchRun(v,contracts){var origin=v.hub;contracts=(contracts||[]).filter(function(c){return c.from===origin&&legOk(v.type,origin,c.to)&&vehCap(v.type)>=c.w&&(!c.reefer||vehReefer(v.type));});var capL=vehCap(v.type),acc=0,keep=[];contracts.forEach(function(c){if(acc+c.w<=capL){keep.push(c);acc+=c.w;}});contracts=keep;if(!contracts.length)return false;sfxGo();var byHub={};contracts.forEach(function(c){(byHub[c.to]=byHub[c.to]||[]).push(c);});var cur=HUBMAP[origin],remaining=Object.keys(byHub),order=[];while(remaining.length){var bi=0,bd=Infinity;for(var i=0;i<remaining.length;i++){var d=haversine(cur,HUBMAP[remaining[i]]);if(d<bd){bd=d;bi=i;}}var h=remaining.splice(bi,1)[0];order.push(h);cur=HUBMAP[h];}var route=[{hub:origin,pickups:contracts.slice(),drops:[]}];order.forEach(function(h){route.push({hub:h,pickups:[],drops:byHub[h]});});var ids={};contracts.forEach(function(c){ids[c.id]=1;});state.contracts=state.contracts.filter(function(x){return !ids[x.id];});v.route=route;v._fromHub=origin;v.hub=origin;startRun(v);return true;}
 function quickDispatch(c,v){v=v||eligibleIdleQ(c);if(!v)return false;var cap=vehCap(v.type),used=c.w,picked=[c],dests=[c.to];var pool=state.contracts.filter(function(x){return x.id!==c.id&&x.from===c.from&&(!x.reefer||vehReefer(v.type))&&legOk(v.type,c.from,x.to);});pool.sort(function(a,b){var sa=a.to===c.to?0:1,sb=b.to===c.to?0:1;return sa!==sb?sa-sb:(b.reward/b.w)-(a.reward/a.w);});pool.forEach(function(x){if(used+x.w>cap)return;var nd=dests.indexOf(x.to)<0;if(nd&&dests.length>=5)return;picked.push(x);used+=x.w;if(nd)dests.push(x.to);});var ordered=[],curHub=c.from,rem=dests.slice();while(rem.length){rem.sort(function(a,b){return haversine(HUBMAP[curHub],HUBMAP[a])-haversine(HUBMAP[curHub],HUBMAP[b]);});var nx=rem.shift();ordered.push(nx);curHub=nx;}var route=[{hub:c.from,pickups:picked.slice(),drops:[]}],prev=c.from,valid=true;ordered.forEach(function(d){if(!legOk(v.type,prev,d))valid=false;route.push({hub:d,pickups:[],drops:picked.filter(function(x){return x.to===d;})});prev=d;});if(!valid){route=[{hub:c.from,pickups:[c],drops:[]},{hub:c.to,pickups:[],drops:[c]}];picked=[c];}sfxGo();var ids={};picked.forEach(function(x){ids[x.id]=1;});state.contracts=state.contracts.filter(function(x){return !ids[x.id];});v.route=route;v._fromHub=v.hub;v.hub=null;startRun(v);return true;}
@@ -743,29 +771,50 @@ function renderLoadModal(){var v=state.veh.filter(function(x){return x.uid===loa
 var incomeBucket=0;
 function gainXP(x){x=Math.round(x*(1+0.15*lv("xp")));state.xp+=x;while(state.xp>=xpNeed(state.level)){state.xp-=xpNeed(state.level);state.level++;sfxLevel();var bonus=state.level*250;state.cash+=bonus;toast("⭐ <b>Level "+state.level+"!</b> +"+eur(bonus)+". New trucks, planes, hubs or upgrades unlocked.");if(curTab!=="contracts")renderTab();}}
 function vehParts(v){var col=VEH[v.type].color,m=VEH[v.type].mode,P=[];if(m==="air"){P.push(el("polygon",{class:"vp",points:"11,0 1,-2 -9,-1.6 -9,1.6 1,2",fill:col}));P.push(el("polygon",{class:"vp",points:"0,-1 -7,-7 -3,-0.5",fill:col}));P.push(el("polygon",{class:"vp",points:"0,1 -7,7 -3,0.5",fill:col}));P.push(el("polygon",{class:"vp",points:"-9,0 -12,-4 -8,-0.6",fill:col}));P.push(el("circle",{cx:4,cy:0,r:1.3,fill:"#0a0f16"}));}else if(m==="sea"){P.push(el("polygon",{class:"vp",points:"12,0 7,4 -10,4 -12,0.5 -12,-0.5 -10,-4 7,-4",fill:col}));P.push(el("rect",{x:-7,y:-7,width:5,height:4,rx:0.5,fill:"#cdd6e0"}));P.push(el("rect",{x:-1,y:-3,width:4,height:3,rx:0.5,fill:"#d8693f"}));P.push(el("rect",{x:4,y:-3,width:4,height:3,rx:0.5,fill:"#3f7fd8"}));}else if(m==="rail"){P.push(el("rect",{class:"vp",x:2,y:-3.6,width:8,height:7.2,rx:1,fill:col}));P.push(el("rect",{x:6.5,y:-2,width:2.5,height:2.2,rx:0.4,fill:"#9fd0ff"}));P.push(el("rect",{class:"vp",x:-10,y:-3.2,width:11,height:6.4,rx:0.8,fill:"#2c333d"}));P.push(el("rect",{x:-7,y:-1,width:8,height:1.2,fill:col,opacity:0.6}));}else{P.push(el("rect",{class:"vp",x:-9,y:-4,width:11,height:8,rx:1,fill:col}));P.push(el("rect",{class:"vp",x:2,y:-3.6,width:7,height:7.2,rx:1.2,fill:"#2c333d"}));P.push(el("rect",{x:5.5,y:-2.4,width:2.6,height:2.6,rx:0.4,fill:"#9fd0ff"}));P.push(el("rect",{x:-7,y:-5,width:8,height:1,fill:"#ffffff",opacity:0.18}));}return P;}function buildVehEls(){gVeh.innerHTML="";state.veh.forEach(function(v){var g=el("g",{id:"v-"+v.uid,class:"veh"});vehParts(v).forEach(function(p){g.appendChild(p);});gVeh.appendChild(g);});}
-function renderVeh(now){state.veh.forEach(function(v){if(v.status==="enroute"&&v.leg){var L=v.leg,t=Math.min(1,(now-L.start)/L.dur);v.x=L.ax+(L.bx-L.ax)*t;v.y=L.ay+(L.by-L.ay)*t;if(t>=1){v.leg=null;arriveStop(v);}}else if(v.status==="loading"){tickLoading(v);}var g=$("v-"+v.uid);if(!g)return;g.setAttribute("transform","translate("+v.x.toFixed(1)+","+v.y.toFixed(1)+") rotate("+(v.heading||0).toFixed(0)+") scale("+_L.toFixed(4)+")");g.setAttribute("opacity",v.status==="idle"?0.75:1);});drawRoutes();drawSel();}
+function renderVeh(now){state.veh.forEach(function(v){if(v.status==="enroute"&&v.leg){var L=v.leg,t=Math.min(1,(now-L.start)/L.dur);v.x=L.ax+(L.bx-L.ax)*t;v.y=L.ay+(L.by-L.ay)*t;if(t>=1){v.leg=null;if(v.line)lineArrive(v);else arriveStop(v);}}else if(v.status==="loading"){tickLoading(v);}var g=$("v-"+v.uid);if(!g)return;g.setAttribute("transform","translate("+v.x.toFixed(1)+","+v.y.toFixed(1)+") rotate("+(v.heading||0).toFixed(0)+") scale("+_L.toFixed(4)+")");g.setAttribute("opacity",v.status==="idle"?0.75:1);});drawRoutes();drawSel();}
 function drawRoutes(){gRoutes.innerHTML="";state.veh.forEach(function(v){if(!v.route||v.status==="idle")return;var air=VEH[v.type].mode==="air";var pts=[{x:v.x,y:v.y}];for(var i=v.legIdx;i<v.route.length;i++){var h=HUBMAP[v.route[i].hub];pts.push({x:h.x,y:h.y});}for(var j=0;j<pts.length-1;j++){var cls="routeline"+(air?" air":"")+(j>0?" pickup":"");gRoutes.appendChild(el("line",{x1:pts[j].x,y1:pts[j].y,x2:pts[j+1].x,y2:pts[j+1].y,class:cls}));}});}
 function drawSel(){gSel.innerHTML="";if(selVeh==null)return;var v=state.veh.filter(function(x){return x.uid===selVeh;})[0];if(!v){selVeh=null;return;}gSel.appendChild(el("circle",{class:"selring",cx:v.x,cy:v.y,r:(13*_L).toFixed(2)}));}
 function spawnFly(x,y,txt){var t=el("text",{class:"fly",x:x,y:y-10});t.textContent=txt;gFly.appendChild(t);var s=performance.now();function a(n){var k=(n-s)/900;if(k>=1){t.remove();return;}t.setAttribute("y",(y-10-k*34));t.setAttribute("opacity",(1-k));requestAnimationFrame(a);}requestAnimationFrame(a);}
-function updateSelPanel(){var p=$("selpanel");if(selVeh==null){p.style.display="none";return;}var v=state.veh.filter(function(x){return x.uid===selVeh;})[0];if(!v){p.style.display="none";return;}var T=VEH[v.type];var statusTxt={idle:"Idle",enroute:"En route",loading:"Loading"}[v.status]||v.status;var body="";if(v.status==="idle"){body+='<div class="l">Parked at '+(HUBMAP[v.hub]?hubLabel(HUBMAP[v.hub])+(ctryName(HUBMAP[v.hub])?", "+ctryName(HUBMAP[v.hub]):""):"depot")+'. Capacity '+vehCap(v.type)+'t.</div>';}else{var loads=[];if(v.route){for(var i=v.legIdx;i<v.route.length;i++){(v.route[i].drops||[]).forEach(function(c){loads.push(c);});}}var nextStop=v.route&&v.route[v.legIdx]?hubLabel(HUBMAP[v.route[v.legIdx].hub]):"-";body+='<div><span class="l">Onboard:</span> '+vehLoadWeight(v)+'/'+vehCap(v.type)+'t · '+loads.length+' load'+(loads.length===1?"":"s")+'</div>';body+='<div><span class="l">Next:</span> '+nextStop+(v.status==="loading"?" (loading)":"")+'</div>';if(v.leg){var rem=Math.max(0,(v.leg.dur-(performance.now()-v.leg.start))/1000);var left=v.route.length-v.legIdx;body+='<div><span class="l">ETA:</span> '+rem.toFixed(0)+'s · '+left+' stop'+(left===1?"":"s")+' left</div>';}}var act=v.status==="idle"?'<div class="sp-btns"><button id="loadBtn" class="prim">Load / move ▸</button></div>':"";p.innerHTML='<div class="sp-top"><span class="sp-ic">'+T.ic+'</span><div><div class="sp-nm">'+T.name+(T.mode==="air"?' <span class="pill air">air</span>':"")+'</div><div class="sp-st">'+statusTxt+'</div></div></div><div class="sp-body">'+body+'</div>'+act+'<div class="sp-btns"><button id="followBtn" class="'+(follow?"on":"")+'">'+(follow?"Following ✓":"Follow")+'</button><button id="deselBtn">Close</button></div>';p.style.display="block";if($("loadBtn"))$("loadBtn").onclick=function(){openLoadModal(v);};$("followBtn").onclick=function(){follow=!follow;updateSelPanel();};$("deselBtn").onclick=function(){selVeh=null;follow=false;updateSelPanel();};}
+function updateSelPanel(){var p=$("selpanel");if(selVeh==null){p.style.display="none";return;}var v=state.veh.filter(function(x){return x.uid===selVeh;})[0];if(!v){p.style.display="none";return;}var T=VEH[v.type];var statusTxt={idle:"Idle",enroute:"En route",loading:"Loading"}[v.status]||v.status;var body="";var _Lp=lineOf(v);if(_Lp){var _n2=HUBMAP[_Lp.stops[v.si]];body+='<div><span class="l">Line:</span> <b style="color:'+_Lp.col+'">'+_Lp.name+'</b></div>';body+='<div><span class="l">Next:</span> '+(_n2?hubLabel(_n2):"?")+(v.status==="loading"?" (loading)":"")+'</div>';body+='<div><span class="l">Onboard:</span> '+vehLoad(v)+'/'+vehCap(v.type)+'t</div>';}else if(v.status==="idle"){body+='<div class="l">Parked at '+(HUBMAP[v.hub]?hubLabel(HUBMAP[v.hub])+(ctryName(HUBMAP[v.hub])?", "+ctryName(HUBMAP[v.hub]):""):"depot")+'. Capacity '+vehCap(v.type)+'t.</div>';}else{var loads=[];if(v.route){for(var i=v.legIdx;i<v.route.length;i++){(v.route[i].drops||[]).forEach(function(c){loads.push(c);});}}var nextStop=v.route&&v.route[v.legIdx]?hubLabel(HUBMAP[v.route[v.legIdx].hub]):"-";body+='<div><span class="l">Onboard:</span> '+vehLoadWeight(v)+'/'+vehCap(v.type)+'t · '+loads.length+' load'+(loads.length===1?"":"s")+'</div>';body+='<div><span class="l">Next:</span> '+nextStop+(v.status==="loading"?" (loading)":"")+'</div>';if(v.leg){var rem=Math.max(0,(v.leg.dur-(performance.now()-v.leg.start))/1000);var left=v.route.length-v.legIdx;body+='<div><span class="l">ETA:</span> '+rem.toFixed(0)+'s · '+left+' stop'+(left===1?"":"s")+' left</div>';}}var act=v.status==="idle"?'<div class="sp-btns"><button id="loadBtn" class="prim">Load / move ▸</button></div>':"";p.innerHTML='<div class="sp-top"><span class="sp-ic">'+T.ic+'</span><div><div class="sp-nm">'+T.name+(T.mode==="air"?' <span class="pill air">air</span>':"")+'</div><div class="sp-st">'+statusTxt+'</div></div></div><div class="sp-body">'+body+'</div>'+act+'<div class="sp-btns"><button id="followBtn" class="'+(follow?"on":"")+'">'+(follow?"Following ✓":"Follow")+'</button><button id="deselBtn">Close</button></div>';p.style.display="block";if($("loadBtn"))$("loadBtn").onclick=function(){openLoadModal(v);};$("followBtn").onclick=function(){follow=!follow;updateSelPanel();};$("deselBtn").onclick=function(){selVeh=null;follow=false;updateSelPanel();};}
 function selectHub(id){if(!state.unlocked[id]){setTab("network");return;}selectedHub=id;setTab("contracts");}
 function setTab(t){curTab=t;[].forEach.call($("tabs").children,function(b){b.classList.toggle("on",b.dataset.tab===t);});renderTab();}
 $("tabs").addEventListener("click",function(e){var b=e.target.closest("button");if(b)setTab(b.dataset.tab);});
-function renderTab(){var b=$("tabbody");if(curTab==="contracts")renderContracts(b);else if(curTab==="fleet")renderFleet(b);else if(curTab==="network")renderNetwork(b);else renderUpgrades(b);}
+function renderTab(){var b=$("tabbody");if(curTab==="contracts")renderContracts(b);else if(curTab==="lines")renderLines(b);else if(curTab==="fleet")renderFleet(b);else if(curTab==="network")renderNetwork(b);else renderUpgrades(b);}
+function renderTenders(b){
+  (state.tenders||[]).forEach(function(t){
+    var card=document.createElement("div");card.className="card tender";
+    var left=Math.max(0,Math.round((120000-(Date.now()-t.born))/1000));
+    card.innerHTML='<div class="row"><div class="ico">🎯</div><div class="grow">'+
+      '<div class="ttl">Urgent tender · '+t.city.n+'</div>'+
+      '<div class="sub">Locate it on the map to earn up to <b style="color:var(--signal)">'+eur(t.reward*3)+
+      '</b> <span class="dot">·</span> '+left+'s left</div></div>'+
+      '<button class="actbtn sm">Locate</button></div>';
+    card.querySelector("button").addEventListener("click",function(){startLocate(t);renderTab();});
+    b.appendChild(card);
+  });
+}
 function renderContracts(b){
   $("bContracts").textContent=state.contracts.length;
   var all=state.contracts.slice();
-  if(!all.length){b.innerHTML='<div class="empty">No contracts right now.<br>They appear at your unlocked hubs — watch the pulsing markers on the map.</div>';return;}
+  if(!all.length){b.innerHTML="";renderTenders(b);
+    var e=document.createElement("div");e.className="empty";
+    e.innerHTML="No freight waiting.<br>It builds up at your hubs — a line passing through will collect it.";
+    b.appendChild(e);return;}
   var pay=function(c){return Math.round(c.reward*payMult());};
   var go=[],no=[];all.forEach(function(c){(eligibleIdleQ(c)?go:no).push(c);});
   var bp=function(a,c){return pay(c)-pay(a);};go.sort(bp);no.sort(bp);
   b.innerHTML="";
+  renderTenders(b);
   function mk(c){
     var elg=eligibleIdleQ(c);var card=document.createElement("div");card.className="card "+(c.rush?"rush ":"")+(elg?"go":"no");
     var tags=(c.reefer?'<span class="pill">reefer</span>':'')+(c.rush?'<span class="pill rush">⏱ rush</span>':'')+((c.demand&&c.demand>1.2)?' <span class="pill rush">🔥 hot</span>':'')+(!sameCont(c.from,c.to)?' <span class="pill ocean">🌊 sea/air</span>':'');
     var _cf=HUBMAP[c.from],_ct=HUBMAP[c.to],_dc=ctryName(_ct);
     var fl=function(h){var f=flagOf(h);return f?'<span class="fl">'+f+'</span>':'';};
     var d='<span class="dot">·</span>';
+    // the planning signal: is there a line that will actually pick this up?
+    var carrier=lineCovering(c);
+    tags+=carrier?' <span class="pill" style="background:#12261a;color:#7bd88f">'+carrier.name+'</span>'
+                 :' <span class="pill" style="background:#2a1512;color:#ff9b8a">no line</span>';
     card.innerHTML='<div class="row"><div class="ico">'+CARGO[c.cargo].ic+'</div><div class="grow"><div class="route">'+fl(_cf)+'<b>'+_cf.name+'</b><span class="arrow">→</span>'+fl(_ct)+_ct.name+'</div><div class="sub">'+(_dc?'<span class="ctry">'+_dc+'</span>'+d:'')+CARGO[c.cargo].t+d+c.w+'t'+d+Math.round(c.km)+'km'+tags+'</div></div><div style="text-align:right"><div class="price">'+eur(pay(c))+'</div><button class="actbtn sm" '+(elg?'':'disabled')+'>Dispatch</button></div></div>';
     card.querySelector("button").addEventListener("click",function(ev){ev.stopPropagation();if(quickDispatch(c))renderContracts(b);});
     return card;
@@ -774,10 +823,166 @@ function renderContracts(b){
   if(go.length){sec("Ready to dispatch ("+go.length+")");go.forEach(function(c){b.appendChild(mk(c));});}
   if(no.length){sec("Need a vehicle or unlock ("+no.length+")");no.forEach(function(c){b.appendChild(mk(c));});}
 }
+/* ---- Lines tab: the planning surface ---------------------------------- */
+var lineEdit=null;   // id of the line currently open in the editor
+function renderLines(b){
+  b.innerHTML="";
+  var badge=$("bLines");
+  if(badge){var idle=state.veh.filter(function(v){return !v.line;}).length;
+    badge.style.display=idle?"":"none";badge.textContent=idle;}
+  if(lineEdit!=null){var L=null;state.lines.forEach(function(x){if(x.id===lineEdit)L=x;});
+    if(L){renderLineEditor(b,L);return;}lineEdit=null;}
+  var lab=document.createElement("div");lab.className="seclabel";
+  lab.textContent="Standing lines · "+state.lines.length+"/"+maxLines();
+  b.appendChild(lab);
+  if(!state.lines.length){
+    var e=document.createElement("div");e.className="empty";e.style.padding="10px";
+    e.innerHTML="You move freight by <b>designing lines</b>, not by dispatching loads one by one.<br><br>A line is an ordered loop of cities. Vehicles you assign run it forever, picking up whatever is waiting that is heading further round the loop.<br><br><b>The order is the game.</b> A badly ordered loop burns fuel on every cycle.";
+    b.appendChild(e);
+  }
+  state.lines.forEach(function(L){
+    var st=lineStats(L);
+    var card=document.createElement("div");card.className="card lncard";
+    var chain=L.stops.length?L.stops.map(function(id){return HUBMAP[id]?HUBMAP[id].name:"?";}).join(" → "):"<i>no stops yet</i>";
+    var warn="";
+    if(L.stops.length<2)warn='<div class="lnwarn">Needs at least 2 stops.</div>';
+    else if(!st.vehs.length)warn='<div class="lnwarn">No vehicles assigned — nothing is moving.</div>';
+    else if(st.quiet.length)warn='<div class="lnwarn">Quiet stop'+(st.quiet.length>1?"s":"")+': '+st.quiet.map(function(id){return HUBMAP[id].name;}).join(", ")+' — no freight originates there.</div>';
+    card.innerHTML=
+      '<div class="row"><span class="lndot" style="background:'+L.col+'"></span>'+
+      '<div class="grow"><div class="ttl">'+L.name+'</div>'+
+      '<div class="lnchain">'+chain+'</div></div>'+
+      '<button class="actbtn sm lnedit">Edit</button></div>'+
+      '<div class="lnstats">'+
+        '<div><span>Loop</span><b>'+Math.round(st.km)+' km</b></div>'+
+        '<div><span>Cycle</span><b>'+(st.cycleSec?Math.round(st.cycleSec)+'s':'—')+'</b></div>'+
+        '<div><span>Vehicles</span><b>'+st.vehs.length+'</b></div>'+
+        '<div><span>Loaded</span><b>'+st.loadPct+'%</b></div>'+
+        '<div><span>Countries</span><b>'+st.conts.length+'</b></div>'+
+        '<div><span>Delivered</span><b>'+(L.delivered||0)+'</b></div>'+
+      '</div>'+warn;
+    card.querySelector(".lnedit").addEventListener("click",function(){lineEdit=L.id;renderLines(b);});
+    b.appendChild(card);
+  });
+  if(state.lines.length<maxLines()){
+    var add=document.createElement("button");add.className="actbtn";add.style.cssText="width:100%;margin-top:4px";
+    add.textContent="＋ New line";
+    add.addEventListener("click",function(){var L=newLine();if(L){lineEdit=L.id;renderLines(b);}});
+    b.appendChild(add);
+  }else{
+    var n=document.createElement("div");n.className="bkp-note";
+    n.textContent="Line limit reached — buy Traffic office in Upgrades to run more.";
+    b.appendChild(n);
+  }
+}
+function renderLineEditor(b,L){
+  var st=lineStats(L);
+  var head=document.createElement("div");head.className="lnhead";
+  head.innerHTML='<button class="lnback">‹ Lines</button><input class="lnname" value="'+
+    L.name.replace(/"/g,"&quot;")+'" maxlength="22"><button class="lndel">Delete</button>';
+  head.querySelector(".lnback").addEventListener("click",function(){lineEdit=null;renderLines(b);});
+  head.querySelector(".lnname").addEventListener("change",function(e){L.name=e.target.value||L.name;});
+  head.querySelector(".lndel").addEventListener("click",function(){
+    if(confirm("Delete "+L.name+"? Its vehicles go back to the depot."))
+    {deleteLine(L);lineEdit=null;renderLines(b);}});
+  b.appendChild(head);
+
+  var lab=document.createElement("div");lab.className="seclabel";lab.textContent="Route ("+L.stops.length+" stops · "+Math.round(st.km)+" km loop)";
+  b.appendChild(lab);
+  if(!L.stops.length){
+    var e=document.createElement("div");e.className="empty";e.style.padding="8px";
+    e.textContent="Add stops below. The loop returns from the last stop to the first.";
+    b.appendChild(e);
+  }
+  L.stops.forEach(function(id,i){
+    var h=HUBMAP[id];if(!h)return;
+    var legKm=L.stops.length>1?Math.round(lineLegKm(L,i)):0;
+    var nxt=L.stops[(i+1)%L.stops.length];
+    var row=document.createElement("div");row.className="card stoprow";
+    row.innerHTML='<div class="row"><span class="stopn">'+(i+1)+'</span>'+
+      '<div class="grow"><div class="ttl">'+flagOf(h)+' '+h.name+'</div>'+
+      '<div class="sub">'+(ctryName(h)||"")+(L.stops.length>1?' <span class="dot">·</span> '+legKm+'km → '+(HUBMAP[nxt]?HUBMAP[nxt].name:"?"):"")+
+      ' <span class="dot">·</span> '+(st.waiting[id]||0)+' waiting</div></div>'+
+      '<div class="stopbtns"><button data-a="up" '+(i===0?"disabled":"")+'>↑</button>'+
+      '<button data-a="down" '+(i===L.stops.length-1?"disabled":"")+'>↓</button>'+
+      '<button data-a="rm">✕</button></div></div>';
+    row.querySelectorAll(".stopbtns button").forEach(function(btn){
+      btn.addEventListener("click",function(){
+        var a=btn.getAttribute("data-a");
+        if(a==="up"&&i>0){var t=L.stops[i-1];L.stops[i-1]=L.stops[i];L.stops[i]=t;}
+        else if(a==="down"&&i<L.stops.length-1){var t2=L.stops[i+1];L.stops[i+1]=L.stops[i];L.stops[i]=t2;}
+        else if(a==="rm")L.stops.splice(i,1);
+        syncLineVehs(L);drawLines();renderLines(b);
+      });
+    });
+    b.appendChild(row);
+  });
+
+  var lab2=document.createElement("div");lab2.className="seclabel";lab2.textContent="Add a stop";
+  b.appendChild(lab2);
+  var last=L.stops.length?HUBMAP[L.stops[L.stops.length-1]]:null;
+  var avail=HUBS.filter(function(h){return state.unlocked[h.id]&&L.stops.indexOf(h.id)<0;});
+  avail.sort(function(a,c){
+    if(!last)return a.name.localeCompare(c.name);
+    return haversine(last,a)-haversine(last,c);
+  });
+  avail.forEach(function(h){
+    var d=last?Math.round(haversine(last,h)):0;
+    var card=document.createElement("div");card.className="card addstop";
+    card.innerHTML='<div class="row"><div class="grow"><div class="ttl" style="font-size:12px">'+flagOf(h)+' '+h.name+'</div>'+
+      '<div class="sub">'+(ctryName(h)||"")+(last?' <span class="dot">·</span> '+d+'km from '+last.name:"")+'</div></div>'+
+      '<button class="actbtn sm">＋</button></div>';
+    card.querySelector("button").addEventListener("click",function(){
+      L.stops.push(h.id);syncLineVehs(L);drawLines();renderLines(b);
+    });
+    b.appendChild(card);
+  });
+
+  var lab3=document.createElement("div");lab3.className="seclabel";lab3.textContent="Vehicles on this line";
+  b.appendChild(lab3);
+  var on=lineVehs(L);
+  if(!on.length){var e2=document.createElement("div");e2.className="bkp-note";
+    e2.textContent="None yet — assign one below and the line starts running.";b.appendChild(e2);}
+  on.forEach(function(v){
+    var T=VEH[v.type];
+    var card=document.createElement("div");card.className="card";
+    card.innerHTML='<div class="row"><div class="ico">'+T.ic+'</div><div class="grow">'+
+      '<div class="ttl">'+T.name+'</div><div class="sub">'+vehLoad(v)+'/'+vehCap(v.type)+'t aboard <span class="dot">·</span> '+
+      (v.status==="enroute"?"→ "+(HUBMAP[L.stops[v.si]]?HUBMAP[L.stops[v.si]].name:"?"):v.status)+'</div></div>'+
+      '<button class="actbtn sm">Remove</button></div>';
+    card.querySelector("button").addEventListener("click",function(){unassignVeh(v);renderLines(b);});
+    b.appendChild(card);
+  });
+  var free=state.veh.filter(function(v){return !v.line;});
+  if(free.length&&L.stops.length>=2){
+    var lab4=document.createElement("div");lab4.className="seclabel";lab4.textContent="Assign from depot";
+    b.appendChild(lab4);
+    free.forEach(function(v){
+      var T=VEH[v.type],ok=lineCanRun(L,v.type);
+      var card=document.createElement("div");card.className="card "+(ok?"go":"no");
+      card.innerHTML='<div class="row"><div class="ico">'+T.ic+'</div><div class="grow">'+
+        '<div class="ttl">'+T.name+'</div><div class="sub">'+(ok?'cap '+vehCap(v.type)+'t <span class="dot">·</span> at '+(HUBMAP[v.hub]?HUBMAP[v.hub].name:"depot")
+          :'<span style="color:var(--danger)">cannot run this loop — '+(T.mode==="sea"?"ships need port-to-port legs":T.mode==="rail"?"trains need rail at both ends":"a leg crosses open sea")+'</span>')+'</div></div>'+
+        '<button class="actbtn sm" '+(ok?"":"disabled")+'>Assign</button></div>';
+      var btn=card.querySelector("button");
+      if(ok)btn.addEventListener("click",function(){assignVeh(v,L);drawLines();renderLines(b);});
+      b.appendChild(card);
+    });
+  }
+}
+// stops changed under a running vehicle -- keep its index sane
+function syncLineVehs(L){
+  L.picks={};L.cycles=0;L.born=Date.now();   // route changed: past evidence no longer applies
+  lineVehs(L).forEach(function(v){
+    if(L.stops.length<2){unassignVeh(v);return;}
+    if(!lineCanRun(L,v.type)){unassignVeh(v);return;}
+    if(v.si>=L.stops.length)v.si=0;
+  });
+}
 function renderFleet(b){
   b.innerHTML="";var lab=document.createElement("div");lab.className="seclabel";lab.textContent="Owned fleet ("+state.veh.length+")"+((state.transit&&state.transit.length)?"  ·  📦 "+state.transit.length+" in transit":"");b.appendChild(lab);
   if(!state.veh.length){var e=document.createElement("div");e.className="empty";e.style.padding="8px";e.textContent="No vehicles yet — buy one below.";b.appendChild(e);}
-  var idleN=state.veh.filter(function(v){return v.status==="idle";}).length;if(idleN){var _da=document.createElement("button");_da.className="actbtn";_da.style.cssText="width:100%;margin:2px 0 6px";_da.textContent="🚀 Dispatch all idle ("+idleN+")";_da.addEventListener("click",dispatchAllIdle);b.appendChild(_da);}var _now=performance.now();var _ord={idle:0,loading:1,enroute:2};state.veh.slice().sort(function(a,c){return (_ord[a.status]||0)-(_ord[c.status]||0);}).forEach(function(v){var T=VEH[v.type];var st,sub;if(v.status==="idle"){st='<span class="pill">idle</span>';sub='Parked at '+(HUBMAP[v.hub]?hubLabel(HUBMAP[v.hub]):"depot")+' · cap '+vehCap(v.type)+'t';}else{var nm=(v.route&&v.route[v.legIdx])?hubLabel(HUBMAP[v.route[v.legIdx].hub]):"-";var eta=v.leg?Math.max(0,Math.round((v.leg.start+v.leg.dur-_now)/1000)):0;st='<span class="pill '+(v.status==="loading"?"":"rush")+'">'+(v.status==="loading"?"loading":"en route")+'</span>';sub=(v.status==="loading"?"Loading at ":"→ ")+nm+(v.status==="enroute"?(" · ~"+eta+"s"):"")+' · '+vehLoadWeight(v)+'/'+vehCap(v.type)+'t';}var card=document.createElement("div");card.className="card";card.innerHTML='<div class="row"><div class="ico">'+T.ic+'</div><div class="grow"><div class="ttl">'+T.name+' '+st+'</div><div class="sub">'+sub+'</div></div></div>';card.addEventListener("click",function(){selVeh=v.uid;follow=true;updateSelPanel();});b.appendChild(card);});
+  var idleN=state.veh.filter(function(v){return v.status==="idle";}).length;if(idleN){var _da=document.createElement("button");_da.className="actbtn";_da.style.cssText="width:100%;margin:2px 0 6px";_da.textContent="🚀 Dispatch all idle ("+idleN+")";_da.addEventListener("click",dispatchAllIdle);b.appendChild(_da);}var _now=performance.now();var _ord={idle:0,loading:1,enroute:2};state.veh.slice().sort(function(a,c){return (_ord[a.status]||0)-(_ord[c.status]||0);}).forEach(function(v){var T=VEH[v.type];var st,sub;var _L2=lineOf(v);if(_L2){var _nx=HUBMAP[_L2.stops[v.si]];st='<span class="pill" style="background:'+_L2.col+'22;color:'+_L2.col+'">'+_L2.name+'</span>';sub=(v.status==="loading"?"Loading at ":"→ ")+(_nx?hubLabel(_nx):"?")+' · '+vehLoad(v)+'/'+vehCap(v.type)+'t';}else if(v.status==="idle"){st='<span class="pill">idle</span>';sub='Parked at '+(HUBMAP[v.hub]?hubLabel(HUBMAP[v.hub]):"depot")+' · cap '+vehCap(v.type)+'t';}else{var nm=(v.route&&v.route[v.legIdx])?hubLabel(HUBMAP[v.route[v.legIdx].hub]):"-";var eta=v.leg?Math.max(0,Math.round((v.leg.start+v.leg.dur-_now)/1000)):0;st='<span class="pill '+(v.status==="loading"?"":"rush")+'">'+(v.status==="loading"?"loading":"en route")+'</span>';sub=(v.status==="loading"?"Loading at ":"→ ")+nm+(v.status==="enroute"?(" · ~"+eta+"s"):"")+' · '+vehLoadWeight(v)+'/'+vehCap(v.type)+'t';}var card=document.createElement("div");card.className="card";card.innerHTML='<div class="row"><div class="ico">'+T.ic+'</div><div class="grow"><div class="ttl">'+T.name+' '+st+'</div><div class="sub">'+sub+'</div></div></div>';card.addEventListener("click",function(){selVeh=v.uid;follow=true;updateSelPanel();});b.appendChild(card);});
   
   var lab2=document.createElement("div");lab2.className="seclabel";lab2.textContent="Buy vehicles";b.appendChild(lab2);
   VEH.slice().sort(function(a,b){return a.cost-b.cost;}).forEach(function(T){var locked=state.level<T.reqLvl,afford=state.cash>=T.cost&&!locked;var card=document.createElement("div");card.className="card "+(afford?"go":"no");var right=locked?'<div class="lvlock">Lvl '+T.reqLvl+'</div>':'<button class="actbtn" '+(afford?'':'disabled')+'>'+eur(T.cost)+'</button>';card.innerHTML='<div class="row"><div class="ico">'+T.ic+'</div><div class="grow"><div class="ttl">'+T.name+(T.mode==="air"?' <span class="pill air">air</span>':T.mode==="sea"?' <span class="pill ocean">sea</span>':T.mode==="rail"?' <span class="pill rail">rail</span>':'')+(T.reefer?' <span class="pill">reefer</span>':'')+' <span class="pill">T'+T.cls+'</span></div><div class="sub">cap '+vehCap(T.id)+'t · speed '+T.speed+' · ⛽ '+(T.fuel<0.04?"low":T.fuel<0.09?"med":"high")+'</div></div><div>'+right+'</div></div>';var btn=card.querySelector("button");if(btn)btn.addEventListener("click",function(){buyVeh(T.id);renderFleet(b);});b.appendChild(card);});
@@ -794,9 +999,9 @@ function renderUpgrades(b){
   b.innerHTML="";var avail=UPG.filter(function(u){return state.level>=u.reqLvl&&lv(u.id)<u.max;});$("bUpg").style.display=avail.length?"":"none";$("bUpg").textContent=avail.length;
   UPG.slice().sort(function(A,B){var ca=lv(A.id)>=A.max?Infinity:upgCost(A),cb=lv(B.id)>=B.max?Infinity:upgCost(B);return ca-cb;}).forEach(function(u){var l=lv(u.id),locked=state.level<u.reqLvl,maxed=l>=u.max,cost=upgCost(u),afford=state.cash>=cost&&!locked&&!maxed;var card=document.createElement("div");card.className="card "+(afford?"go":"no");var tier=u.max>1?' <span class="pill">'+l+'/'+u.max+'</span>':(l>0?' <span class="pill">owned</span>':'');var right=maxed?'<div class="price" style="color:var(--muted)">max</div>':locked?'<div class="lvlock">Lvl '+u.reqLvl+'</div>':'<button class="actbtn sm" '+(afford?'':'disabled')+'>'+eur(cost)+'</button>';card.innerHTML='<div class="row"><div class="ico">'+u.ic+'</div><div class="grow"><div class="ttl">'+u.name+tier+'</div><div class="sub">'+u.desc+'</div></div><div>'+right+'</div></div>';var btn=card.querySelector("button");if(btn)btn.addEventListener("click",function(){var cc=upgCost(u);if(state.cash>=cc&&lv(u.id)<u.max){state.cash-=cc;state.upg[u.id]=lv(u.id)+1;if(u.id==="auto"){state.autoOn=true;updateAutoBtn();toast("🤖 Auto-dispatch unlocked & on.");}renderUpgrades(b);}});if(u.id==="focus"&&lv("focus")>0){var fc=document.createElement("button");fc.className="actbtn focuschoose";var cur=state.focusCargo!=null?CARGO[state.focusCargo].ic+" "+CARGO[state.focusCargo].t:"none yet";fc.innerHTML="🎯 Focus: "+cur+" — tap to change";fc.addEventListener("click",function(){openFocusPicker();});card.appendChild(fc);}b.appendChild(card);});
 }
-function updateAutoBtn(){var has=lv("auto")>0;$("autoBtn").classList.toggle("locked",!has);$("autoSw").classList.toggle("on",has&&state.autoOn);}
-$("autoBtn").addEventListener("click",function(){if(lv("auto")<1){toast("🔒 Unlock <b>Auto-dispatch</b> in the Upgrades tab (Level 3).");return;}state.autoOn=!state.autoOn;updateAutoBtn();});
-function runAuto(){if(!state.autoOn||lv("auto")<1)return;state.veh.forEach(function(v){if(v.status!=="idle")return;var cap=vehCap(v.type);var here=state.contracts.filter(function(c){return c.from===v.hub&&c.w<=cap&&(c.reefer?vehReefer(v.type):true)&&legOk(v.type,v.hub,c.to);}).sort(function(a,b){return (b.reward/b.w)-(a.reward/a.w);});if(here.length){var picked=[],w=0;for(var i=0;i<here.length;i++){if(w+here[i].w<=cap){picked.push(here[i]);w+=here[i].w;}}if(picked.length){dispatchRun(v,picked);return;}}var best=null,bd=Infinity;HUBS.forEach(function(h){if(!state.unlocked[h.id]||h.id===v.hub)return;if(!vehCanStop(v.type,h.id)||!legOk(v.type,v.hub,h.id))return;var has=state.contracts.some(function(c){return c.from===h.id&&c.w<=cap&&(c.reefer?vehReefer(v.type):true)&&legOk(v.type,h.id,c.to);});if(!has)return;var d=haversine(HUBMAP[v.hub],h);if(d<bd){bd=d;best=h;}});if(best)reposition(v,best.id);});}
+function updateAutoBtn(){/* auto-dispatch retired -- your lines are the automation */}
+/* auto-dispatch retired: standing lines are the automation now */
+function runAuto(){return;/* replaced by standing lines */if(!state.autoOn||lv("auto")<1)return;state.veh.forEach(function(v){if(v.status!=="idle")return;var cap=vehCap(v.type);var here=state.contracts.filter(function(c){return c.from===v.hub&&c.w<=cap&&(c.reefer?vehReefer(v.type):true)&&legOk(v.type,v.hub,c.to);}).sort(function(a,b){return (b.reward/b.w)-(a.reward/a.w);});if(here.length){var picked=[],w=0;for(var i=0;i<here.length;i++){if(w+here[i].w<=cap){picked.push(here[i]);w+=here[i].w;}}if(picked.length){dispatchRun(v,picked);return;}}var best=null,bd=Infinity;HUBS.forEach(function(h){if(!state.unlocked[h.id]||h.id===v.hub)return;if(!vehCanStop(v.type,h.id)||!legOk(v.type,v.hub,h.id))return;var has=state.contracts.some(function(c){return c.from===h.id&&c.w<=cap&&(c.reefer?vehReefer(v.type):true)&&legOk(v.type,h.id,c.to);});if(!has)return;var d=haversine(HUBMAP[v.hub],h);if(d<bd){bd=d;best=h;}});if(best)reposition(v,best.id);});}
 function updateHUD(){$("cash").textContent=eur(state.cash);$("inc").textContent=eur(state.incomeEMA)+"/s";$("lvTxt").textContent="LVL "+state.level;var need=xpNeed(state.level);$("xpfill").style.width=Math.min(100,100*state.xp/need)+"%";$("xpTxt").textContent=commas(state.xp)+" / "+commas(need)+" XP";}
 function totalUpkeep(){var u=0;state.veh.forEach(function(v){u+=VEH[v.type].cost*0.00025*(VEH[v.type].mode==="air"?1.7:VEH[v.type].mode==="sea"?1.3:1);});return u*upkeepMult()*Math.pow(0.90,lv("upkeep"));}
 function openModal(id){$(id).classList.add("show");}
@@ -866,7 +1071,7 @@ updAudioBtns();
 $("xpstrip").addEventListener("click",renderStats);
 [].forEach.call(document.querySelectorAll("[data-close]"),function(b){b.addEventListener("click",function(){this.closest(".modal").classList.remove("show");});});
 [].forEach.call(document.querySelectorAll(".modal"),function(m){m.addEventListener("click",function(e){if(e.target===m)m.classList.remove("show");});});
-function renderStats(){var s=state.stats,need=xpNeed(state.level);var hubsOwned=HUBS.filter(function(h){return state.unlocked[h.id];}).length;var box=function(k,v,cls){return '<div class="statbox"><div class="sk">'+k+'</div><div class="sv '+(cls||"")+'">'+v+'</div></div>';};$("statsBody").innerHTML='<div class="statgrid">'+box("Level",state.level,"am")+box("XP to next",commas(Math.max(0,need-state.xp)),"")+box("Cash",eur(state.cash),"am")+box("Income / sec",eur(state.incomeEMA),"gr")+box("Upkeep / sec",eur(totalUpkeep()),"")+box("Total earned",eur(s.earned),"gr")+box("Fuel spent",eur(s.fuel||0),"")+box("Net earned",eur((s.earned||0)-(s.fuel||0)),"gr")+box("Deliveries",commas(s.deliveries),"")+box("Distance driven",commas(s.km)+" km","")+box("Fleet size",state.veh.length,"")+box("Hubs owned",hubsOwned+" / "+HUBS.length,"")+box("Countries",gCountries()+" / "+totalCountries(),"am")+box("Continents",gConts()+" / 6","")+box("Open contracts",state.contracts.length,"")+box("Auto-dispatch",lv("auto")>0?(state.autoOn?"ON":"off"):"locked","")+'</div>';openModal("statsModal");}
+function renderStats(){var s=state.stats,need=xpNeed(state.level);var hubsOwned=HUBS.filter(function(h){return state.unlocked[h.id];}).length;var box=function(k,v,cls){return '<div class="statbox"><div class="sk">'+k+'</div><div class="sv '+(cls||"")+'">'+v+'</div></div>';};$("statsBody").innerHTML='<div class="statgrid">'+box("Level",state.level,"am")+box("XP to next",commas(Math.max(0,need-state.xp)),"")+box("Cash",eur(state.cash),"am")+box("Income / sec",eur(state.incomeEMA),"gr")+box("Upkeep / sec",eur(totalUpkeep()),"")+box("Total earned",eur(s.earned),"gr")+box("Fuel spent",eur(s.fuel||0),"")+box("Net earned",eur((s.earned||0)-(s.fuel||0)),"gr")+box("Deliveries",commas(s.deliveries),"")+box("Distance driven",commas(s.km)+" km","")+box("Fleet size",state.veh.length,"")+box("Hubs owned",hubsOwned+" / "+HUBS.length,"")+box("Countries",gCountries()+" / "+totalCountries(),"am")+box("Continents",gConts()+" / 6","")+box("Open contracts",state.contracts.length,"")+box("Lines",state.lines.length+" / "+maxLines(),"")+box("Cities located",(state.loc&&state.loc.done)||0,"am")+box("Pinpoint guesses",(state.loc&&state.loc.perfect)||0,"gr")+'</div>';openModal("statsModal");}
 var spawnAccum=0;
 function rafLoop(now){renderVeh(now);if(follow&&selVeh!=null){var v=state.veh.filter(function(x){return x.uid===selVeh;})[0];if(v){var tx=VW/2-cam.s*v.x,ty=VH/2-cam.s*v.y;cam.tx+=(tx-cam.tx)*0.12;cam.ty+=(ty-cam.ty)*0.12;clampCam();applyCam();}}requestAnimationFrame(rafLoop);}
 function gHubsOwned(){var n=0;HUBS.forEach(function(h){if(state.unlocked[h.id])n++;});return n;}
@@ -954,16 +1159,296 @@ var TRACKS=[
  {id:"fleet",ic:"🚚",name:"Fleet size",cur:function(){return state.veh.length;},rungs:[{t:5,r:6000},{t:10,r:15000},{t:20,r:45000},{t:35,r:120000},{t:50,r:300000},{t:75,r:600000},{t:100,r:1200000},{t:150,r:3000000},{t:200,r:7000000},{t:300,r:15000000}]},
  {id:"modes",ic:"🚀",name:"Transport modes",cur:gModes,rungs:[{t:2,r:10000},{t:3,r:30000},{t:4,r:90000}]}
 ];
-function tick(){checkGoals();var uk=totalUpkeep();state.cash=Math.max(0,state.cash-uk);spawnAccum+=1;while(spawnAccum>=spawnEvery()){spawnAccum-=spawnEvery();spawnContract();}pruneContracts();runAuto();state.incomeEMA=state.incomeEMA*0.7+(incomeBucket-uk)*0.3;incomeBucket=0;pushHist();driftDemand();relayTick();refreshHubVisuals();updateHUD();updateSelPanel();if(curTab==="contracts")renderContracts($("tabbody"));else renderTab();}
+/* ===================================================================
+   LINES -- the planning layer.
+   You do not dispatch loads. You design standing routes; vehicles cycle
+   them forever, collecting whatever freight is waiting that is heading
+   somewhere further along the loop. A badly ordered line burns fuel on
+   every single cycle, so the shape of your network is the game.
+   =================================================================== */
+var LINE_COLORS=["#5B9BD5","#4FC97A","#C98CE0","#6FD0D8","#E5634D","#8CE0A4","#F2A93B","#E0A55B"];
+var nextLineId=1;
+function maxLines(){return 2+lv("auto");}
+function lineOf(v){if(!v.line)return null;for(var i=0;i<state.lines.length;i++)if(state.lines[i].id===v.line)return state.lines[i];return null;}
+function lineVehs(L){return state.veh.filter(function(v){return v.line===L.id;});}
+function lineLegKm(L,i){var a=HUBMAP[L.stops[i]],b=HUBMAP[L.stops[(i+1)%L.stops.length]];return (a&&b)?haversine(a,b):0;}
+function lineLoopKm(L){if(!L.stops||L.stops.length<2)return 0;var t=0;for(var i=0;i<L.stops.length;i++)t+=lineLegKm(L,i);return t;}
+function lineCountries(L){var s={};(L.stops||[]).forEach(function(id){var h=HUBMAP[id];if(h&&h.iso)s[h.iso]=1;});return Object.keys(s);}
+// every stop after si, wrapping the loop -- on a circle everything is reachable,
+// but the long way round costs real fuel, which is the whole point
+function downstreamOf(L,si){var d={};for(var n=1;n<L.stops.length;n++)d[L.stops[(si+n)%L.stops.length]]=n;return d;}
+function vehLoad(v){var t=0;(v.cargo||[]).forEach(function(c){t+=c.w;});return t;}
+function lineCanRun(L,type){
+  if(!L.stops||L.stops.length<2)return false;
+  for(var i=0;i<L.stops.length;i++){if(!legOk(type,L.stops[i],L.stops[(i+1)%L.stops.length]))return false;}
+  return true;
+}
+function newLine(){
+  if(state.lines.length>=maxLines())return null;
+  var L={id:nextLineId++,name:"Line "+(state.lines.length+1),stops:[],col:LINE_COLORS[state.lines.length%LINE_COLORS.length],born:Date.now()};
+  state.lines.push(L);return L;
+}
+function deleteLine(L){
+  state.veh.forEach(function(v){if(v.line===L.id)unassignVeh(v);});
+  state.lines=state.lines.filter(function(x){return x!==L;});
+  drawLines();
+}
+function unassignVeh(v){
+  // anything still aboard goes back on the market at the stop it reached
+  (v.cargo||[]).forEach(function(c){c.from=v.hub||c.from;state.contracts.push(c);});
+  v.cargo=[];v.line=null;v.si=0;v.route=null;v.leg=null;v.status="idle";
+  if(!v.hub)v.hub=pickHomeHub();
+  var h=HUBMAP[v.hub];if(h){v.x=h.x;v.y=h.y;}
+}
+function assignVeh(v,L){
+  if(!lineCanRun(L,v.type))return false;
+  v.line=L.id;v.cargo=[];v.route=null;v.leg=null;v._fromHub=null;
+  // start from whichever stop it is nearest, so assigning does not teleport it
+  var bi=0,bd=Infinity;
+  L.stops.forEach(function(id,i){var h=HUBMAP[id];if(!h)return;var d=pxDist(v,h);if(d<bd){bd=d;bi=i;}});
+  v.si=bi;v.status="enroute";v.hub=null;lineBeginLeg(v);
+  return true;
+}
+function lineBeginLeg(v){
+  var L=lineOf(v);
+  if(!L||!L.stops||L.stops.length<2){unassignVeh(v);return;}
+  var b=HUBMAP[L.stops[v.si]];
+  if(!b){unassignVeh(v);return;}
+  v.heading=Math.atan2(b.y-v.y,b.x-v.x)*180/Math.PI;
+  var dist=Math.hypot(b.x-v.x,b.y-v.y);
+  var dur=Math.max(0.2,dist/(VEH[v.type].speed*speedMult()*vehSpeedBonus(v.type)));
+  v.leg={ax:v.x,ay:v.y,bx:b.x,by:b.y,start:performance.now(),dur:dur*1000};
+  if(dist<1.2){v.leg=null;lineArrive(v);}
+}
+function lineArrive(v){
+  var L=lineOf(v);if(!L){unassignVeh(v);return;}
+  var hubId=L.stops[v.si],hub=HUBMAP[hubId];
+  if(!hub){unassignVeh(v);return;}
+  v.x=hub.x;v.y=hub.y;v.hub=hubId;
+  // fuel for the leg just finished, charged on what was actually aboard
+  if(v._fromHub&&HUBMAP[v._fromHub]){
+    var dkm=haversine(HUBMAP[v._fromHub],hub);
+    state.stats.km+=dkm;
+    var fc=Math.round(fuelFor(v.type,dkm,vehLoad(v)));
+    if(fc>0){state.cash=Math.max(0,state.cash-fc);state.stats.fuel=(state.stats.fuel||0)+fc;incomeBucket-=fc;
+      L.fuelCyc=(L.fuelCyc||0)+fc;if(dkm>1)spawnFly(hub.x,hub.y+16,"-"+eur(fc));}
+  }
+  v._fromHub=hubId;
+  // drop everything addressed to this stop
+  var earn=0,dropped=0;
+  v.cargo=(v.cargo||[]).filter(function(c){
+    if(c.to!==hubId)return true;
+    var rew=Math.round(c.reward*payMult()*lineBonus());
+    earn+=rew;state.cash+=rew;state.stats.earned+=rew;state.stats.deliveries++;dropped++;
+    gainXP(Math.max(1,Math.round(rew/3)));incomeBucket+=rew;
+    decayDemand(hub.cont,c.cargo);
+    return false;
+  });
+  if(earn>0){spawnFly(hub.x,hub.y,"+"+eur(earn));sfxPay();L.earnCyc=(L.earnCyc||0)+earn;L.delivered=(L.delivered||0)+dropped;}
+  // load anything here that is going somewhere further round the loop
+  var down=downstreamOf(L,v.si),cap=vehCap(v.type),used=vehLoad(v),tons=0,taken={};
+  var pool=state.contracts.filter(function(c){
+    return c.from===hubId&&down[c.to]!==undefined&&(!c.reefer||vehReefer(v.type));
+  }).sort(function(a,b){return (b.reward/b.w)-(a.reward/a.w);});
+  pool.forEach(function(c){
+    if(used+c.w>cap)return;
+    used+=c.w;tons+=c.w;taken[c.id]=1;v.cargo.push(c);
+  });
+  if(tons>0){
+    state.contracts=state.contracts.filter(function(c){return !taken[c.id];});
+    v.status="loading";v.loadUntil=performance.now()+loadTimeFor(v.type,tons)*1000;
+    L.loadedCyc=(L.loadedCyc||0)+tons;
+    if(!L.picks)L.picks={};L.picks[hubId]=(L.picks[hubId]||0)+1;
+    return;
+  }
+  if(dropped>0){v.status="loading";v.loadUntil=performance.now()+0.4*1000;return;}
+  lineAdvance(v);
+}
+function lineAdvance(v){
+  var L=lineOf(v);if(!L){unassignVeh(v);return;}
+  v.si=(v.si+1)%L.stops.length;
+  if(v.si===0)L.cycles=(L.cycles||0)+1;
+  v.hub=null;v.status="enroute";lineBeginLeg(v);
+}
+function lineBonus(){return 1+0.10*lv("smart");}
+/* Per-line read-out. Without honest numbers a planning game is guesswork,
+   so surface cycle time, load factor and the legs that run empty. */
+function lineStats(L){
+  var km=lineLoopKm(L),vs=lineVehs(L);
+  var speed=vs.length?VEH[vs[0].type].speed*speedMult()*vehSpeedBonus(vs[0].type):0;
+  var capTot=0,loadTot=0;
+  vs.forEach(function(v){capTot+=vehCap(v.type);loadTot+=vehLoad(v);});
+  // px-per-km differs by latitude; estimate cycle from the px path the game actually drives
+  var px=0;for(var i=0;i<L.stops.length;i++){var a=HUBMAP[L.stops[i]],b=HUBMAP[L.stops[(i+1)%L.stops.length]];if(a&&b)px+=pxDist(a,b);}
+  var cyc=speed?px/speed:0;
+  var waiting={},legEmpty=[];
+  L.stops.forEach(function(id,i){
+    var down=downstreamOf(L,i);
+    var n=state.contracts.filter(function(c){return c.from===id&&down[c.to]!==undefined;}).length;
+    waiting[id]=n;
+  });
+  // a stop that has never yielded a load is the classic planning mistake, but
+  // only say so once the line has run enough laps for that to mean something
+  if((L.cycles||0)>=8&&L.stops.length>2&&Date.now()-(L.born||0)>90000){
+    L.stops.forEach(function(id){
+      if(!(L.picks&&L.picks[id]))legEmpty.push(id);
+    });
+  }
+  return {km:km,cycleSec:cyc,vehs:vs,cap:capTot,load:loadTot,
+    loadPct:capTot?Math.round(100*loadTot/capTot):0,waiting:waiting,quiet:legEmpty,
+    conts:lineCountries(L)};
+}
+// which standing line, if any, will collect this load
+function lineCovering(c){
+  for(var i=0;i<state.lines.length;i++){
+    var L=state.lines[i];
+    if(!L.stops||L.stops.length<2)continue;
+    var si=L.stops.indexOf(c.from);
+    if(si<0)continue;
+    if(downstreamOf(L,si)[c.to]===undefined)continue;
+    if(!lineVehs(L).length)continue;
+    return L;
+  }
+  return null;
+}
+function resumeLines(){
+  state.veh.forEach(function(v){
+    if(!v.line)return;
+    var L=lineOf(v);
+    if(!L||!lineCanRun(L,v.type)){v.line=null;v.status="idle";return;}
+    if(v.si>=L.stops.length)v.si=0;
+    v.cargo=[];v.status="enroute";v.hub=null;v._fromHub=null;lineBeginLeg(v);
+  });
+}
+function drawLines(){
+  gLines.innerHTML="";
+  state.lines.forEach(function(L){
+    if(!L.stops||L.stops.length<2)return;
+    var pts=[];
+    for(var i=0;i<=L.stops.length;i++){var h=HUBMAP[L.stops[i%L.stops.length]];if(h)pts.push(h.x+","+h.y);}
+    gLines.appendChild(el("polyline",{class:"lineway",points:pts.join(" "),stroke:L.col}));
+  });
+}
+/* ===================================================================
+   LOCATE THE CITY
+   A tender names a place and shows no pin. Point at it on the map. Get
+   close and the job pays a large premium; miss and it still pays the
+   normal rate. Nothing is ever lost by guessing, so it stays a game
+   rather than a test -- but you only earn the premium by knowing where
+   things actually are.
+   =================================================================== */
+function invLng(x){return LNG0+(x-PADX)/(VW-2*PADX)*(LNG1-LNG0);}
+function invLat(y){return LAT1-(y-PADY)/(VH-2*PADY)*(LAT1-LAT0);}
+var locate=null;   // {city, reward, guess:{lng,lat}}
+function locStats(){if(!state.loc)state.loc={done:0,best:null,perfect:0};return state.loc;}
+// any ISO-3166 alpha-2 code -> its flag, via regional indicator letters
+function isoFlag(cc){
+  if(!cc||cc.length!==2)return "";
+  return String.fromCodePoint(0x1F1E6+cc.charCodeAt(0)-65,0x1F1E6+cc.charCodeAt(1)-65);
+}
+/* Teach outward from where you already are. Early on you get places within
+   reach of your network -- recognisable, and relevant to where you might
+   expand. The horizon widens as your company grows. */
+function locateRadius(){return 900+Math.max(0,state.level-1)*700;}
+function pickLocateCity(){
+  var hubs=HUBS.filter(function(h){return state.unlocked[h.id];});
+  if(!hubs.length)hubs=[HUBMAP.duiven];
+  var seen=(state.loc&&state.loc.seen)||{};
+  var pool=LOCATE_CITIES.filter(function(c){return !c.hub;});
+  var near=function(r){
+    return pool.filter(function(c){
+      for(var i=0;i<hubs.length;i++){
+        if(haversine({lat:c.t,lng:c.g},hubs[i])<=r)return true;
+      }
+      return false;
+    });
+  };
+  var bag=[],r=locateRadius();
+  for(var k=0;k<5&&bag.length<8;k++){bag=near(r);r*=1.8;}
+  if(bag.length<8)bag=pool;
+  // capitals first while you are still learning the basics
+  if(state.level<5){var caps=bag.filter(function(c){return c.cap;});if(caps.length>=5)bag=caps;}
+  var fresh=bag.filter(function(c){return !seen[c.n];});
+  if(fresh.length)bag=fresh;
+  return bag[Math.floor(Math.random()*bag.length)];
+}
+function tenderReward(){
+  var base=Math.max(400,state.incomeEMA*45);
+  return Math.round(base*(1+0.35*(state.level-1)));
+}
+function startLocate(t){
+  locate={city:t.city,reward:t.reward,id:t.id};
+  state.tenders=(state.tenders||[]).filter(function(x){return x.id!==t.id;});
+  var c=t.city;
+  var bn=document.createElement("div");bn.className="loc-banner";bn.id="locBanner";
+  bn.innerHTML='<button class="loc-cancel" id="locCancel">✕</button>'+
+    '<div class="loc-k">Urgent tender · premium up to ×3</div>'+
+    '<div class="loc-city">'+c.n+'</div>'+
+    '<div class="loc-hint">Tap the map where you think it is.'+(c.cap?' <b>It is a capital.</b>':'')+'</div>';
+  $("mapwrap").appendChild(bn);
+  $("locCancel").addEventListener("click",cancelLocate);
+}
+function cancelLocate(){locate=null;var b=$("locBanner");if(b)b.remove();gFly.innerHTML="";}
+function locateGrade(km){
+  if(km<120)return {mult:3,word:"Pinpoint",col:"#4FC97A"};
+  if(km<350)return {mult:2.2,word:"Very close",col:"#4FC97A"};
+  if(km<750)return {mult:1.6,word:"Close",col:"#F2A93B"};
+  if(km<1500)return {mult:1.2,word:"In the region",col:"#F2A93B"};
+  return {mult:1,word:"Way off",col:"#E5634D"};
+}
+function resolveLocate(wx,wy){
+  if(!locate)return;
+  var c=locate.city;
+  var guess={lat:invLat(wy),lng:invLng(wx)};
+  var km=haversine(guess,{lat:c.t,lng:c.g});
+  var g=locateGrade(km);
+  var pay=Math.round(locate.reward*g.mult);
+  state.cash+=pay;state.stats.earned+=pay;incomeBucket+=pay;
+  gainXP(Math.max(2,Math.round(pay/6)));
+  var S=locStats();S.done++;if(!S.seen)S.seen={};S.seen[c.n]=1;
+  if(km<120)S.perfect++;
+  if(S.best==null||km<S.best)S.best=km;
+  // show the answer against the guess
+  var tx=projX(c.g),ty=projY(c.t),gx=projX(guess.lng),gy=projY(guess.lat);
+  gSel.appendChild(el("line",{class:"loc-link",x1:gx,y1:gy,x2:tx,y2:ty}));
+  gSel.appendChild(el("circle",{class:"loc-guess",cx:gx,cy:gy,r:6*_L}));
+  gSel.appendChild(el("circle",{class:"loc-true",cx:tx,cy:ty,r:5*_L}));
+  cancelLocate();
+  var cn=CITY_COUNTRY[c.c]||c.c;
+  $("briefTitle").textContent="Tender result";
+  $("briefBody").innerHTML=
+    '<div class="loc-res" style="color:'+g.col+'">'+g.word+'</div>'+
+    '<div class="loc-err">'+(km<1?"spot on":Math.round(km)+" km off")+' · paid <b style="color:var(--signal)">'+eur(pay)+'</b> (×'+g.mult+')</div>'+
+    '<div class="brf-hero"><div class="brf-flag">'+(isoFlag(c.c)||"📍")+'</div><div>'+
+    '<div class="brf-city">'+c.n+'</div><div class="brf-ctry">'+cn+'</div>'+
+    (c.cap?'<div class="brf-reg">capital of '+cn+'</div>':'')+'</div></div>'+
+    '<div class="brf-grid"><div class="brf-row"><div class="brf-k">Located</div><div class="brf-v">'+
+    S.done+(S.done===1?' city · ':' cities · ')+S.perfect+' pinpoint<span class="note">best guess '+(S.best!=null?Math.round(S.best)+" km":"—")+' off</span></div></div></div>';
+  openModal("briefModal");
+  sfxPay();
+  setTimeout(function(){gSel.innerHTML="";},6000);
+}
+function spawnTender(){
+  if(!state.tenders)state.tenders=[];
+  if(state.tenders.length>=2||locate)return;
+  var c=pickLocateCity();if(!c)return;
+  state.tenders.push({id:nextCid++,city:c,reward:tenderReward(),born:Date.now()});
+}
+function pruneTenders(){
+  if(!state.tenders)return;
+  state.tenders=state.tenders.filter(function(t){return Date.now()-t.born<120000;});
+}
+var tenderAccum=0;
+function tick(){checkGoals();pruneTenders();tenderAccum++;if(tenderAccum>=38){tenderAccum=0;spawnTender();}var uk=totalUpkeep();state.cash=Math.max(0,state.cash-uk);spawnAccum+=1;while(spawnAccum>=spawnEvery()){spawnAccum-=spawnEvery();spawnContract();}pruneContracts();runAuto();state.incomeEMA=state.incomeEMA*0.7+(incomeBucket-uk)*0.3;incomeBucket=0;pushHist();driftDemand();relayTick();refreshHubVisuals();updateHUD();updateSelPanel();if(curTab==="lines"&&lineEdit!=null){}else if(curTab==="contracts")renderContracts($("tabbody"));else renderTab();}
 var KEY="linehaul-tycoon-v6";var VERSION="v3.2";
-function serial(){return {cash:state.cash,xp:state.xp,level:state.level,upg:state.upg,autoOn:state.autoOn,focusCargo:state.focusCargo,unlocked:state.unlocked,hubLvl:state.hubLvl,incomeEMA:state.incomeEMA,stats:state.stats,goals:state.goals,goalTiers:state.goalTiers,demand:state.demand,transit:state.transit,veh:state.veh.map(function(v){return {type:v.type,hub:v.hub||pickHomeHub()};}),lastSaved:Date.now()};}
+function serial(){return {cash:state.cash,xp:state.xp,level:state.level,upg:state.upg,autoOn:state.autoOn,focusCargo:state.focusCargo,unlocked:state.unlocked,hubLvl:state.hubLvl,incomeEMA:state.incomeEMA,stats:state.stats,goals:state.goals,goalTiers:state.goalTiers,demand:state.demand,transit:state.transit,loc:state.loc,lines:state.lines.map(function(L){return {id:L.id,name:L.name,stops:L.stops,col:L.col};}),veh:state.veh.map(function(v){return {type:v.type,hub:v.hub||pickHomeHub(),line:v.line||null,si:v.si||0};}),lastSaved:Date.now()};}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(serial()));}catch(e){}}
 function load(cb){try{var v=localStorage.getItem(KEY);cb(v?JSON.parse(v):null);}catch(e){cb(null);}}
-function applyOffline(saved){if(!saved||!saved.autoOn)return;var dt=Math.min((8+2*lv("offline"))*3600,(Date.now()-(saved.lastSaved||Date.now()))/1000);if(dt>60&&saved.incomeEMA>0){var earn=saved.incomeEMA*dt*(0.6+0.10*lv("offline"));state.cash+=earn;state.stats.earned+=earn;var h=Math.floor(dt/3600),m=Math.floor(dt%3600/60);toast("🌙 Auto-dispatch ran while away ("+(h?h+"h ":"")+m+"m): <b>"+eur(earn)+"</b>.");}}
+function applyOffline(saved){if(!saved||!(saved.veh||[]).some(function(v){return v.line;}))return;var dt=Math.min((8+2*lv("offline"))*3600,(Date.now()-(saved.lastSaved||Date.now()))/1000);if(dt>60&&saved.incomeEMA>0){var earn=saved.incomeEMA*dt*(0.6+0.10*lv("offline"));state.cash+=earn;state.stats.earned+=earn;var h=Math.floor(dt/3600),m=Math.floor(dt%3600/60);toast("🌙 Your lines kept running while away ("+(h?h+"h ":"")+m+"m): <b>"+eur(earn)+"</b>.");}}
 function starterFleet(){[0,1].forEach(function(t){var home=HUBMAP[pickSpawnHub(t)];state.veh.push({uid:nextId++,type:t,x:home.x+(Math.random()*16-8),y:home.y+(Math.random()*16-8),heading:0,status:"idle",hub:home.id,route:null,legIdx:0,leg:null});});}
 function boot(saved){
-  if(saved){state=Object.assign(fresh(),saved);state.upg=saved.upg||{};state.unlocked=saved.unlocked||state.unlocked;state.hubLvl=saved.hubLvl||{};state.stats=saved.stats||{earned:0,deliveries:0,km:0};state.veh=(saved.veh||[]).map(function(v){var h=HUBMAP[v.hub]||HUBMAP.duiven;return {uid:nextId++,type:v.type,x:h.x+(Math.random()*12-6),y:h.y+(Math.random()*12-6),heading:0,status:"idle",hub:v.hub||"duiven",route:null,legIdx:0,leg:null};});}else {state=fresh();starterFleet();}
-  buildMap();refreshHubVisuals();refreshCountryVisuals();var _vv=$("ver");if(_vv)_vv.textContent=VERSION;if(saved)reconcileGoals();updateGoalsBadge();buildVehEls();updateAutoBtn();updateHUD();fitView();setTab("contracts");
+  if(saved){state=Object.assign(fresh(),saved);state.upg=saved.upg||{};state.unlocked=saved.unlocked||state.unlocked;state.hubLvl=saved.hubLvl||{};state.stats=saved.stats||{earned:0,deliveries:0,km:0};state.lines=(saved.lines||[]).map(function(L){return {id:L.id,name:L.name,stops:(L.stops||[]).filter(function(x){return HUBMAP[x];}),col:L.col||LINE_COLORS[0],born:Date.now(),picks:{},cycles:0};});state.lines.forEach(function(L){if(L.id>=nextLineId)nextLineId=L.id+1;});state.veh=(saved.veh||[]).map(function(v){var h=HUBMAP[v.hub]||HUBMAP.duiven;return {uid:nextId++,type:v.type,x:h.x+(Math.random()*12-6),y:h.y+(Math.random()*12-6),heading:0,status:"idle",hub:v.hub||"duiven",route:null,legIdx:0,leg:null,line:v.line||null,si:v.si||0,cargo:[]};});}else {state=fresh();starterFleet();}
+  buildMap();refreshHubVisuals();refreshCountryVisuals();resumeLines();drawLines();var _vv=$("ver");if(_vv)_vv.textContent=VERSION;if(saved)reconcileGoals();updateGoalsBadge();buildVehEls();updateAutoBtn();updateHUD();fitView();setTab("contracts");
   for(var i=0;i<4;i++)spawnContract();
   if(saved)applyOffline(saved);else toast("🚚 Welcome! Tap <b>❔</b> any time for help. Start: buy a van in the <b>Fleet</b> tab, then Dispatch a contract.");
   requestAnimationFrame(rafLoop);setInterval(tick,1000);setInterval(save,5000);
