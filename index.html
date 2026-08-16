@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <title>LINEHAUL — Network Tycoon</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1440,7 +1442,7 @@ function pruneTenders(){
 }
 var tenderAccum=0;
 function tick(){checkGoals();pruneTenders();tenderAccum++;if(tenderAccum>=38){tenderAccum=0;spawnTender();}var uk=totalUpkeep();state.cash=Math.max(0,state.cash-uk);spawnAccum+=1;while(spawnAccum>=spawnEvery()){spawnAccum-=spawnEvery();spawnContract();}pruneContracts();runAuto();state.incomeEMA=state.incomeEMA*0.7+(incomeBucket-uk)*0.3;incomeBucket=0;pushHist();driftDemand();relayTick();refreshHubVisuals();updateHUD();updateSelPanel();if(curTab==="lines"&&lineEdit!=null){}else if(curTab==="contracts")renderContracts($("tabbody"));else renderTab();}
-var KEY="linehaul-tycoon-v6";var VERSION="v3.2";
+var KEY="linehaul-tycoon-v6";var VERSION="v4.0";
 function serial(){return {cash:state.cash,xp:state.xp,level:state.level,upg:state.upg,autoOn:state.autoOn,focusCargo:state.focusCargo,unlocked:state.unlocked,hubLvl:state.hubLvl,incomeEMA:state.incomeEMA,stats:state.stats,goals:state.goals,goalTiers:state.goalTiers,demand:state.demand,transit:state.transit,loc:state.loc,lines:state.lines.map(function(L){return {id:L.id,name:L.name,stops:L.stops,col:L.col};}),veh:state.veh.map(function(v){return {type:v.type,hub:v.hub||pickHomeHub(),line:v.line||null,si:v.si||0};}),lastSaved:Date.now()};}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(serial()));}catch(e){}}
 function load(cb){try{var v=localStorage.getItem(KEY);cb(v?JSON.parse(v):null);}catch(e){cb(null);}}
