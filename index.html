@@ -132,6 +132,20 @@
   .help h3:first-child{margin-top:0}
   .help p{font-size:13px;color:#C9CDD6;line-height:1.6;margin-bottom:4px}
   .help .em{color:var(--paper);font-weight:600}
+  .brf-hero{display:flex;align-items:center;gap:12px;padding:12px;background:#171A21;border:1px solid var(--line);border-radius:10px;margin-bottom:10px}
+  .brf-flag{font-size:38px;line-height:1;flex:0 0 auto}
+  .brf-city{font-family:'Archivo';font-weight:800;font-size:19px;letter-spacing:.01em}
+  .brf-ctry{font-size:13px;color:var(--amber);font-weight:600;margin-top:2px}
+  .brf-reg{font-size:11px;color:var(--muted);margin-top:2px}
+  .brf-fact{font-size:13px;color:#C9CDD6;line-height:1.6;padding:10px 12px;border-left:2px solid var(--amber);background:#15181F;border-radius:0 8px 8px 0;margin-bottom:10px}
+  .brf-grid{display:flex;flex-direction:column;gap:7px}
+  .brf-row{display:flex;gap:9px;align-items:baseline;padding:9px 11px;background:#171A21;border:1px solid var(--line);border-radius:9px}
+  .brf-k{font-family:'Archivo';font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);flex:0 0 74px}
+  .brf-v{font-size:13px;color:var(--paper);flex:1;line-height:1.5}
+  .brf-v .note{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+  .brf-cap{color:var(--signal);font-weight:600}
+  .brf-nb{font-size:12px;line-height:1.9}
+  .brf-nb span{background:var(--asphalt-3);border:1px solid var(--line);border-radius:6px;padding:2px 6px;margin:0 3px 3px 0;display:inline-block;white-space:nowrap}
   .hbtn.off{opacity:.36}
   .loadhead{font-size:14px;margin-bottom:10px}
   .capmeter{margin-bottom:12px}
@@ -244,9 +258,11 @@
   <h3>Auto-dispatch 🤖</h3><p>When ON, every idle vehicle <span class="em">automatically grabs the best contract it can carry</span>, so you don't tap Dispatch yourself. Unlock it in <span class="em">Upgrades</span> (Level 3), then toggle it in the top bar. Great once your fleet is large — it also keeps earning while you're away.</p>
   <h3>Upkeep ⛽</h3><p>Every vehicle costs a little per second to run (more for planes). Idle vehicles still cost money, so keep them busy. <span class="em">Fuel cards</span> lower this.</p>
   <h3>Hubs &amp; network</h3><p>Open new hubs in <span class="em">Network</span> for more routes. You can also <span class="em">upgrade a hub</span> (★) so its contracts pay more and appear more often — upgrade your busiest ones.</p>
+  <h3>Learning the map 🌍</h3><p>Every hub belongs to a real country. Contracts, fleet cards and the map all show the <span class="em">flag and country</span> of each city, so you pick them up just by playing. Open a new hub and you get a <span class="em">briefing</span>: the country, its capital, which countries it borders, and why that city matters in freight. Tap any hub you already own in <span class="em">Network</span> to read its briefing again. Your <span class="em">Countries served</span> count is in Goals and company stats.</p>
   <h3>Levels</h3><p>Delivering earns XP. Leveling unlocks new vehicles, hubs and upgrades, plus a cash bonus. XP is in the bar under the top menu — tap it for full stats.</p>
   <h3>The map</h3><p><span class="em">Pinch or scroll</span> to zoom, <span class="em">drag</span> to pan. <span class="em">Tap a moving vehicle</span> to select it and have the camera follow it around Europe. Use ⊙ to reset the view.</p>
 </div></div></div>
+<div class="modal" id="briefModal"><div class="modalbox"><div class="modalhead"><h2 id="briefTitle">Route briefing</h2><button data-close>✕</button></div><div class="modalbody" id="briefBody"></div></div></div>
 <div class="modal" id="loadModal"><div class="modalbox"><div class="modalhead"><h2>Load vehicle</h2><button data-close>✕</button></div><div class="modalbody"><div id="loadBody"></div><button class="actbtn" id="loadDispatch" style="width:100%;margin-top:10px;padding:11px">Dispatch run</button></div></div></div>
 <script>
 "use strict";
@@ -318,6 +334,112 @@ var HUBS=[
  {id:"auckland",name:"Auckland",lng:174.76,lat:-36.85,tier:2,port:true,rail:false,cont:"OC",unlockCost:96000000,reqLvl:13}
 ];
 var HUBMAP={};HUBS.forEach(function(h){HUBMAP[h.id]=h;});
+/* ---- Geography layer: countries behind every hub ---------------------- */
+var COUNTRIES={
+ NL:{name:"Netherlands",flag:"🇳🇱",cap:"Amsterdam",capNote:"seat of government is The Hague",region:"Western Europe",nb:["Belgium","Germany"]},
+ DE:{name:"Germany",flag:"🇩🇪",cap:"Berlin",region:"Central Europe",nb:["Denmark","Poland","Czechia","Austria","Switzerland","France","Luxembourg","Belgium","Netherlands"]},
+ BE:{name:"Belgium",flag:"🇧🇪",cap:"Brussels",region:"Western Europe",nb:["Netherlands","Germany","Luxembourg","France"]},
+ FR:{name:"France",flag:"🇫🇷",cap:"Paris",region:"Western Europe",nb:["Belgium","Luxembourg","Germany","Switzerland","Italy","Monaco","Spain","Andorra"]},
+ GB:{name:"United Kingdom",flag:"🇬🇧",cap:"London",region:"Northern Europe",nb:["Ireland"],nbNote:"its only land border"},
+ PL:{name:"Poland",flag:"🇵🇱",cap:"Warsaw",region:"Central Europe",nb:["Germany","Czechia","Slovakia","Ukraine","Belarus","Lithuania","Russia"]},
+ AT:{name:"Austria",flag:"🇦🇹",cap:"Vienna",region:"Central Europe",nb:["Germany","Czechia","Slovakia","Hungary","Slovenia","Italy","Switzerland","Liechtenstein"]},
+ DK:{name:"Denmark",flag:"🇩🇰",cap:"Copenhagen",region:"Northern Europe",nb:["Germany"],nbNote:"its only land border"},
+ ES:{name:"Spain",flag:"🇪🇸",cap:"Madrid",region:"Southern Europe",nb:["Portugal","France","Andorra","Morocco","Gibraltar (UK)"]},
+ IT:{name:"Italy",flag:"🇮🇹",cap:"Rome",region:"Southern Europe",nb:["France","Switzerland","Austria","Slovenia","San Marino","Vatican City"]},
+ PT:{name:"Portugal",flag:"🇵🇹",cap:"Lisbon",region:"Southern Europe",nb:["Spain"],nbNote:"its only land border"},
+ SE:{name:"Sweden",flag:"🇸🇪",cap:"Stockholm",region:"Northern Europe",nb:["Norway","Finland"]},
+ GR:{name:"Greece",flag:"🇬🇷",cap:"Athens",region:"Southern Europe",nb:["Albania","North Macedonia","Bulgaria","Türkiye"]},
+ RU:{name:"Russia",flag:"🇷🇺",cap:"Moscow",region:"Eastern Europe / North Asia",nb:["Norway","Finland","Estonia","Latvia","Lithuania","Poland","Belarus","Ukraine","Georgia","Azerbaijan","Kazakhstan","China","Mongolia","North Korea"],nbNote:"14 land borders — tied with China for the most in the world"},
+ US:{name:"United States",flag:"🇺🇸",cap:"Washington, D.C.",capCity:"Washington",capNote:"a federal district, not part of any state",region:"North America",nb:["Canada","Mexico"]},
+ CA:{name:"Canada",flag:"🇨🇦",cap:"Ottawa",region:"North America",nb:["United States"],nbNote:"the longest land border in the world"},
+ CO:{name:"Colombia",flag:"🇨🇴",cap:"Bogotá",region:"South America",nb:["Venezuela","Brazil","Peru","Ecuador","Panama"]},
+ PE:{name:"Peru",flag:"🇵🇪",cap:"Lima",region:"South America",nb:["Ecuador","Colombia","Brazil","Bolivia","Chile"]},
+ BR:{name:"Brazil",flag:"🇧🇷",cap:"Brasília",capNote:"purpose-built inland in 1960",region:"South America",nb:["Uruguay","Argentina","Paraguay","Bolivia","Peru","Colombia","Venezuela","Guyana","Suriname","French Guiana"],nbNote:"borders every South American country except Chile and Ecuador"},
+ CL:{name:"Chile",flag:"🇨🇱",cap:"Santiago",region:"South America",nb:["Peru","Bolivia","Argentina"]},
+ AR:{name:"Argentina",flag:"🇦🇷",cap:"Buenos Aires",region:"South America",nb:["Chile","Bolivia","Paraguay","Brazil","Uruguay"]},
+ MA:{name:"Morocco",flag:"🇲🇦",cap:"Rabat",region:"North Africa",nb:["Algeria","Western Sahara","Spain (Ceuta & Melilla)"]},
+ NG:{name:"Nigeria",flag:"🇳🇬",cap:"Abuja",capNote:"moved from Lagos in 1991",region:"West Africa",nb:["Benin","Niger","Chad","Cameroon"]},
+ EG:{name:"Egypt",flag:"🇪🇬",cap:"Cairo",region:"North Africa",nb:["Libya","Sudan","Israel","Palestine (Gaza)"]},
+ KE:{name:"Kenya",flag:"🇰🇪",cap:"Nairobi",region:"East Africa",nb:["Ethiopia","Somalia","South Sudan","Uganda","Tanzania"]},
+ ZA:{name:"South Africa",flag:"🇿🇦",cap:"Pretoria",capNote:"one of three — Cape Town is legislative, Bloemfontein judicial",region:"Southern Africa",nb:["Namibia","Botswana","Zimbabwe","Mozambique","Eswatini","Lesotho"],nbNote:"Lesotho sits entirely inside it"},
+ TR:{name:"Türkiye",flag:"🇹🇷",cap:"Ankara",capNote:"not Istanbul",region:"Western Asia",nb:["Greece","Bulgaria","Georgia","Armenia","Azerbaijan","Iran","Iraq","Syria"]},
+ AE:{name:"United Arab Emirates",flag:"🇦🇪",cap:"Abu Dhabi",capNote:"not Dubai",region:"Middle East",nb:["Saudi Arabia","Oman"]},
+ IN:{name:"India",flag:"🇮🇳",cap:"New Delhi",region:"South Asia",nb:["Pakistan","China","Nepal","Bhutan","Bangladesh","Myanmar"]},
+ TH:{name:"Thailand",flag:"🇹🇭",cap:"Bangkok",region:"Southeast Asia",nb:["Myanmar","Laos","Cambodia","Malaysia"]},
+ SG:{name:"Singapore",flag:"🇸🇬",cap:"Singapore",capNote:"a city-state — the country is the city",region:"Southeast Asia",nb:[],nbNote:"an island nation with no land borders"},
+ HK:{name:"Hong Kong",flag:"🇭🇰",cap:"—",capNote:"a Special Administrative Region of China, not a sovereign state",region:"East Asia",nb:["Mainland China"]},
+ CN:{name:"China",flag:"🇨🇳",cap:"Beijing",region:"East Asia",nb:["Russia","Mongolia","North Korea","Vietnam","Laos","Myanmar","India","Bhutan","Nepal","Pakistan","Afghanistan","Tajikistan","Kyrgyzstan","Kazakhstan"],nbNote:"14 land borders — tied with Russia for the most in the world"},
+ KR:{name:"South Korea",flag:"🇰🇷",cap:"Seoul",region:"East Asia",nb:["North Korea"],nbNote:"its only land border, and it is closed"},
+ JP:{name:"Japan",flag:"🇯🇵",cap:"Tokyo",region:"East Asia",nb:[],nbNote:"an island nation with no land borders"},
+ AU:{name:"Australia",flag:"🇦🇺",cap:"Canberra",capNote:"not Sydney or Melbourne — built as a compromise between them",region:"Oceania",nb:[],nbNote:"no land borders"},
+ NZ:{name:"New Zealand",flag:"🇳🇿",cap:"Wellington",capNote:"not Auckland",region:"Oceania",nb:[],nbNote:"no land borders"}
+};
+var HUB_GEO={
+ duiven:{c:"NL",fact:"Your HQ, on the A12 corridor just short of the German border."},
+ rotterdam:{c:"NL",fact:"Europe's largest seaport. Nearly everything entering the continent by sea passes a quay like this one."},
+ amsterdam:{c:"NL",fact:"Schiphol is one of Europe's busiest cargo airports — flowers out, electronics in."},
+ koln:{c:"DE",fact:"A Rhine river port: barges carry freight inland from Rotterdam without touching a road."},
+ brussels:{c:"BE",fact:"The EU's political capital and the road crossroads of the Low Countries."},
+ paris:{c:"FR",fact:"Charles de Gaulle is one of Europe's biggest cargo airports, behind only Frankfurt."},
+ london:{c:"GB",fact:"An island market: freight arrives via Felixstowe, Dover, or the Channel Tunnel."},
+ frankfurt:{c:"DE",fact:"Germany's busiest cargo airport, sitting on the Autobahn crossroads of the country."},
+ hamburg:{c:"DE",fact:"Germany's largest port, 100km up the Elbe from the sea. Nicknamed the Gateway to the World."},
+ berlin:{c:"DE",fact:"The capital, and the road and rail gateway east toward Poland."},
+ warsaw:{c:"PL",fact:"Polish hauliers move more freight by road than any other country in the EU."},
+ vienna:{c:"AT",fact:"A Danube river port and the gateway to Central and Southeastern Europe."},
+ copenhagen:{c:"DK",fact:"The Øresund Bridge runs from here to Sweden — road and rail on the same crossing."},
+ barcelona:{c:"ES",fact:"A major Mediterranean container port and Spain's industrial northeast."},
+ milan:{c:"IT",fact:"Italy's industrial capital, in the Po Valley where most Italian manufacturing sits."},
+ rome:{c:"IT",fact:"The capital, and the distribution centre for central and southern Italy."},
+ madrid:{c:"ES",fact:"Spain's road network radiates from here — it is the country's inland freight pivot."},
+ lisbon:{c:"PT",fact:"An Atlantic port at the western edge of continental Europe."},
+ stockholm:{c:"SE",fact:"Sweden's Baltic gateway, built across fourteen islands."},
+ athens:{c:"GR",fact:"Piraeus, its port, is one of the busiest container terminals in Europe."},
+ moscow:{c:"RU",fact:"The centre of Russia's rail network — lines radiate from here across eleven time zones."},
+ newyork:{c:"US",fact:"The Port of New York and New Jersey is the busiest on the US East Coast."},
+ boston:{c:"US",fact:"New England's gateway, and the closest major US port to Europe."},
+ halifax:{c:"CA",fact:"The deepest ice-free Atlantic port in North America — the first call from Europe."},
+ montreal:{c:"CA",fact:"An inland port on the St. Lawrence Seaway, 1,600km from the open ocean."},
+ toronto:{c:"CA",fact:"Canada's largest city, on the Great Lakes corridor into the US Midwest."},
+ washington:{c:"US",fact:"The political capital, though New York and Baltimore handle its freight by sea."},
+ atlanta:{c:"US",fact:"The road hub of the American Southeast, and the world's busiest passenger airport."},
+ chicago:{c:"US",fact:"North America's rail capital: six Class I railroads meet here and nowhere else."},
+ memphis:{c:"US",fact:"FedEx built its global superhub here, making it one of the world's busiest cargo airports."},
+ miami:{c:"US",fact:"The gateway between the United States and Latin America."},
+ dallas:{c:"US",fact:"Central enough to reach most of the US in two days by truck."},
+ houston:{c:"US",fact:"The largest US port by tonnage, at the heart of the energy corridor."},
+ bogota:{c:"CO",fact:"An Andean capital at 2,600m — thin air, and everything arrives by mountain road."},
+ lima:{c:"PE",fact:"Its port, Callao, is Peru's window on the Pacific."},
+ rio:{c:"BR",fact:"Brazil's second city and a major Atlantic port — but not the capital."},
+ saopaulo:{c:"BR",fact:"South America's largest city and its industrial engine; the port of Santos serves it."},
+ santiago:{c:"CL",fact:"Chile's centre, hemmed by the Andes; its cargo moves through Valparaíso on the coast."},
+ buenosaires:{c:"AR",fact:"On the Río de la Plata, the estuary that is Argentina's gateway to the Atlantic."},
+ casablanca:{c:"MA",fact:"Morocco's largest city. Tanger Med to the north is Africa's biggest container port."},
+ lagos:{c:"NG",fact:"Africa's largest city and Nigeria's port — but Abuja is the capital."},
+ cairo:{c:"EG",fact:"Africa's largest metro area, beside the Suez Canal that carries much of world trade."},
+ nairobi:{c:"KE",fact:"East Africa's business hub, at the inland end of the corridor from Mombasa."},
+ johannesburg:{c:"ZA",fact:"An inland city built on gold — every container reaches it by road or rail from Durban."},
+ capetown:{c:"ZA",fact:"An Atlantic-side port near the Cape of Good Hope, where two oceans meet."},
+ istanbul:{c:"TR",fact:"The only major city on two continents, split by the Bosphorus strait."},
+ dubai:{c:"AE",fact:"Jebel Ali is the Middle East's largest port, and DXB a top global air-cargo hub."},
+ mumbai:{c:"IN",fact:"India's financial capital; the JNPT terminal handles much of the country's containers."},
+ delhi:{c:"IN",fact:"The capital region and the distribution centre for northern India."},
+ bangkok:{c:"TH",fact:"Laem Chabang, its deep-sea port, is the gateway to mainland Southeast Asia."},
+ singapore:{c:"SG",fact:"The world's busiest transshipment port — cargo arrives only to change ship."},
+ hongkong:{c:"HK",fact:"A deep-water port and one of the world's leading air-cargo gateways."},
+ shanghai:{c:"CN",fact:"The world's busiest container port, by a wide margin."},
+ beijing:{c:"CN",fact:"China's capital and the hub of its northern rail network."},
+ seoul:{c:"KR",fact:"Served by Incheon, a port and airport pairing that handles most Korean trade."},
+ tokyo:{c:"JP",fact:"The largest metropolitan area on earth — roughly 37 million people to supply."},
+ sydney:{c:"AU",fact:"Port Botany is the container gateway for New South Wales."},
+ melbourne:{c:"AU",fact:"Australia's busiest container port, ahead of Sydney."},
+ auckland:{c:"NZ",fact:"New Zealand's largest city and port — but Wellington is the capital."}
+};
+HUBS.forEach(function(h){var g=HUB_GEO[h.id]||{};h.iso=g.c||"";h.fact=g.fact||"";});
+function ctryOf(h){return COUNTRIES[(typeof h==="string"?(HUBMAP[h]||{}):h).iso]||null;}
+function flagOf(h){var c=ctryOf(h);return c?c.flag:"";}
+function ctryName(h){var c=ctryOf(h);return c?c.name:"";}
+function hubLabel(h){var f=flagOf(h);return (f?f+" ":"")+h.name;}
 var LNG0=-125,LNG1=180,LAT0=-50,LAT1=70,VW=2300,VH=900,PADX=40,PADY=40;
 function projX(lng){return PADX+(lng-LNG0)/(LNG1-LNG0)*(VW-2*PADX);}
 function projY(lat){return PADY+(LAT1-lat)/(LAT1-LAT0)*(VH-2*PADY);}
@@ -416,7 +538,7 @@ function buildMap(){
     g.appendChild(el("circle",{class:"hubglow",cx:h.x,cy:h.y,r:20,style:"display:none",id:"glow-"+h.id}));
     g.appendChild(el("circle",{class:"pulse-c",cx:h.x,cy:h.y,r:13,fill:"none"}));
     g.appendChild(el("circle",{class:"hub-core",cx:h.x,cy:h.y,r:9}));
-    var lbl=el("text",{class:"hub-label",x:h.x+h.ldx,y:h.y+h.ldy,"text-anchor":h.la});lbl.textContent=h.name;g.appendChild(lbl);
+    var lbl=el("text",{class:"hub-label",x:h.x+h.ldx,y:h.y+h.ldy,"text-anchor":h.la});lbl.textContent=hubLabel(h);g.appendChild(lbl);
     g.appendChild(el("text",{class:"hublvl",x:h.x,y:h.y+3,"text-anchor":"middle",id:"hl-"+h.id,style:"display:none"}));
     g.appendChild(el("circle",{class:"jobbadge",cx:h.x+12,cy:h.y-11,r:8,style:"display:none",id:"jb-"+h.id}));
     g.appendChild(el("text",{class:"jobbadge-t",x:h.x+12,y:h.y-8,style:"display:none",id:"jt-"+h.id}));
@@ -474,7 +596,7 @@ function closeModalById(id){$(id).classList.remove("show");}
 var loadSel={veh:null,picked:[]};
 function openLoadModal(v){loadSel={veh:v.uid,picked:[]};renderLoadModal();openModal("loadModal");}
 function estimateRun(v,list){var origin=v.hub;var drops=list.map(function(c){return {hub:c.to,pay:Math.round(c.reward*payMult()),w:c.w};});var gross=0;drops.forEach(function(d){gross+=d.pay;});var rem=drops.slice(),cur=origin,fuel=0,guard=0;while(rem.length&&guard++<50){var bi=0,bd=Infinity;for(var i=0;i<rem.length;i++){var d=haversine(HUBMAP[cur],HUBMAP[rem[i].hub]);if(d<bd){bd=d;bi=i;}}var onb=0;rem.forEach(function(d){onb+=d.w;});fuel+=fuelFor(v.type,bd,onb);cur=rem[bi].hub;rem.splice(bi,1);}return {gross:gross,fuel:Math.round(fuel),net:Math.round(gross-fuel)};}
-function renderLoadModal(){var v=state.veh.filter(function(x){return x.uid===loadSel.veh;})[0];if(!v||v.status!=="idle"){closeModalById("loadModal");return;}var hub=HUBMAP[v.hub];var cap=vehCap(v.type);var here=state.contracts.filter(function(c){return c.from===v.hub&&legOk(v.type,v.hub,c.to)&&(!c.reefer||vehReefer(v.type));});var pickedW=0,pickedPay=0;loadSel.picked.forEach(function(id){var c=findContract(id);if(c){pickedW+=c.w;pickedPay+=Math.round(c.reward*payMult());}});var est=loadSel.picked.length?estimateRun(v,loadSel.picked.map(findContract).filter(Boolean)):null;var html='<div class="loadhead"><span class="sp-ic">'+VEH[v.type].ic+'</span> <b>'+VEH[v.type].name+'</b> at '+hub.name+'</div>';html+='<div class="capmeter"><div class="capbar"><div class="capfill" style="width:'+Math.min(100,100*pickedW/cap)+'%"></div></div><div class="capnum">'+pickedW+' / '+cap+'t loaded</div>'+(est?'<div class="capnet">gross '+eur(est.gross)+' · fuel −'+eur(est.fuel)+' · net <b style="color:'+(est.net>=0?"#7bd88f":"#ff9b8a")+'">'+eur(est.net)+'</b></div>':'')+'</div>';html+='<div class="seclabel">Cargo at '+hub.name+'</div>';if(!here.length){html+='<div class="empty" style="padding:8px">No cargo waiting here.</div>';}else{here.forEach(function(c){var on=loadSel.picked.indexOf(c.id)>=0;var fits=(pickedW+c.w<=cap)||on;var ok=fits&&(!c.reefer||vehReefer(v.type));html+='<div class="loadrow '+(on?"on":"")+'"><div class="ico">'+CARGO[c.cargo].ic+'</div><div class="grow"><div class="ttl" style="font-size:12px">→ '+HUBMAP[c.to].name+(c.rush?' <span class="pill rush">⏱</span>':'')+(c.reefer?' <span class="pill">reefer</span>':'')+'</div><div class="sub">'+CARGO[c.cargo].t+' · '+c.w+'t · '+eur(Math.round(c.reward*payMult()))+'</div></div><button class="addbtn" data-id="'+c.id+'" '+(ok?'':'disabled')+'>'+(on?'✓':'＋')+'</button></div>';});}html+='<div class="seclabel">Or send empty to a hub with cargo</div>';var others=HUBS.filter(function(h){return state.unlocked[h.id]&&h.id!==v.hub&&vehCanStop(v.type,h.id)&&legOk(v.type,v.hub,h.id);}).map(function(h){return {h:h,n:state.contracts.filter(function(c){return c.from===h.id;}).length};}).sort(function(a,b){return b.n-a.n;});others.slice(0,6).forEach(function(o){html+='<div class="loadrow"><div class="ico">📍</div><div class="grow"><div class="ttl" style="font-size:12px">'+o.h.name+'</div><div class="sub">'+(o.n?o.n+' load'+(o.n===1?'':'s')+' waiting':'no loads')+'</div></div><button class="repobtn" data-hub="'+o.h.id+'">Go ▸</button></div>';});$("loadBody").innerHTML=html;$("loadDispatch").disabled=loadSel.picked.length===0;$("loadDispatch").textContent=loadSel.picked.length?('Dispatch run · '+eur(pickedPay)):'Dispatch run';[].forEach.call($("loadBody").querySelectorAll(".addbtn"),function(b){b.onclick=function(){var id=+b.dataset.id;var i=loadSel.picked.indexOf(id);if(i>=0)loadSel.picked.splice(i,1);else loadSel.picked.push(id);renderLoadModal();};});[].forEach.call($("loadBody").querySelectorAll(".repobtn"),function(b){b.onclick=function(){reposition(v,b.dataset.hub);closeModalById("loadModal");selVeh=v.uid;follow=true;updateSelPanel();};});$("loadDispatch").onclick=function(){var cs=loadSel.picked.map(findContract).filter(Boolean);if(!cs.length)return;dispatchRun(v,cs);closeModalById("loadModal");selVeh=v.uid;follow=true;updateSelPanel();};}
+function renderLoadModal(){var v=state.veh.filter(function(x){return x.uid===loadSel.veh;})[0];if(!v||v.status!=="idle"){closeModalById("loadModal");return;}var hub=HUBMAP[v.hub];var cap=vehCap(v.type);var here=state.contracts.filter(function(c){return c.from===v.hub&&legOk(v.type,v.hub,c.to)&&(!c.reefer||vehReefer(v.type));});var pickedW=0,pickedPay=0;loadSel.picked.forEach(function(id){var c=findContract(id);if(c){pickedW+=c.w;pickedPay+=Math.round(c.reward*payMult());}});var est=loadSel.picked.length?estimateRun(v,loadSel.picked.map(findContract).filter(Boolean)):null;var html='<div class="loadhead"><span class="sp-ic">'+VEH[v.type].ic+'</span> <b>'+VEH[v.type].name+'</b> at '+hubLabel(hub)+'</div>';html+='<div class="capmeter"><div class="capbar"><div class="capfill" style="width:'+Math.min(100,100*pickedW/cap)+'%"></div></div><div class="capnum">'+pickedW+' / '+cap+'t loaded</div>'+(est?'<div class="capnet">gross '+eur(est.gross)+' · fuel −'+eur(est.fuel)+' · net <b style="color:'+(est.net>=0?"#7bd88f":"#ff9b8a")+'">'+eur(est.net)+'</b></div>':'')+'</div>';html+='<div class="seclabel">Cargo at '+hub.name+'</div>';if(!here.length){html+='<div class="empty" style="padding:8px">No cargo waiting here.</div>';}else{here.forEach(function(c){var on=loadSel.picked.indexOf(c.id)>=0;var fits=(pickedW+c.w<=cap)||on;var ok=fits&&(!c.reefer||vehReefer(v.type));html+='<div class="loadrow '+(on?"on":"")+'"><div class="ico">'+CARGO[c.cargo].ic+'</div><div class="grow"><div class="ttl" style="font-size:12px">→ '+hubLabel(HUBMAP[c.to])+(c.rush?' <span class="pill rush">⏱</span>':'')+(c.reefer?' <span class="pill">reefer</span>':'')+'</div><div class="sub">'+(ctryName(HUBMAP[c.to])?ctryName(HUBMAP[c.to])+' · ':'')+CARGO[c.cargo].t+' · '+c.w+'t · '+eur(Math.round(c.reward*payMult()))+'</div></div><button class="addbtn" data-id="'+c.id+'" '+(ok?'':'disabled')+'>'+(on?'✓':'＋')+'</button></div>';});}html+='<div class="seclabel">Or send empty to a hub with cargo</div>';var others=HUBS.filter(function(h){return state.unlocked[h.id]&&h.id!==v.hub&&vehCanStop(v.type,h.id)&&legOk(v.type,v.hub,h.id);}).map(function(h){return {h:h,n:state.contracts.filter(function(c){return c.from===h.id;}).length};}).sort(function(a,b){return b.n-a.n;});others.slice(0,6).forEach(function(o){html+='<div class="loadrow"><div class="ico">📍</div><div class="grow"><div class="ttl" style="font-size:12px">'+o.h.name+'</div><div class="sub">'+(o.n?o.n+' load'+(o.n===1?'':'s')+' waiting':'no loads')+'</div></div><button class="repobtn" data-hub="'+o.h.id+'">Go ▸</button></div>';});$("loadBody").innerHTML=html;$("loadDispatch").disabled=loadSel.picked.length===0;$("loadDispatch").textContent=loadSel.picked.length?('Dispatch run · '+eur(pickedPay)):'Dispatch run';[].forEach.call($("loadBody").querySelectorAll(".addbtn"),function(b){b.onclick=function(){var id=+b.dataset.id;var i=loadSel.picked.indexOf(id);if(i>=0)loadSel.picked.splice(i,1);else loadSel.picked.push(id);renderLoadModal();};});[].forEach.call($("loadBody").querySelectorAll(".repobtn"),function(b){b.onclick=function(){reposition(v,b.dataset.hub);closeModalById("loadModal");selVeh=v.uid;follow=true;updateSelPanel();};});$("loadDispatch").onclick=function(){var cs=loadSel.picked.map(findContract).filter(Boolean);if(!cs.length)return;dispatchRun(v,cs);closeModalById("loadModal");selVeh=v.uid;follow=true;updateSelPanel();};}
 
 
 
@@ -486,7 +608,7 @@ function renderVeh(now){state.veh.forEach(function(v){if(v.status==="enroute"&&v
 function drawRoutes(){gRoutes.innerHTML="";state.veh.forEach(function(v){if(!v.route||v.status==="idle")return;var air=VEH[v.type].mode==="air";var pts=[{x:v.x,y:v.y}];for(var i=v.legIdx;i<v.route.length;i++){var h=HUBMAP[v.route[i].hub];pts.push({x:h.x,y:h.y});}for(var j=0;j<pts.length-1;j++){var cls="routeline"+(air?" air":"")+(j>0?" pickup":"");gRoutes.appendChild(el("line",{x1:pts[j].x,y1:pts[j].y,x2:pts[j+1].x,y2:pts[j+1].y,class:cls}));}});}
 function drawSel(){gSel.innerHTML="";if(selVeh==null)return;var v=state.veh.filter(function(x){return x.uid===selVeh;})[0];if(!v){selVeh=null;return;}gSel.appendChild(el("circle",{class:"selring",cx:v.x,cy:v.y,r:13}));}
 function spawnFly(x,y,txt){var t=el("text",{class:"fly",x:x,y:y-10});t.textContent=txt;gFly.appendChild(t);var s=performance.now();function a(n){var k=(n-s)/900;if(k>=1){t.remove();return;}t.setAttribute("y",(y-10-k*34));t.setAttribute("opacity",(1-k));requestAnimationFrame(a);}requestAnimationFrame(a);}
-function updateSelPanel(){var p=$("selpanel");if(selVeh==null){p.style.display="none";return;}var v=state.veh.filter(function(x){return x.uid===selVeh;})[0];if(!v){p.style.display="none";return;}var T=VEH[v.type];var statusTxt={idle:"Idle",enroute:"En route",loading:"Loading"}[v.status]||v.status;var body="";if(v.status==="idle"){body+='<div class="l">Parked at '+(HUBMAP[v.hub]?HUBMAP[v.hub].name:"depot")+'. Capacity '+vehCap(v.type)+'t.</div>';}else{var loads=[];if(v.route){for(var i=v.legIdx;i<v.route.length;i++){(v.route[i].drops||[]).forEach(function(c){loads.push(c);});}}var nextStop=v.route&&v.route[v.legIdx]?HUBMAP[v.route[v.legIdx].hub].name:"-";body+='<div><span class="l">Onboard:</span> '+vehLoadWeight(v)+'/'+vehCap(v.type)+'t · '+loads.length+' load'+(loads.length===1?"":"s")+'</div>';body+='<div><span class="l">Next:</span> '+nextStop+(v.status==="loading"?" (loading)":"")+'</div>';if(v.leg){var rem=Math.max(0,(v.leg.dur-(performance.now()-v.leg.start))/1000);var left=v.route.length-v.legIdx;body+='<div><span class="l">ETA:</span> '+rem.toFixed(0)+'s · '+left+' stop'+(left===1?"":"s")+' left</div>';}}var act=v.status==="idle"?'<div class="sp-btns"><button id="loadBtn" class="prim">Load / move ▸</button></div>':"";p.innerHTML='<div class="sp-top"><span class="sp-ic">'+T.ic+'</span><div><div class="sp-nm">'+T.name+(T.mode==="air"?' <span class="pill air">air</span>':"")+'</div><div class="sp-st">'+statusTxt+'</div></div></div><div class="sp-body">'+body+'</div>'+act+'<div class="sp-btns"><button id="followBtn" class="'+(follow?"on":"")+'">'+(follow?"Following ✓":"Follow")+'</button><button id="deselBtn">Close</button></div>';p.style.display="block";if($("loadBtn"))$("loadBtn").onclick=function(){openLoadModal(v);};$("followBtn").onclick=function(){follow=!follow;updateSelPanel();};$("deselBtn").onclick=function(){selVeh=null;follow=false;updateSelPanel();};}
+function updateSelPanel(){var p=$("selpanel");if(selVeh==null){p.style.display="none";return;}var v=state.veh.filter(function(x){return x.uid===selVeh;})[0];if(!v){p.style.display="none";return;}var T=VEH[v.type];var statusTxt={idle:"Idle",enroute:"En route",loading:"Loading"}[v.status]||v.status;var body="";if(v.status==="idle"){body+='<div class="l">Parked at '+(HUBMAP[v.hub]?hubLabel(HUBMAP[v.hub])+(ctryName(HUBMAP[v.hub])?", "+ctryName(HUBMAP[v.hub]):""):"depot")+'. Capacity '+vehCap(v.type)+'t.</div>';}else{var loads=[];if(v.route){for(var i=v.legIdx;i<v.route.length;i++){(v.route[i].drops||[]).forEach(function(c){loads.push(c);});}}var nextStop=v.route&&v.route[v.legIdx]?hubLabel(HUBMAP[v.route[v.legIdx].hub]):"-";body+='<div><span class="l">Onboard:</span> '+vehLoadWeight(v)+'/'+vehCap(v.type)+'t · '+loads.length+' load'+(loads.length===1?"":"s")+'</div>';body+='<div><span class="l">Next:</span> '+nextStop+(v.status==="loading"?" (loading)":"")+'</div>';if(v.leg){var rem=Math.max(0,(v.leg.dur-(performance.now()-v.leg.start))/1000);var left=v.route.length-v.legIdx;body+='<div><span class="l">ETA:</span> '+rem.toFixed(0)+'s · '+left+' stop'+(left===1?"":"s")+' left</div>';}}var act=v.status==="idle"?'<div class="sp-btns"><button id="loadBtn" class="prim">Load / move ▸</button></div>':"";p.innerHTML='<div class="sp-top"><span class="sp-ic">'+T.ic+'</span><div><div class="sp-nm">'+T.name+(T.mode==="air"?' <span class="pill air">air</span>':"")+'</div><div class="sp-st">'+statusTxt+'</div></div></div><div class="sp-body">'+body+'</div>'+act+'<div class="sp-btns"><button id="followBtn" class="'+(follow?"on":"")+'">'+(follow?"Following ✓":"Follow")+'</button><button id="deselBtn">Close</button></div>';p.style.display="block";if($("loadBtn"))$("loadBtn").onclick=function(){openLoadModal(v);};$("followBtn").onclick=function(){follow=!follow;updateSelPanel();};$("deselBtn").onclick=function(){selVeh=null;follow=false;updateSelPanel();};}
 function selectHub(id){if(!state.unlocked[id]){setTab("network");return;}selectedHub=id;setTab("contracts");}
 function setTab(t){curTab=t;[].forEach.call($("tabs").children,function(b){b.classList.toggle("on",b.dataset.tab===t);});renderTab();}
 $("tabs").addEventListener("click",function(e){var b=e.target.closest("button");if(b)setTab(b.dataset.tab);});
@@ -502,7 +624,8 @@ function renderContracts(b){
   function mk(c){
     var elg=eligibleIdleQ(c);var card=document.createElement("div");card.className="card "+(c.rush?"rush ":"")+(elg?"go":"no");
     var tags=(c.reefer?'<span class="pill">reefer</span>':'')+(c.rush?'<span class="pill rush">⏱ rush</span>':'')+((c.demand&&c.demand>1.2)?' <span class="pill rush">🔥 hot</span>':'')+(!sameCont(c.from,c.to)?' <span class="pill ocean">🌊 sea/air</span>':'');
-    card.innerHTML='<div class="row"><div class="ico">'+CARGO[c.cargo].ic+'</div><div class="grow"><div class="route"><b>'+HUBMAP[c.from].name+'</b><span class="arrow">→</span>'+HUBMAP[c.to].name+'</div><div class="sub">'+CARGO[c.cargo].t+' · '+c.w+'t · '+Math.round(c.km)+'km'+tags+'</div></div><div style="text-align:right"><div class="price">'+eur(pay(c))+'</div><button class="actbtn sm" '+(elg?'':'disabled')+'>Dispatch</button></div></div>';
+    var _cf=HUBMAP[c.from],_ct=HUBMAP[c.to],_dc=ctryName(_ct);
+    card.innerHTML='<div class="row"><div class="ico">'+CARGO[c.cargo].ic+'</div><div class="grow"><div class="route"><b>'+hubLabel(_cf)+'</b><span class="arrow">→</span>'+hubLabel(_ct)+'</div><div class="sub">'+(_dc?_dc+' · ':'')+CARGO[c.cargo].t+' · '+c.w+'t · '+Math.round(c.km)+'km'+tags+'</div></div><div style="text-align:right"><div class="price">'+eur(pay(c))+'</div><button class="actbtn sm" '+(elg?'':'disabled')+'>Dispatch</button></div></div>';
     card.querySelector("button").addEventListener("click",function(ev){ev.stopPropagation();if(quickDispatch(c))renderContracts(b);});
     return card;
   }
@@ -513,7 +636,7 @@ function renderContracts(b){
 function renderFleet(b){
   b.innerHTML="";var lab=document.createElement("div");lab.className="seclabel";lab.textContent="Owned fleet ("+state.veh.length+")"+((state.transit&&state.transit.length)?"  ·  📦 "+state.transit.length+" in transit":"");b.appendChild(lab);
   if(!state.veh.length){var e=document.createElement("div");e.className="empty";e.style.padding="8px";e.textContent="No vehicles yet — buy one below.";b.appendChild(e);}
-  var idleN=state.veh.filter(function(v){return v.status==="idle";}).length;if(idleN){var _da=document.createElement("button");_da.className="actbtn";_da.style.cssText="width:100%;margin:2px 0 6px";_da.textContent="🚀 Dispatch all idle ("+idleN+")";_da.addEventListener("click",dispatchAllIdle);b.appendChild(_da);}var _now=performance.now();var _ord={idle:0,loading:1,enroute:2};state.veh.slice().sort(function(a,c){return (_ord[a.status]||0)-(_ord[c.status]||0);}).forEach(function(v){var T=VEH[v.type];var st,sub;if(v.status==="idle"){st='<span class="pill">idle</span>';sub='Parked at '+(HUBMAP[v.hub]?HUBMAP[v.hub].name:"depot")+' · cap '+vehCap(v.type)+'t';}else{var nm=(v.route&&v.route[v.legIdx])?HUBMAP[v.route[v.legIdx].hub].name:"-";var eta=v.leg?Math.max(0,Math.round((v.leg.start+v.leg.dur-_now)/1000)):0;st='<span class="pill '+(v.status==="loading"?"":"rush")+'">'+(v.status==="loading"?"loading":"en route")+'</span>';sub=(v.status==="loading"?"Loading at ":"→ ")+nm+(v.status==="enroute"?(" · ~"+eta+"s"):"")+' · '+vehLoadWeight(v)+'/'+vehCap(v.type)+'t';}var card=document.createElement("div");card.className="card";card.innerHTML='<div class="row"><div class="ico">'+T.ic+'</div><div class="grow"><div class="ttl">'+T.name+' '+st+'</div><div class="sub">'+sub+'</div></div></div>';card.addEventListener("click",function(){selVeh=v.uid;follow=true;updateSelPanel();});b.appendChild(card);});
+  var idleN=state.veh.filter(function(v){return v.status==="idle";}).length;if(idleN){var _da=document.createElement("button");_da.className="actbtn";_da.style.cssText="width:100%;margin:2px 0 6px";_da.textContent="🚀 Dispatch all idle ("+idleN+")";_da.addEventListener("click",dispatchAllIdle);b.appendChild(_da);}var _now=performance.now();var _ord={idle:0,loading:1,enroute:2};state.veh.slice().sort(function(a,c){return (_ord[a.status]||0)-(_ord[c.status]||0);}).forEach(function(v){var T=VEH[v.type];var st,sub;if(v.status==="idle"){st='<span class="pill">idle</span>';sub='Parked at '+(HUBMAP[v.hub]?hubLabel(HUBMAP[v.hub]):"depot")+' · cap '+vehCap(v.type)+'t';}else{var nm=(v.route&&v.route[v.legIdx])?hubLabel(HUBMAP[v.route[v.legIdx].hub]):"-";var eta=v.leg?Math.max(0,Math.round((v.leg.start+v.leg.dur-_now)/1000)):0;st='<span class="pill '+(v.status==="loading"?"":"rush")+'">'+(v.status==="loading"?"loading":"en route")+'</span>';sub=(v.status==="loading"?"Loading at ":"→ ")+nm+(v.status==="enroute"?(" · ~"+eta+"s"):"")+' · '+vehLoadWeight(v)+'/'+vehCap(v.type)+'t';}var card=document.createElement("div");card.className="card";card.innerHTML='<div class="row"><div class="ico">'+T.ic+'</div><div class="grow"><div class="ttl">'+T.name+' '+st+'</div><div class="sub">'+sub+'</div></div></div>';card.addEventListener("click",function(){selVeh=v.uid;follow=true;updateSelPanel();});b.appendChild(card);});
   
   var lab2=document.createElement("div");lab2.className="seclabel";lab2.textContent="Buy vehicles";b.appendChild(lab2);
   VEH.slice().sort(function(a,b){return a.cost-b.cost;}).forEach(function(T){var locked=state.level<T.reqLvl,afford=state.cash>=T.cost&&!locked;var card=document.createElement("div");card.className="card "+(afford?"go":"no");var right=locked?'<div class="lvlock">Lvl '+T.reqLvl+'</div>':'<button class="actbtn" '+(afford?'':'disabled')+'>'+eur(T.cost)+'</button>';card.innerHTML='<div class="row"><div class="ico">'+T.ic+'</div><div class="grow"><div class="ttl">'+T.name+(T.mode==="air"?' <span class="pill air">air</span>':T.mode==="sea"?' <span class="pill ocean">sea</span>':T.mode==="rail"?' <span class="pill rail">rail</span>':'')+(T.reefer?' <span class="pill">reefer</span>':'')+' <span class="pill">T'+T.cls+'</span></div><div class="sub">cap '+vehCap(T.id)+'t · speed '+T.speed+' · ⛽ '+(T.fuel<0.04?"low":T.fuel<0.09?"med":"high")+'</div></div><div>'+right+'</div></div>';var btn=card.querySelector("button");if(btn)btn.addEventListener("click",function(){buyVeh(T.id);renderFleet(b);});b.appendChild(card);});
@@ -521,8 +644,8 @@ function renderFleet(b){
 function renderNetwork(b){
   b.innerHTML="";var owned=HUBS.filter(function(h){return state.unlocked[h.id];}).length;var lab=document.createElement("div");lab.className="seclabel";lab.textContent="Network · "+owned+"/"+HUBS.length+" hubs";b.appendChild(lab);
   HUBS.slice().sort(function(a,b){return a.unlockCost-b.unlockCost;}).forEach(function(h){
-    if(state.unlocked[h.id]){var l=hubLvl(h.id),uc=hubUpCost(h);var right=uc==null?'<div class="price" style="color:var(--muted)">max ★3</div>':'<button class="actbtn sm" '+(state.cash>=uc?'':'disabled')+'>★ '+eur(uc)+'</button>';var c0=document.createElement("div");c0.className="card";c0.innerHTML='<div class="row"><div class="ico">'+(h.home?'🏠':'📍')+'</div><div class="grow"><div class="ttl">'+h.name+(h.home?' <span class="pill">HQ</span>':'')+' '+(l>0?'<span class="pill">★'+l+'</span>':'')+'</div><div class="sub">+'+Math.round((hubPay(h.id)-1)*100)+'% payout · more contracts</div>'+'<div class="sub">Exports '+profIcons(h,"prod")+' · Wants '+profIcons(h,"want")+'</div></div><div>'+right+'</div></div>';var btn=c0.querySelector("button");if(btn)btn.addEventListener("click",function(){var cc=hubUpCost(h);if(cc!=null&&state.cash>=cc){state.cash-=cc;state.hubLvl[h.id]=hubLvl(h.id)+1;toast("⬆️ Upgraded <b>"+h.name+"</b> to ★"+hubLvl(h.id)+".");refreshHubVisuals();renderNetwork(b);}});b.appendChild(c0);return;}
-    var locked=state.level<h.reqLvl,afford=state.cash>=hubUnlockCost(h)&&!locked;var card=document.createElement("div");card.className="card "+(afford?"go":"no");var right=locked?'<div class="lvlock">Lvl '+h.reqLvl+'</div>':'<button class="actbtn sm" '+(afford?'':'disabled')+'>'+eur(hubUnlockCost(h))+'</button>';card.innerHTML='<div class="row"><div class="ico">🔒</div><div class="grow"><div class="ttl">'+h.name+'</div><div class="sub">new destination &amp; contracts</div></div><div>'+right+'</div></div>';var btn=card.querySelector("button");if(btn)btn.addEventListener("click",function(){var uc=hubUnlockCost(h);if(state.cash>=uc){state.cash-=uc;state.unlocked[h.id]=true;toast("🗺️ Opened <b>"+h.name+"</b> to your network.");refreshHubVisuals();renderNetwork(b);}});b.appendChild(card);
+    if(state.unlocked[h.id]){var l=hubLvl(h.id),uc=hubUpCost(h);var right=uc==null?'<div class="price" style="color:var(--muted)">max ★3</div>':'<button class="actbtn sm" '+(state.cash>=uc?'':'disabled')+'>★ '+eur(uc)+'</button>';var c0=document.createElement("div");c0.className="card";c0.innerHTML='<div class="row"><div class="ico">'+(h.home?'🏠':flagOf(h)||'📍')+'</div><div class="grow"><div class="ttl">'+h.name+(h.home?' <span class="pill">HQ</span>':'')+' '+(l>0?'<span class="pill">★'+l+'</span>':'')+'</div><div class="sub">'+(ctryName(h)||"—")+' · +'+Math.round((hubPay(h.id)-1)*100)+'% payout</div>'+'<div class="sub">Exports '+profIcons(h,"prod")+' · Wants '+profIcons(h,"want")+'</div></div><div>'+right+'</div></div>';var btn=c0.querySelector("button");if(btn)btn.addEventListener("click",function(ev){ev.stopPropagation();var cc=hubUpCost(h);if(cc!=null&&state.cash>=cc){state.cash-=cc;state.hubLvl[h.id]=hubLvl(h.id)+1;toast("⬆️ Upgraded <b>"+h.name+"</b> to ★"+hubLvl(h.id)+".");refreshHubVisuals();renderNetwork(b);}});c0.addEventListener("click",function(){showBriefing(h,false);});b.appendChild(c0);return;}
+    var locked=state.level<h.reqLvl,afford=state.cash>=hubUnlockCost(h)&&!locked;var card=document.createElement("div");card.className="card "+(afford?"go":"no");var right=locked?'<div class="lvlock">Lvl '+h.reqLvl+'</div>':'<button class="actbtn sm" '+(afford?'':'disabled')+'>'+eur(hubUnlockCost(h))+'</button>';card.innerHTML='<div class="row"><div class="ico">🔒</div><div class="grow"><div class="ttl">'+h.name+'</div><div class="sub">'+(ctryName(h)?flagOf(h)+' '+ctryName(h):'new destination')+' · new contracts</div></div><div>'+right+'</div></div>';var btn=card.querySelector("button");if(btn)btn.addEventListener("click",function(){var uc=hubUnlockCost(h);if(state.cash>=uc){state.cash-=uc;state.unlocked[h.id]=true;toast("🗺️ Opened <b>"+flagOf(h)+" "+h.name+"</b> to your network.");refreshHubVisuals();renderNetwork(b);showBriefing(h,true);}});b.appendChild(card);
   });
 }
 function renderFocusSelector(b){if(state.level<2)return;var fl=lv("focus");var card=document.createElement("div");card.className="card";var icons=CARGO.map(function(cg,i){return '<button class="focusic'+(state.focusCargo===i?" on":"")+'" data-i="'+i+'">'+cg.ic+'</button>';}).join("");card.innerHTML='<div class="grow"><div class="ttl">🎯 Cargo focus '+(fl>0?'<span class="pill">+'+(fl*8)+'% pay · ×'+(1+fl*0.6).toFixed(1)+' spawn</span>':'<span class="pill">buy upgrade below</span>')+'</div><div class="sub">Tap a cargo to focus it — appears more often'+(fl>0?" and pays more":"")+'. Tap again to clear.</div><div class="focusrow">'+icons+'</div></div>';Array.prototype.forEach.call(card.querySelectorAll(".focusic"),function(btn){btn.addEventListener("click",function(){var i=+btn.getAttribute("data-i");state.focusCargo=(state.focusCargo===i?null:i);renderUpgrades(b);});});b.appendChild(card);}
@@ -536,6 +659,32 @@ function runAuto(){if(!state.autoOn||lv("auto")<1)return;state.veh.forEach(funct
 function updateHUD(){$("cash").textContent=eur(state.cash);$("inc").textContent=eur(state.incomeEMA)+"/s";$("lvTxt").textContent="LVL "+state.level;var need=xpNeed(state.level);$("xpfill").style.width=Math.min(100,100*state.xp/need)+"%";$("xpTxt").textContent=commas(state.xp)+" / "+commas(need)+" XP";}
 function totalUpkeep(){var u=0;state.veh.forEach(function(v){u+=VEH[v.type].cost*0.00025*(VEH[v.type].mode==="air"?1.7:VEH[v.type].mode==="sea"?1.3:1);});return u*upkeepMult()*Math.pow(0.90,lv("upkeep"));}
 function openModal(id){$(id).classList.add("show");}
+function showBriefing(h,fresh){
+  var c=ctryOf(h);
+  $("briefTitle").textContent=fresh?"New hub opened":"Hub briefing";
+  var nb="";
+  if(c){
+    if(c.nb&&c.nb.length)nb=c.nb.map(function(n){return "<span>"+n+"</span>";}).join("");
+    else nb='<span style="opacity:.6">none</span>';
+  }
+  var html='<div class="brf-hero"><div class="brf-flag">'+(c?c.flag:"📍")+'</div><div><div class="brf-city">'+h.name+'</div>'+
+    (c?'<div class="brf-ctry">'+c.name+'</div><div class="brf-reg">'+c.region+'</div>':'')+'</div></div>';
+  if(h.fact)html+='<div class="brf-fact">'+h.fact+'</div>';
+  if(c){
+    html+='<div class="brf-grid">';
+    html+='<div class="brf-row"><div class="brf-k">Capital</div><div class="brf-v"><span class="brf-cap">'+c.cap+'</span>'+
+      ((c.cap===h.name||c.capCity===h.name)?' <span class="pill">this city</span>':'')+
+      (c.capNote?'<span class="note">'+c.capNote+'</span>':'')+'</div></div>';
+    html+='<div class="brf-row"><div class="brf-k">Borders</div><div class="brf-v"><div class="brf-nb">'+nb+'</div>'+
+      (c.nbNote?'<span class="note">'+c.nbNote+'</span>':'')+'</div></div>';
+  var mine=HUBS.filter(function(x){return x.iso===h.iso&&state.unlocked[x.id];}).map(function(x){return x.name;});
+    html+='<div class="brf-row"><div class="brf-k">Your hubs</div><div class="brf-v">'+
+      (mine.length?mine.join(", "):"none yet")+'<span class="note">'+mine.length+' of '+
+      HUBS.filter(function(x){return x.iso===h.iso;}).length+' '+c.name+' hubs in the game</span></div></div>';
+    html+='</div>';
+  }
+  $("briefBody").innerHTML=html;openModal("briefModal");
+}
 $("helpBtn").addEventListener("click",function(){openModal("helpModal");});
 $("backupBtn").addEventListener("click",function(){try{$("bkOut").value=btoa(unescape(encodeURIComponent(JSON.stringify(serial()))));}catch(e){$("bkOut").value="";}$("bkIn").value="";openModal("backupModal");});
 $("bkCopy").addEventListener("click",function(){var t=$("bkOut");t.focus();t.select();var ok=false;try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t.value);ok=true;}}catch(e){}if(!ok){try{ok=document.execCommand("copy");}catch(e){}}toast(ok?"📋 Save code copied.":"📋 Selected — long-press to copy.");});
@@ -576,11 +725,13 @@ updAudioBtns();
 $("xpstrip").addEventListener("click",renderStats);
 [].forEach.call(document.querySelectorAll("[data-close]"),function(b){b.addEventListener("click",function(){this.closest(".modal").classList.remove("show");});});
 [].forEach.call(document.querySelectorAll(".modal"),function(m){m.addEventListener("click",function(e){if(e.target===m)m.classList.remove("show");});});
-function renderStats(){var s=state.stats,need=xpNeed(state.level);var hubsOwned=HUBS.filter(function(h){return state.unlocked[h.id];}).length;var box=function(k,v,cls){return '<div class="statbox"><div class="sk">'+k+'</div><div class="sv '+(cls||"")+'">'+v+'</div></div>';};$("statsBody").innerHTML='<div class="statgrid">'+box("Level",state.level,"am")+box("XP to next",commas(Math.max(0,need-state.xp)),"")+box("Cash",eur(state.cash),"am")+box("Income / sec",eur(state.incomeEMA),"gr")+box("Upkeep / sec",eur(totalUpkeep()),"")+box("Total earned",eur(s.earned),"gr")+box("Fuel spent",eur(s.fuel||0),"")+box("Net earned",eur((s.earned||0)-(s.fuel||0)),"gr")+box("Deliveries",commas(s.deliveries),"")+box("Distance driven",commas(s.km)+" km","")+box("Fleet size",state.veh.length,"")+box("Hubs owned",hubsOwned+" / "+HUBS.length,"")+box("Open contracts",state.contracts.length,"")+box("Auto-dispatch",lv("auto")>0?(state.autoOn?"ON":"off"):"locked","")+'</div>';openModal("statsModal");}
+function renderStats(){var s=state.stats,need=xpNeed(state.level);var hubsOwned=HUBS.filter(function(h){return state.unlocked[h.id];}).length;var box=function(k,v,cls){return '<div class="statbox"><div class="sk">'+k+'</div><div class="sv '+(cls||"")+'">'+v+'</div></div>';};$("statsBody").innerHTML='<div class="statgrid">'+box("Level",state.level,"am")+box("XP to next",commas(Math.max(0,need-state.xp)),"")+box("Cash",eur(state.cash),"am")+box("Income / sec",eur(state.incomeEMA),"gr")+box("Upkeep / sec",eur(totalUpkeep()),"")+box("Total earned",eur(s.earned),"gr")+box("Fuel spent",eur(s.fuel||0),"")+box("Net earned",eur((s.earned||0)-(s.fuel||0)),"gr")+box("Deliveries",commas(s.deliveries),"")+box("Distance driven",commas(s.km)+" km","")+box("Fleet size",state.veh.length,"")+box("Hubs owned",hubsOwned+" / "+HUBS.length,"")+box("Countries",gCountries()+" / "+totalCountries(),"am")+box("Continents",gConts()+" / 6","")+box("Open contracts",state.contracts.length,"")+box("Auto-dispatch",lv("auto")>0?(state.autoOn?"ON":"off"):"locked","")+'</div>';openModal("statsModal");}
 var spawnAccum=0;
 function rafLoop(now){renderVeh(now);if(follow&&selVeh!=null){var v=state.veh.filter(function(x){return x.uid===selVeh;})[0];if(v){var tx=VW/2-cam.s*v.x,ty=VH/2-cam.s*v.y;cam.tx+=(tx-cam.tx)*0.12;cam.ty+=(ty-cam.ty)*0.12;clampCam();applyCam();}}requestAnimationFrame(rafLoop);}
 function gHubsOwned(){var n=0;HUBS.forEach(function(h){if(state.unlocked[h.id])n++;});return n;}
 function gConts(){var s={};HUBS.forEach(function(h){if(state.unlocked[h.id])s[h.cont]=1;});return Object.keys(s).length;}
+function gCountries(){var s={};HUBS.forEach(function(h){if(state.unlocked[h.id]&&h.iso)s[h.iso]=1;});return Object.keys(s).length;}
+function totalCountries(){var s={};HUBS.forEach(function(h){if(h.iso)s[h.iso]=1;});return Object.keys(s).length;}
 function gModeOwned(m){return state.veh.some(function(v){return VEH[v.type].mode===m;})?1:0;}
 function gModes(){var s={};state.veh.forEach(function(v){s[VEH[v.type].mode]=1;});return Object.keys(s).length;}
 var GOALS=[
@@ -658,6 +809,7 @@ var TRACKS=[
  {id:"lvl",ic:"⭐",name:"Company level",cur:function(){return state.level;},rungs:[{t:3,r:1500},{t:5,r:4000},{t:8,r:12000},{t:10,r:25000},{t:13,r:60000},{t:15,r:120000},{t:18,r:300000},{t:22,r:600000},{t:28,r:1200000},{t:35,r:3000000},{t:45,r:8000000},{t:60,r:20000000},{t:80,r:50000000},{t:100,r:120000000}]},
  {id:"hubs",ic:"📍",name:"Hubs opened",cur:gHubsOwned,rungs:[{t:8,r:5000},{t:12,r:14000},{t:18,r:35000},{t:25,r:80000},{t:40,r:200000},{t:59,r:600000}]},
  {id:"cont",ic:"🌍",name:"Continents",cur:gConts,rungs:[{t:2,r:20000},{t:3,r:50000},{t:4,r:110000},{t:5,r:250000},{t:6,r:600000}]},
+ {id:"ctry",ic:"🏳️",name:"Countries served",cur:gCountries,rungs:[{t:2,r:6000},{t:4,r:18000},{t:8,r:60000},{t:14,r:180000},{t:22,r:500000},{t:30,r:1500000},{t:37,r:5000000}]},
  {id:"fleet",ic:"🚚",name:"Fleet size",cur:function(){return state.veh.length;},rungs:[{t:5,r:6000},{t:10,r:15000},{t:20,r:45000},{t:35,r:120000},{t:50,r:300000},{t:75,r:600000},{t:100,r:1200000},{t:150,r:3000000},{t:200,r:7000000},{t:300,r:15000000}]},
  {id:"modes",ic:"🚀",name:"Transport modes",cur:gModes,rungs:[{t:2,r:10000},{t:3,r:30000},{t:4,r:90000}]}
 ];
