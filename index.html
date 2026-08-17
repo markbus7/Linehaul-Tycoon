@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
-<title>LINEHAUL — Network v5.0</title>
+<title>LINEHAUL — Network v5.1</title>
 <style>
   :root{
     --bg:#0d1116;--panel:#141a21;--panel2:#1a222b;--line:#26313c;
@@ -78,6 +78,8 @@
   .cdot.served{fill:#1d3328;stroke:var(--green);stroke-width:2}
   .cdot.home{fill:#3a2c12;stroke:var(--amber);stroke-width:2}
   .cdot.sel{stroke:var(--ink);stroke-width:2.5}
+  .cring{fill:none;stroke:#4a5a6a;stroke-width:1;opacity:.5;vector-effect:non-scaling-stroke}
+  .cinv{fill:none;stroke:var(--amber);stroke-width:1.2;opacity:.75;stroke-dasharray:2 2;vector-effect:non-scaling-stroke}
   .clabel{fill:#a7b3c1;font-size:10px;font-weight:500;pointer-events:none;paint-order:stroke;
     stroke:var(--sea);stroke-width:3px;stroke-linejoin:round}
   .clabel.served{fill:var(--ink);font-weight:650}
@@ -133,10 +135,11 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v5.0</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v5.1</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">Day</div><div class="v" id="hClock">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
+  <div class="stat"><div class="k">Running cost</div><div class="v" id="hBurn">—</div></div>
   <div class="sp"></div>
   <button class="hbtn" id="btnSpeed">▶ 1×</button>
   <button class="hbtn" id="btnHelp">?</button>
@@ -340,14 +343,15 @@ function cname(c){ return (COUNTRY[c]&&COUNTRY[c].n)||c; }
 
 /* ============================================================ TRUCKS */
 var TRUCKS = [
-  {id:0, n:"Rigid",       cap:12, kmh:78, cost:38000,  fuel:0.34, dwell:0.5},
-  {id:1, n:"Semi",        cap:26, kmh:80, cost:82000,  fuel:0.42, dwell:0.7},
-  {id:2, n:"Road train",  cap:44, kmh:72, cost:165000, fuel:0.58, dwell:1.0},
-  {id:3, n:"Express van", cap:6,  kmh:105,cost:29000,  fuel:0.22, dwell:0.25}
+  {id:0, n:"Rigid",       cap:12, kmh:78, cost:38000,  fuel:0.21, dwell:0.5},
+  {id:1, n:"Semi",        cap:26, kmh:80, cost:82000,  fuel:0.27, dwell:0.7},
+  {id:2, n:"Road train",  cap:44, kmh:72, cost:165000, fuel:0.37, dwell:1.0},
+  {id:3, n:"Express van", cap:6,  kmh:105,cost:29000,  fuel:0.14, dwell:0.25}
 ];
 
 /* ============================================================ STATE */
 var S = null, nextId = 1;
+var WAGE_PER_H = 3.2;   // per truck, per game hour
 function fresh(){
   return {
     cash: 260000, t: 0,             // t = game hours since start
@@ -373,7 +377,7 @@ Object.keys(GOODS).forEach(function(g){
 });
 function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
 function spawnLoad(){
-  var capLoads=Math.min(26, 4+2*S.veh.length);
+  var capLoads=Math.min(44, 6+3*S.veh.length);
   if(S.loads.length>=capLoads) return;
   var gs=Object.keys(GOODS).filter(function(g){return PRODUCERS[g].length&&CONSUMERS[g].length;});
   var g=pick(gs);
@@ -391,7 +395,10 @@ function spawnLoad(){
     if(pairGoods.length){
       g=pick(pairGoods);
       var ps=PRODUCERS[g].filter(function(c){return served[c.id];});
-      from=pick(ps);
+      // weight origins by freight office too
+      var wsum=0,ws=ps.map(function(c){var w=1+0.5*officeLvl(c.id);wsum+=w;return w;});
+      var r2=Math.random()*wsum; from=ps[0];
+      for(var q=0;q<ps.length;q++){ r2-=ws[q]; if(r2<=0){from=ps[q];break;} }
     }
   }
   if(!from && servedIds.length && Math.random()<0.6){
@@ -409,6 +416,7 @@ function spawnLoad(){
     var w=(c.size+1)/Math.pow(Math.max(120,km(from.id,c.id))/500,1.35);
     if(served[c.id]) w*=6;                         // pairs you can actually serve
     else if(!servedIds.length && km("duiven",c.id)>520) w*=0.25;
+    w*=1+0.5*officeLvl(c.id);                      // a freight office pulls trade in
     return {c:c,w:w};
   });
   var tot=0; scored.forEach(function(s){tot+=s.w;});
@@ -417,7 +425,7 @@ function spawnLoad(){
   var d=km(from.id,to.id);
   var G=GOODS[g];
   var wt=Math.max(3, Math.round((4+Math.random()*22) * (G.t==="bulk"?1.5:G.t==="heavy"?1.1:1)));
-  var pay=Math.round(d*wt*G.rate*0.055 + 120);
+  var pay=Math.round(d*wt*G.rate*0.115 + 160);
   // A window generous enough to be met by a decent network, tight enough that
   // one enormous loop cannot serve it.
   var drive=d/78;
@@ -443,8 +451,9 @@ function loopKm(s){ if(s.stops.length<2) return 0; var t=0; for(var i=0;i<s.stop
 // cycle time in hours for a given truck type, including dwell at every stop
 function cycleH(s,type){
   if(s.stops.length<2) return 0;
-  var T=TRUCKS[type==null?1:type];
-  return loopKm(s)/T.kmh + s.stops.length*T.dwell;
+  var T=TRUCKS[type==null?1:type], t=loopKm(s)/T.kmh;
+  s.stops.forEach(function(id){ t+=dwellAt(id,type==null?1:type); });
+  return t;
 }
 function svcCycle(s){
   var vs=svcVehs(s);
@@ -460,7 +469,7 @@ function headway(s){
 // ride time from stop index i to stop index j, going forward around the loop
 function rideH(s,i,j,type){
   var T=TRUCKS[type==null?1:type], t=0, n=s.stops.length, k=i;
-  while(k!==j){ t+=km(s.stops[k],s.stops[(k+1)%n])/T.kmh + T.dwell; k=(k+1)%n; }
+  while(k!==j){ t+=km(s.stops[k],s.stops[(k+1)%n])/T.kmh + dwellAt(s.stops[k],type==null?1:type); k=(k+1)%n; }
   return t;
 }
 
@@ -515,6 +524,22 @@ function planFor(load){
 }
 
 /* ============================================================ SIM */
+/* Investment is spatial. You do not buy abstract upgrades, you build up the
+   cities you actually run through -- which is what makes a hub feel like yours. */
+var DEPOT_COST=[45000,120000,320000], OFFICE_COST=[38000,95000,240000];
+function depotLvl(id){ return (S.depot&&S.depot[id])||0; }
+function officeLvl(id){ return (S.office&&S.office[id])||0; }
+function dwellAt(cityId,type){ return TRUCKS[type].dwell*Math.pow(0.78,depotLvl(cityId)); }
+function buyDepot(id){
+  var l=depotLvl(id); if(l>=3) return false;
+  var c=DEPOT_COST[l]; if(S.cash<c) return false;
+  S.cash-=c; S.spent+=c; if(!S.depot)S.depot={}; S.depot[id]=l+1; invalidate(); return true;
+}
+function buyOffice(id){
+  var l=officeLvl(id); if(l>=3) return false;
+  var c=OFFICE_COST[l]; if(S.cash<c) return false;
+  S.cash-=c; S.spent+=c; if(!S.office)S.office={}; S.office[id]=l+1; return true;
+}
 function buyTruck(type){
   var T=TRUCKS[type];
   if(S.cash<T.cost) return false;
@@ -584,7 +609,7 @@ function arrive(v,s){
     S.loads=S.loads.filter(function(x){return x!==l;});
     var h=hist(cityId); h.out++; if(h.first==null) h.first=S.t;
   });
-  v.dwell = T.dwell * (take.length?1:0.35);
+  v.dwell = dwellAt(cityId,v.type) * (take.length?1:0.35);
 }
 function deliver(l,cityId){
   var onTime = S.t <= l.due;
@@ -601,6 +626,11 @@ function deliver(l,cityId){
 }
 function step(dt){
   S.t += dt;
+  // wages tick whether a truck earns or not, so idle capacity is a real loss
+  if(S.veh.length){
+    var wage=S.veh.length*WAGE_PER_H*dt;
+    S.cash-=wage; S.spent+=wage; S.wages=(S.wages||0)+wage;
+  }
   S.veh.forEach(function(v){
     var s=v.svc?svcOf(v.svc):null;
     if(!s||s.stops.length<2){ return; }
@@ -611,6 +641,10 @@ function step(dt){
     var d=km(a.id,b.id) || 1;
     var need=d/T.kmh;
     v.prog += dt/need;
+    v.hd=Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
+    // fuel is charged on distance covered, loaded or empty
+    var burn=T.fuel*(d*(dt/need));
+    S.cash-=burn; S.spent+=burn; S.fuel=(S.fuel||0)+burn;
     if(v.prog>=1){ v.prog=1; v.x=b.x; v.y=b.y; arrive(v,s); }
     else { v.x=a.x+(b.x-a.x)*v.prog; v.y=a.y+(b.y-a.y)*v.prog; }
   });
@@ -644,7 +678,14 @@ function buildMap(){
   });
   CITIES.forEach(function(c){
     var g=el("g",{class:"cwrap","data-id":c.id});
-    g.appendChild(el("circle",{class:"cdot",cx:c.x,cy:c.y,r:4,id:"dot-"+c.id}));
+    var shape;
+    if(c.port)      shape=el("rect",{class:"cdot",x:c.x-4,y:c.y-4,width:8,height:8,rx:1.2,id:"dot-"+c.id});
+    else if(c.air)  shape=el("polygon",{class:"cdot",id:"dot-"+c.id,
+                      points:(c.x)+","+(c.y-5)+" "+(c.x+4.5)+","+(c.y+3.5)+" "+(c.x-4.5)+","+(c.y+3.5)});
+    else            shape=el("circle",{class:"cdot",cx:c.x,cy:c.y,r:4,id:"dot-"+c.id});
+    if(c.capital) g.appendChild(el("circle",{class:"cring",cx:c.x,cy:c.y,r:7.5,id:"ring-"+c.id}));
+    g.appendChild(shape);
+    g.appendChild(el("circle",{class:"cinv",cx:c.x,cy:c.y,r:9.5,id:"inv-"+c.id,style:"display:none"}));
     var t=el("text",{class:"clabel",x:c.x,y:c.y-8,"text-anchor":"middle",id:"lb-"+c.id});
     t.textContent=c.n; g.appendChild(t);
     gCity.appendChild(g);
@@ -667,7 +708,9 @@ function refreshCities(){
     var d=$("dot-"+c.id), l=$("lb-"+c.id);
     var cl="cdot"+(c.home?" home":served[c.id]?" served":"")+(selCity===c.id?" sel":"");
     d.setAttribute("class",cl);
-    d.setAttribute("r", c.home?5: 3+Math.min(3,c.size*0.6));
+    if(d.tagName==="circle") d.setAttribute("r", c.home?5: 3+Math.min(3,c.size*0.6));
+    var inv=$("inv-"+c.id);
+    if(inv) inv.style.display=(depotLvl(c.id)||officeLvl(c.id))?"":"none";
     // keep whatever the declutter decided -- this runs twice a second and would
     // otherwise wipe the "hide" class straight back off a suppressed label
     l.setAttribute("class","clabel"+(served[c.id]||c.home?" served":"")+
@@ -688,9 +731,17 @@ function drawVehs(){
   S.veh.forEach(function(v){
     if(!v.svc) return;
     var s=svcOf(v.svc); if(!s) return;
-    var g=el("g",{class:"veh"});
-    g.appendChild(el("circle",{cx:v.x,cy:v.y,r:3.4,fill:s.col,stroke:"#0a1015","stroke-width":1}));
-    if(v.cargo.length) g.appendChild(el("circle",{class:"load-pip",cx:v.x+3.6,cy:v.y-3.6,r:1.7}));
+    var g=el("g",{class:"veh",transform:"translate("+v.x.toFixed(1)+" "+v.y.toFixed(1)+") rotate("+
+      (v.hd||0).toFixed(0)+") scale("+(1/cam.s).toFixed(3)+")"});
+    var loaded=v.cargo.length>0;
+    g.appendChild(el("rect",{x:-5.5,y:-3,width:8,height:6,rx:1.2,fill:loaded?s.col:"#39454f",
+      stroke:"#080d11","stroke-width":.8}));                     // trailer
+    g.appendChild(el("rect",{x:2.5,y:-2.6,width:3.6,height:5.2,rx:1,fill:s.col,
+      stroke:"#080d11","stroke-width":.8}));                     // cab
+    if(loaded){
+      var fill=Math.min(1,vehLoad(v)/TRUCKS[v.type].cap);
+      g.appendChild(el("rect",{x:-5,y:-2.4,width:7*fill,height:1.6,rx:.6,fill:"#0d1116",opacity:.55}));
+    }
     gVeh.appendChild(g);
   });
 }
@@ -813,7 +864,7 @@ $("zOut").onclick=function(){ zoomAt(VW/2,VH/2,cam.s/1.35); };
 $("zFit").onclick=function(){ fitAll(); };
 
 /* ============================================================ UI */
-var tab="loads", svcEdit=null;
+var tab="loads", svcEdit=null, stopFilter="";
 function setTab(t){ tab=t; Array.prototype.forEach.call($("tabs").children,function(b){
     b.classList.toggle("on", b.dataset.tab===t); }); render(); }
 $("tabs").addEventListener("click",function(e){ var b=e.target.closest("button"); if(b) setTab(b.dataset.tab); });
@@ -975,23 +1026,48 @@ function renderSvcEditor(b,s){
   }
   b.appendChild(wrapS);
 
-  var lab2=document.createElement("div"); lab2.className="lbl"; lab2.textContent="Add a stop · nearest first";
-  b.appendChild(lab2);
   var last=s.stops.length?CITY[s.stops[s.stops.length-1]]:CITY.duiven;
   var avail=CITIES.filter(function(c){ return s.stops.indexOf(c.id)<0; })
     .sort(function(a,c){ return km(last.id,a.id)-km(last.id,c.id); });
-  avail.slice(0,14).forEach(function(c){
+  var lab2=document.createElement("div"); lab2.className="lbl";
+  lab2.textContent="Add a stop · "+avail.length+" cities, nearest to "+last.n+" first";
+  b.appendChild(lab2);
+  var search=document.createElement("input");
+  search.placeholder="filter by city or country…";
+  search.value=stopFilter;
+  search.style.cssText="width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;"+
+    "color:var(--ink);padding:8px 10px;margin-bottom:7px;font-size:12px";
+  search.oninput=function(e){ stopFilter=e.target.value; renderStopList(list,s,avail,last);
+    lab2.textContent="Add a stop · "+avail.length+" cities, nearest to "+last.n+" first"; };
+  b.appendChild(search);
+  var list=document.createElement("div"); b.appendChild(list);
+  renderStopList(list,s,avail,last);
+  var lab3=document.createElement("div"); lab3.className="lbl"; lab3.textContent="Trucks on this service";
+  b.appendChild(lab3);
+  renderSvcTrucks(b,s);
+  setTimeout(function(){ if(stopFilter) search.focus(); },0);
+}
+function renderStopList(list,s,avail,last){
+  list.innerHTML="";
+  var q=stopFilter.trim().toLowerCase();
+  var rows=avail.filter(function(c){
+    if(!q) return true;
+    return c.n.toLowerCase().indexOf(q)>=0 || cname(c.c).toLowerCase().indexOf(q)>=0 ||
+           (c.out||[]).some(function(g){return GOODS[g].n.toLowerCase().indexOf(q)>=0;});
+  });
+  if(!rows.length){ list.innerHTML='<div class="sub" style="padding:4px 2px">No city matches that.</div>'; return; }
+  rows.forEach(function(c){
     var d=document.createElement("div"); d.className="card"; d.style.padding="7px 9px";
     d.innerHTML='<div class="row"><div class="grow"><div class="ttl" style="font-size:12px">'+flag(c.c)+' '+c.n+
       '</div><div class="sub">'+cname(c.c)+' · '+km(last.id,c.id)+'km from '+last.n+
       (c.out&&c.out.length?' · ships '+c.out.slice(0,2).map(function(g){return GOODS[g].n.toLowerCase();}).join(", "):'')+
       '</div></div><button class="btn sm">＋</button></div>';
     d.querySelector("button").onclick=function(){ s.stops.push(c.id); afterEdit(s); };
-    b.appendChild(d);
+    list.appendChild(d);
   });
-
-  var lab3=document.createElement("div"); lab3.className="lbl"; lab3.textContent="Trucks on this service";
-  b.appendChild(lab3);
+}
+function renderSvcTrucks(b,s){
+  var vs=svcVehs(s);
   if(!vs.length){ var n=document.createElement("div"); n.className="sub"; n.style.padding="0 2px 6px";
     n.textContent="None. Assign at least one or nothing moves."; b.appendChild(n); }
   vs.forEach(function(v){
@@ -1078,11 +1154,28 @@ function renderCity(b){
     '<div class="kv"><div class="k">Trades with</div><div class="v">'+
       (plist.map(function(p){ return (p.dir==="to"?"→ ":"← ")+CITY[p.id].n+' <span class="sub">('+
         GOODS[p.g].n.toLowerCase()+', '+p.d+'km)</span>'; }).join("<br>")||"—")+'</div></div>'+
+    '<div class="lbl">Invest here</div>'+
+    '<div class="card"><div class="row"><div class="grow"><div class="ttl">Depot '+
+      (depotLvl(c.id)?'<span class="pill a">level '+depotLvl(c.id)+'</span>':'')+'</div>'+
+      '<div class="sub">Faster turnarounds: −22% time in the yard per level. Shorter cycles mean '+
+      'trucks come round more often on every service through here.'+
+      (depotLvl(c.id)?' Now '+(TRUCKS[1].dwell*Math.pow(0.78,depotLvl(c.id))).toFixed(2)+'h vs '+TRUCKS[1].dwell.toFixed(2)+'h.':'')+
+      '</div></div>'+(depotLvl(c.id)>=3?'<span class="pill">max</span>':
+        '<button class="btn sm" id="buyDepot" '+(S.cash>=DEPOT_COST[depotLvl(c.id)]?'':'disabled')+'>'+
+        eur(DEPOT_COST[depotLvl(c.id)])+'</button>')+'</div></div>'+
+    '<div class="card"><div class="row"><div class="grow"><div class="ttl">Freight office '+
+      (officeLvl(c.id)?'<span class="pill a">level '+officeLvl(c.id)+'</span>':'')+'</div>'+
+      '<div class="sub">Wins you more business here: +50% of the freight offered at this city per level.'+
+      '</div></div>'+(officeLvl(c.id)>=3?'<span class="pill">max</span>':
+        '<button class="btn sm" id="buyOffice" '+(S.cash>=OFFICE_COST[officeLvl(c.id)]?'':'disabled')+'>'+
+        eur(OFFICE_COST[officeLvl(c.id)])+'</button>')+'</div></div>'+
     '<div class="lbl">Your history here</div>'+
     '<div class="kv"><div class="k">Collected</div><div class="v mono">'+h.out+' loads</div></div>'+
     '<div class="kv"><div class="k">Delivered</div><div class="v mono">'+h.in+' loads'+(h.late?' · '+h.late+' late':'')+'</div></div>'+
     '<div class="kv"><div class="k">Earned</div><div class="v mono">'+eur(h.paid)+'</div></div>'+
     (h.first!=null?'<div class="kv"><div class="k">First seen</div><div class="v mono">day '+Math.floor(h.first/24+1)+'</div></div>':'');
+  var bd=$("buyDepot"); if(bd) bd.onclick=function(){ if(buyDepot(c.id)){ toast("Depot built at <b>"+c.n+"</b>."); render(); } };
+  var bo=$("buyOffice"); if(bo) bo.onclick=function(){ if(buyOffice(c.id)){ toast("Freight office opened at <b>"+c.n+"</b>."); render(); } };
 }
 
 function render(){
@@ -1091,12 +1184,18 @@ function render(){
   else if(tab==="services") renderServices(b);
   else if(tab==="fleet") renderFleet(b);
   else renderCity(b);
+  updateHeader();
+  $("bSvc").textContent=S.svcs.length; $("bFleet").textContent=S.veh.length;
+}
+// The header must keep ticking even while a panel is being edited -- otherwise
+// the clock and cash freeze and the game looks like it has stopped.
+function updateHeader(){
   $("hCash").textContent=eur(S.cash);
   $("hClock").textContent="d"+(Math.floor(S.t/24)+1)+" "+String(Math.floor(S.t%24)).padStart(2,"0")+":00";
+  $("hBurn").textContent="−"+eur(S.veh.length*WAGE_PER_H)+"/h";
   var ot=Math.round(repScore()*100);
   var e=$("hOnTime"); e.textContent=(S.recent&&S.recent.length)?ot+"%":"—";
   e.className="v "+(ot<75?"bad":"ok");
-  $("bSvc").textContent=S.svcs.length; $("bFleet").textContent=S.veh.length;
 }
 
 /* ============================================================ HELP */
@@ -1122,11 +1221,13 @@ function frame(now){
   step(dt);
   spawnAcc+=dt;
   // reputation throttles how much business you are offered
-  var every = 2.2 / (0.25+0.75*repScore());
+  var every = 0.85 / (0.25+0.75*repScore());
   while(spawnAcc>=every){ spawnAcc-=every; spawnLoad(); }
   drawVehs();
   uiAcc+=dtReal;
-  if(uiAcc>0.5){ uiAcc=0; if(!(tab==="services"&&svcEdit!=null)) render(); refreshCities(); }
+  if(uiAcc>0.25){ uiAcc=0; updateHeader();
+    if(!(tab==="services"&&svcEdit!=null)) render();
+    refreshCities(); }
   requestAnimationFrame(frame);
 }
 
