@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
-<title>LINEHAUL — Network v5.1</title>
+<title>LINEHAUL — Network v5.2</title>
 <style>
   :root{
     --bg:#0d1116;--panel:#141a21;--panel2:#1a222b;--line:#26313c;
@@ -20,64 +20,111 @@
   button{font:inherit;color:inherit;border:none;background:none;cursor:pointer}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
 
-  header{display:flex;align-items:center;gap:14px;padding:8px 12px;border-bottom:1px solid var(--line);
-    background:var(--panel);flex:0 0 auto;flex-wrap:wrap}
-  .brand{font-weight:800;letter-spacing:.16em;font-size:13px;color:var(--amber)}
+  header{display:flex;align-items:center;gap:16px;padding:9px 14px;flex:0 0 auto;flex-wrap:wrap;
+    background:linear-gradient(180deg,#1b232c,#131a21);border-bottom:1px solid #2b3742;
+    box-shadow:0 2px 14px rgba(0,0,0,.45);position:relative;z-index:5}
+  header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(240,166,60,.35),transparent)}
+  .brand{font-weight:800;letter-spacing:.16em;font-size:13px;
+    background:linear-gradient(180deg,#ffd08a,#e2921f);-webkit-background-clip:text;background-clip:text;
+    color:transparent;text-shadow:0 1px 0 rgba(0,0,0,.4)}
   .stat{display:flex;flex-direction:column;line-height:1.15}
   .stat .k{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim2)}
   .stat .v{font-family:ui-monospace,Menlo,monospace;font-weight:600;font-size:14px;font-variant-numeric:tabular-nums}
   .v.money{color:var(--amber)} .v.ok{color:var(--green)} .v.bad{color:var(--red)}
   .sp{flex:1}
-  .hbtn{padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);font-size:12px;font-weight:600}
+  .hbtn{padding:7px 12px;border:1px solid #33404d;border-radius:9px;font-size:12px;font-weight:700;
+    background:linear-gradient(180deg,#28323d,#1d252e);box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 2px 6px rgba(0,0,0,.35)}
+  .hbtn:hover{border-color:var(--amber);color:#ffd08a}
+  .hbtn:active{transform:translateY(1px)}
   .hbtn:hover{border-color:var(--amber)}
   .hbtn.on{border-color:var(--amber);color:var(--amber)}
 
   main{flex:1;display:flex;min-height:0}
   @media(max-width:900px){main{flex-direction:column}}
   .mapwrap{flex:1;position:relative;background:var(--sea);min-height:0;overflow:hidden;touch-action:none}
+  .mapwrap::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;
+    background:radial-gradient(130% 95% at 50% 45%,transparent 55%,rgba(3,7,11,.55) 100%)}
   svg{width:100%;height:100%;display:block;-webkit-user-select:none;user-select:none;touch-action:none}
-  aside{width:390px;flex:0 0 auto;border-left:1px solid var(--line);background:var(--panel);
-    display:flex;flex-direction:column;min-height:0}
+  aside{width:400px;flex:0 0 auto;border-left:1px solid #2b3742;background:var(--panel);
+    display:flex;flex-direction:column;min-height:0;box-shadow:-8px 0 24px rgba(0,0,0,.35)}
   @media(max-width:900px){aside{width:auto;border-left:none;border-top:1px solid var(--line);height:47%}}
-  .tabs{display:flex;flex:0 0 auto;border-bottom:1px solid var(--line);background:var(--panel2)}
-  .tabs button{flex:1;padding:10px 4px;font-size:11px;font-weight:700;letter-spacing:.04em;
-    text-transform:uppercase;color:var(--dim);position:relative}
-  .tabs button.on{color:var(--amber)}
-  .tabs button.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--amber)}
+  .tabs{display:flex;flex:0 0 auto;border-bottom:1px solid #2b3742;
+    background:linear-gradient(180deg,#1a222b,#151c24);padding:0 4px}
+  .tabs button{flex:1;padding:11px 4px;font-size:11px;font-weight:700;letter-spacing:.045em;
+    text-transform:uppercase;color:var(--dim);position:relative;transition:color .15s}
+  .tabs button:hover{color:#b9c4d0}
+  .tabs button.on{color:#ffd08a}
+  .tabs button.on::after{content:"";position:absolute;left:8%;right:8%;bottom:-1px;height:2.5px;
+    border-radius:2px;background:linear-gradient(90deg,transparent,var(--amber),transparent)}
   .tabs .bdg{display:inline-block;min-width:16px;padding:0 4px;margin-left:3px;border-radius:8px;
     background:var(--line);color:var(--ink);font-size:10px;line-height:16px;font-family:ui-monospace,monospace}
   .tabs .bdg.warn{background:#5a2420;color:#ffb3a8}
-  .body{flex:1;overflow-y:auto;padding:10px;-webkit-overflow-scrolling:touch}
+  .body{flex:1;overflow-y:auto;padding:11px;-webkit-overflow-scrolling:touch;
+    background:radial-gradient(120% 60% at 50% 0%,#171f27,#121820)}
+  .body::-webkit-scrollbar{width:9px}
+  .body::-webkit-scrollbar-thumb{background:#2b3742;border-radius:5px;border:2px solid transparent;background-clip:padding-box}
+  .body::-webkit-scrollbar-thumb:hover{background:#3a4756;background-clip:padding-box}
 
-  .card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px}
-  .card.warn{border-color:#5a3a20}
-  .card.bad{border-color:#5a2420}
+  .card{background:linear-gradient(180deg,#1c242d,#171e26);border:1px solid #2b3541;border-radius:11px;
+    padding:11px;margin-bottom:8px;position:relative;overflow:hidden;
+    box-shadow:0 1px 0 rgba(255,255,255,.035) inset,0 3px 10px rgba(0,0,0,.28)}
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:transparent}
+  .card.warn{border-color:#4d3a1e}   .card.warn::before{background:linear-gradient(180deg,#f0a63c,#8a5c17)}
+  .card.bad{border-color:#4d2622}    .card.bad::before{background:linear-gradient(180deg,#e5675a,#8a2f26)}
+  .card.good::before{background:linear-gradient(180deg,#4fc98a,#1f6f4a)}
   .row{display:flex;align-items:center;gap:10px}
   .grow{flex:1;min-width:0}
   .ttl{font-weight:650;font-size:13px}
   .sub{font-size:11px;color:var(--dim);margin-top:2px;line-height:1.5}
-  .lbl{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim2);margin:12px 2px 7px}
+  .lbl{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#7d8b9a;margin:14px 2px 8px;
+    display:flex;align-items:center;gap:8px}
+  .lbl::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,#2b3742,transparent)}
   .lbl:first-child{margin-top:2px}
-  .btn{background:var(--amber);color:#1b1206;font-weight:700;font-size:12px;padding:7px 12px;border-radius:8px;white-space:nowrap}
-  .btn:disabled{background:var(--line);color:var(--dim2);cursor:not-allowed}
-  .btn.ghost{background:var(--panel);border:1px solid var(--line);color:var(--ink);font-weight:600}
-  .btn.danger{background:#3a1a16;border:1px solid #5c2b24;color:#ffb3a8}
-  .btn.sm{padding:5px 9px;font-size:11px}
-  .pill{display:inline-block;font-size:10px;padding:1px 7px;border-radius:7px;background:var(--line);color:var(--dim);
-    font-family:ui-monospace,monospace}
-  .pill.g{background:#13301f;color:#7fdba6} .pill.r{background:#341715;color:#ffa79b}
-  .pill.a{background:#332512;color:#f3c07a} .pill.b{background:#132534;color:#8ec6f0}
-  .empty{color:var(--dim);font-size:12px;text-align:center;padding:26px 14px;line-height:1.65}
+  .btn{background:linear-gradient(180deg,#f7bb52,#df9520);color:#1b1206;font-weight:800;font-size:12px;
+    padding:8px 13px;border-radius:9px;white-space:nowrap;
+    box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 2px 8px rgba(224,150,32,.28);transition:transform .1s,filter .15s}
+  .btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)}
+  .btn:disabled{background:#242d38;color:#5d6b7a;box-shadow:none;cursor:not-allowed}
+  .btn.ghost{background:linear-gradient(180deg,#272f3a,#1c242d);border:1px solid #34404d;color:var(--ink);
+    font-weight:700;box-shadow:0 1px 0 rgba(255,255,255,.05) inset}
+  .btn.danger{background:linear-gradient(180deg,#4a221c,#341714);border:1px solid #5c2b24;color:#ffb3a8;box-shadow:none}
+  .btn.sm{padding:6px 10px;font-size:11px}
+  .pill{display:inline-block;font-size:10px;padding:2px 7px;border-radius:7px;background:#26313d;color:#9aa8b6;
+    font-family:ui-monospace,monospace;border:1px solid #2f3b48}
+  .pill.g{background:#13301f;color:#7fdba6;border-color:#1e4a31}
+  .pill.r{background:#3a1714;color:#ffa79b;border-color:#5c2a24}
+  .pill.a{background:#332512;color:#f3c07a;border-color:#4d3818}
+  .pill.b{background:#132534;color:#8ec6f0;border-color:#1e3c52}
+  .empty{color:var(--dim);font-size:12.5px;text-align:center;padding:30px 18px;line-height:1.75;
+    background:linear-gradient(180deg,#1a222b,#151c24);border:1px dashed #303c49;border-radius:12px}
   .empty b{color:var(--ink)}
 
   /* map furniture */
-  .land{fill:var(--land);stroke:var(--landln);stroke-width:.8;vector-effect:non-scaling-stroke}
-  .land.mine{fill:#26302b;stroke:#3d5145}
-  .svcline{fill:none;stroke-width:2.6;opacity:.75;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
-  .cdot{fill:#2b3742;stroke:#455565;stroke-width:1.5;vector-effect:non-scaling-stroke;cursor:pointer}
-  .cdot.served{fill:#1d3328;stroke:var(--green);stroke-width:2}
-  .cdot.home{fill:#3a2c12;stroke:var(--amber);stroke-width:2}
-  .cdot.sel{stroke:var(--ink);stroke-width:2.5}
+  .land{fill:url(#landG);stroke:#3a4756;stroke-width:.7;vector-effect:non-scaling-stroke;
+        stroke-linejoin:round;transition:fill .6s ease}
+  .land.mine{fill:url(#landMine);stroke:#5d6b4a}
+  .grat{stroke:#1a2836;stroke-width:.6;opacity:.5;vector-effect:non-scaling-stroke;fill:none}
+  .svccase{fill:none;stroke:#070d13;stroke-width:6;opacity:.85;stroke-linejoin:round;
+           stroke-linecap:round;vector-effect:non-scaling-stroke}
+  .svcline{fill:none;stroke-width:3;opacity:.95;stroke-linejoin:round;stroke-linecap:round;
+           vector-effect:non-scaling-stroke}
+  .svcflow{fill:none;stroke-width:2;opacity:.6;stroke-linecap:round;vector-effect:non-scaling-stroke;
+           stroke-dasharray:1 13;animation:flow 1.4s linear infinite}
+  @keyframes flow{to{stroke-dashoffset:-14}}
+  .cpad{fill:url(#padG);stroke:#55677c;stroke-width:1.4;vector-effect:non-scaling-stroke;
+        cursor:pointer;transition:stroke .3s}
+  .cpad.served{fill:url(#padOn);stroke:var(--green);stroke-width:1.8}
+  .cpad.home{fill:url(#padHome);stroke:var(--amber);stroke-width:2}
+  .cpad.sel{stroke:#fff;stroke-width:2.6}
+  .cglyph{pointer-events:none;text-anchor:middle;dominant-baseline:central}
+  .chalo{fill:none;stroke:var(--green);stroke-width:1.2;opacity:0;vector-effect:non-scaling-stroke}
+  .chalo.on{opacity:.5;animation:halo 2.6s ease-out infinite;transform-box:fill-box;transform-origin:center}
+  @keyframes halo{0%{transform:scale(.75);opacity:.55}100%{transform:scale(1.5);opacity:0}}
+  .cbadge{fill:var(--amber);stroke:#1a1206;stroke-width:.8;vector-effect:non-scaling-stroke}
+  .cbadge-t{fill:#1a1206;font-size:7px;font-weight:800;text-anchor:middle;dominant-baseline:central;
+            pointer-events:none}
+  .lplate{fill:#070d13;opacity:.66;rx:3}
   .cring{fill:none;stroke:#4a5a6a;stroke-width:1;opacity:.5;vector-effect:non-scaling-stroke}
   .cinv{fill:none;stroke:var(--amber);stroke-width:1.2;opacity:.75;stroke-dasharray:2 2;vector-effect:non-scaling-stroke}
   .clabel{fill:#a7b3c1;font-size:10px;font-weight:500;pointer-events:none;paint-order:stroke;
@@ -117,8 +164,18 @@
   .stopbtn{width:25px;height:25px;border-radius:6px;background:var(--panel);border:1px solid var(--line);
     font-size:11px;display:grid;place-items:center}
   .stopbtn:disabled{opacity:.28}
-  .plan{margin-top:7px;padding:7px 9px;background:#11171d;border-left:2px solid var(--line);border-radius:0 8px 8px 0;
-    font-size:11px;line-height:1.6;color:#b6c0cb}
+  .gtile{width:38px;height:38px;flex:0 0 auto;border-radius:10px;display:grid;place-items:center;
+    font-size:19px;background:linear-gradient(180deg,#28323d,#1b232b);border:1px solid #333f4c;
+    box-shadow:0 1px 0 rgba(255,255,255,.05) inset}
+  .ld .wt{font-family:ui-monospace,monospace;font-size:11px;color:#8e9bab;font-weight:600}
+  .route2{font-size:11.5px;color:#aeb9c6;margin-top:3px;line-height:1.5}
+  .route2 b{color:var(--ink);font-weight:600}
+  .route2 .ar{color:var(--amber);margin:0 6px}
+  .money{text-align:right;flex:0 0 auto}
+  .money .amt{font-family:ui-monospace,monospace;font-weight:700;font-size:13.5px;color:#5fd79b}
+  .money .pill{margin-top:4px}
+  .plan{margin-top:9px;padding:8px 10px;background:#10161c;border-left:2px solid var(--line);
+    border-radius:0 8px 8px 0;font-size:11px;line-height:1.65;color:#b6c0cb}
   .plan.ok{border-left-color:var(--green)} .plan.tight{border-left-color:var(--amber)}
   .plan.late{border-left-color:var(--red)} .plan.none{border-left-color:var(--red);color:#ffa79b}
   .plan .leg{display:block}
@@ -135,7 +192,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v5.1</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v5.2</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">Day</div><div class="v" id="hClock">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
@@ -147,8 +204,41 @@
 <main>
   <div class="mapwrap" id="mapwrap">
     <svg id="map" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <radialGradient id="seaG" cx="50%" cy="38%" r="78%">
+          <stop offset="0" stop-color="#12212e"/><stop offset="55%" stop-color="#0b141d"/>
+          <stop offset="100%" stop-color="#060c12"/>
+        </radialGradient>
+        <linearGradient id="landG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#2b3742"/><stop offset="100%" stop-color="#1b242d"/>
+        </linearGradient>
+        <linearGradient id="landMine" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#3a4437"/><stop offset="100%" stop-color="#232c26"/>
+        </linearGradient>
+        <linearGradient id="padG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#39485a"/><stop offset="100%" stop-color="#212b36"/>
+        </linearGradient>
+        <linearGradient id="padOn" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#2f4a3c"/><stop offset="100%" stop-color="#1a2a22"/>
+        </linearGradient>
+        <linearGradient id="padHome" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#6a4d1c"/><stop offset="100%" stop-color="#3a2a11"/>
+        </linearGradient>
+        <filter id="coast" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="1.5" stdDeviation="2.2" flood-color="#04080c" flood-opacity=".85"/>
+        </filter>
+        <filter id="glowSoft" x="-90%" y="-90%" width="280%" height="280%">
+          <feGaussianBlur stdDeviation="3.2" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="pinShadow" x="-60%" y="-60%" width="220%" height="220%">
+          <feDropShadow dx="0" dy="1.2" stdDeviation="1.4" flood-color="#03070b" flood-opacity=".9"/>
+        </filter>
+      </defs>
+      <rect id="seaRect" x="-4000" y="-4000" width="12000" height="12000" fill="url(#seaG)"/>
       <g id="gWorld">
-        <g id="gLand"></g><g id="gSvc"></g><g id="gCity"></g><g id="gVeh"></g>
+        <g id="gLand"></g><g id="gGrat"></g><g id="gSvc"></g><g id="gSvcFlow"></g>
+        <g id="gCity"></g><g id="gVeh"></g>
       </g>
     </svg>
     <div class="mapctl">
@@ -187,16 +277,16 @@ function py(lat){ return (MAP.meta.lat1-lat)*SX; }
    containers land at the coast, steel goes to the car towns, textiles go to
    the fashion houses, finished cars go back out through the ports.        */
 var GOODS = {
-  ore:      {n:"Iron ore",   ic:"⛰", rate:0.9,  t:"bulk"},
-  coal:     {n:"Coal",       ic:"◼", rate:0.8,  t:"bulk"},
-  steel:    {n:"Steel",      ic:"▬", rate:1.3,  t:"bulk"},
+  ore:      {n:"Iron ore",   ic:"🪨", rate:0.9,  t:"bulk"},
+  coal:     {n:"Coal",       ic:"⚫", rate:0.8,  t:"bulk"},
+  steel:    {n:"Steel",      ic:"🔩", rate:1.3,  t:"bulk"},
   timber:   {n:"Timber",     ic:"🪵", rate:1.0,  t:"bulk"},
-  chem:     {n:"Chemicals",  ic:"⚗", rate:1.8,  t:"tank"},
+  chem:     {n:"Chemicals",  ic:"🧪", rate:1.8,  t:"tank"},
   pharma:   {n:"Pharma",     ic:"💊", rate:3.2,  t:"box"},
   textiles: {n:"Textiles",   ic:"🧵", rate:1.5,  t:"box"},
   fashion:  {n:"Fashion",    ic:"👗", rate:2.6,  t:"box"},
   elec:     {n:"Electronics",ic:"💻", rate:3.0,  t:"box"},
-  machines: {n:"Machinery",  ic:"⚙", rate:1.9,  t:"heavy"},
+  machines: {n:"Machinery",  ic:"🛠️", rate:1.9,  t:"heavy"},
   cars:     {n:"Cars",       ic:"🚗", rate:2.2,  t:"heavy"},
   food:     {n:"Food",       ic:"🍎", rate:1.4,  t:"reefer"},
   cargo:    {n:"Containers", ic:"📦", rate:1.6,  t:"box"}
@@ -666,30 +756,47 @@ function step(dt){
 var NS="http://www.w3.org/2000/svg";
 function el(t,a){ var e=document.createElementNS(NS,t); for(var k in a) e.setAttribute(k,a[k]); return e; }
 var $=function(i){return document.getElementById(i);};
-var svg=$("map"), gWorld=$("gWorld"), gLand=$("gLand"), gSvc=$("gSvc"), gCity=$("gCity"), gVeh=$("gVeh");
+var svg=$("map"), gWorld=$("gWorld"), gLand=$("gLand"), gGrat=$("gGrat"), gSvc=$("gSvc"),
+    gSvcFlow=$("gSvcFlow"), gCity=$("gCity"), gVeh=$("gVeh");
 svg.setAttribute("viewBox","0 0 "+VW+" "+VH);
 var cam={s:1,tx:0,ty:0}, selCity=null;
 
 function buildMap(){
   MAP.shapes.forEach(function(sh){
-    var p=el("path",{class:"land",d:sh.d});
+    var p=el("path",{class:"land",d:sh.d,filter:"url(#coast)"});
     if(sh.iso) p.setAttribute("data-iso",sh.iso);
     gLand.appendChild(p);
   });
+  // faint graticule for depth, so the sea is not an empty void
+  for(var gl=-10;gl<=26;gl+=4){ var gx=px(gl);
+    gGrat.appendChild(el("line",{class:"grat",x1:gx,y1:-400,x2:gx,y2:VH+400})); }
+  for(var gt=36;gt<=62;gt+=3){ var gy=py(gt);
+    gGrat.appendChild(el("line",{class:"grat",x1:-400,y1:gy,x2:VW+400,y2:gy})); }
   CITIES.forEach(function(c){
     var g=el("g",{class:"cwrap","data-id":c.id});
-    var shape;
-    if(c.port)      shape=el("rect",{class:"cdot",x:c.x-4,y:c.y-4,width:8,height:8,rx:1.2,id:"dot-"+c.id});
-    else if(c.air)  shape=el("polygon",{class:"cdot",id:"dot-"+c.id,
-                      points:(c.x)+","+(c.y-5)+" "+(c.x+4.5)+","+(c.y+3.5)+" "+(c.x-4.5)+","+(c.y+3.5)});
-    else            shape=el("circle",{class:"cdot",cx:c.x,cy:c.y,r:4,id:"dot-"+c.id});
-    if(c.capital) g.appendChild(el("circle",{class:"cring",cx:c.x,cy:c.y,r:7.5,id:"ring-"+c.id}));
-    g.appendChild(shape);
-    g.appendChild(el("circle",{class:"cinv",cx:c.x,cy:c.y,r:9.5,id:"inv-"+c.id,style:"display:none"}));
+    g.appendChild(el("circle",{class:"chalo",cx:c.x,cy:c.y,r:11,id:"halo-"+c.id}));
+    g.appendChild(el("circle",{class:"cpad",cx:c.x,cy:c.y,r:padR(c),id:"dot-"+c.id,filter:"url(#pinShadow)"}));
+    var gy2=el("text",{class:"cglyph",x:c.x,y:c.y+0.4,id:"gl-"+c.id,"font-size":glyphSize(c)});
+    gy2.textContent=cityGlyph(c); g.appendChild(gy2);
+    g.appendChild(el("circle",{class:"cbadge",cx:c.x+padR(c)*0.82,cy:c.y-padR(c)*0.82,r:3.6,
+      id:"bg-"+c.id,style:"display:none"}));
+    var bt=el("text",{class:"cbadge-t",x:c.x+padR(c)*0.82,y:c.y-padR(c)*0.82+0.2,id:"bt-"+c.id,
+      style:"display:none"}); g.appendChild(bt);
+    g.appendChild(el("rect",{class:"lplate",id:"lp-"+c.id,x:0,y:0,width:0,height:0,rx:3}));
     var t=el("text",{class:"clabel",x:c.x,y:c.y-8,"text-anchor":"middle",id:"lb-"+c.id});
     t.textContent=c.n; g.appendChild(t);
     gCity.appendChild(g);
   });
+}
+function padR(c){ return c.home?7.5 : 4.6+Math.min(3.2,c.size*0.72); }
+function glyphSize(c){ return (padR(c)*1.18).toFixed(1); }
+// a pin shows what the place actually ships, so the map itself teaches the trade
+function cityGlyph(c){
+  if(c.home) return "\uD83C\uDFE0";
+  if(c.out&&c.out.length) return GOODS[c.out[0]].ic;
+  if(c.capital) return "\u2605";
+  if(c.port) return "\u2693";
+  return "\u25CF";
 }
 function servedCities(){
   var set={};
@@ -704,13 +811,20 @@ function refreshCities(){
     var iso=p.getAttribute("data-iso");
     p.setAttribute("class", iso&&isoServed[iso] ? "land mine" : "land");
   });
+  var waiting={};
+  S.loads.forEach(function(l){ if(!l.on&&l.at) waiting[l.at]=(waiting[l.at]||0)+1; });
   CITIES.forEach(function(c){
     var d=$("dot-"+c.id), l=$("lb-"+c.id);
-    var cl="cdot"+(c.home?" home":served[c.id]?" served":"")+(selCity===c.id?" sel":"");
+    var cl="cpad"+(c.home?" home":served[c.id]?" served":"")+(selCity===c.id?" sel":"");
     d.setAttribute("class",cl);
-    if(d.tagName==="circle") d.setAttribute("r", c.home?5: 3+Math.min(3,c.size*0.6));
-    var inv=$("inv-"+c.id);
-    if(inv) inv.style.display=(depotLvl(c.id)||officeLvl(c.id))?"":"none";
+    var inv=(depotLvl(c.id)||officeLvl(c.id));
+    d.setAttribute("stroke-width", inv?3:(c.home||served[c.id]?1.9:1.4));
+    if(inv) d.setAttribute("stroke","#f0a63c");
+    var halo=$("halo-"+c.id);
+    if(halo) halo.setAttribute("class","chalo"+(waiting[c.id]&&served[c.id]?" on":""));
+    var bg=$("bg-"+c.id), bt=$("bt-"+c.id), n=waiting[c.id]||0;
+    if(bg){ bg.style.display=n?"":"none"; bt.style.display=n?"":"none";
+            if(n) bt.textContent=n>9?"9+":n; }
     // keep whatever the declutter decided -- this runs twice a second and would
     // otherwise wipe the "hide" class straight back off a suppressed label
     l.setAttribute("class","clabel"+(served[c.id]||c.home?" served":"")+
@@ -718,12 +832,16 @@ function refreshCities(){
   });
 }
 function drawSvcs(){
-  gSvc.innerHTML="";
+  gSvc.innerHTML=""; gSvcFlow.innerHTML="";
   S.svcs.forEach(function(s){
     if(s.stops.length<2) return;
     var pts=[];
     for(var i=0;i<=s.stops.length;i++){ var c=CITY[s.stops[i%s.stops.length]]; pts.push(c.x+","+c.y); }
-    gSvc.appendChild(el("polyline",{class:"svcline",points:pts.join(" "),stroke:s.col}));
+    var p=pts.join(" ");
+    gSvc.appendChild(el("polyline",{class:"svccase",points:p}));
+    gSvc.appendChild(el("polyline",{class:"svcline",points:p,stroke:s.col}));
+    // dashes drifting along the route read as freight actually flowing
+    if(svcVehs(s).length) gSvcFlow.appendChild(el("polyline",{class:"svcflow",points:p,stroke:"#eaf2ff"}));
   });
 }
 function drawVehs(){
@@ -731,17 +849,23 @@ function drawVehs(){
   S.veh.forEach(function(v){
     if(!v.svc) return;
     var s=svcOf(v.svc); if(!s) return;
+    var sc=(1/cam.s);
     var g=el("g",{class:"veh",transform:"translate("+v.x.toFixed(1)+" "+v.y.toFixed(1)+") rotate("+
-      (v.hd||0).toFixed(0)+") scale("+(1/cam.s).toFixed(3)+")"});
-    var loaded=v.cargo.length>0;
-    g.appendChild(el("rect",{x:-5.5,y:-3,width:8,height:6,rx:1.2,fill:loaded?s.col:"#39454f",
-      stroke:"#080d11","stroke-width":.8}));                     // trailer
-    g.appendChild(el("rect",{x:2.5,y:-2.6,width:3.6,height:5.2,rx:1,fill:s.col,
-      stroke:"#080d11","stroke-width":.8}));                     // cab
-    if(loaded){
-      var fill=Math.min(1,vehLoad(v)/TRUCKS[v.type].cap);
-      g.appendChild(el("rect",{x:-5,y:-2.4,width:7*fill,height:1.6,rx:.6,fill:"#0d1116",opacity:.55}));
+      (v.hd||0).toFixed(0)+") scale("+sc.toFixed(3)+")"});
+    var loaded=v.cargo.length>0, T=TRUCKS[v.type];
+    var big=(T.cap>=40?1.45:T.cap>=20?1.2:1)*1.15;                     // silhouette by class
+    g.appendChild(el("ellipse",{cx:0,cy:2.4*big,rx:7*big,ry:2.6*big,fill:"#03070b",opacity:.4}));
+    g.appendChild(el("rect",{x:-7*big,y:-3.1*big,width:9.4*big,height:6.2*big,rx:1.3,
+      fill:loaded?"#2c3641":"#232c35",stroke:"#070c11","stroke-width":.7}));       // trailer body
+    if(loaded){                                                   // livery band + fill gauge
+      var f=Math.min(1,vehLoad(v)/T.cap);
+      g.appendChild(el("rect",{x:-6.6*big,y:-2.6*big,width:8.6*big*f,height:5.2*big,rx:1,
+        fill:s.col,opacity:.92}));
     }
+    g.appendChild(el("rect",{x:2.6*big,y:-2.9*big,width:4.4*big,height:5.8*big,rx:1.2,
+      fill:s.col,stroke:"#070c11","stroke-width":.7}));                            // cab
+    g.appendChild(el("rect",{x:5.2*big,y:-2*big,width:1.5*big,height:4*big,rx:.5,
+      fill:"#cfe6ff",opacity:.85}));                                               // windscreen
     gVeh.appendChild(g);
   });
 }
@@ -806,9 +930,16 @@ function doLabels(){
       if(box.x0<0||box.x1>X.w||box.y0<0||box.y1>X.h) continue;
       if(hit(box,placed)||hit(box,marks,c.id)) continue;
       t.setAttribute("x",c.x+dx); t.setAttribute("y",c.y+dy); t.setAttribute("text-anchor",an);
+      var lp=$("lp-"+c.id);
+      if(lp){ var pw=(w+8), ph=13;
+        var lx = an==="end" ? c.x+dx-w-4 : an==="middle" ? c.x+dx-w/2-4 : c.x+dx-4;
+        lp.setAttribute("x",lx); lp.setAttribute("y",c.y+dy-10);
+        lp.setAttribute("width",pw); lp.setAttribute("height",ph);
+        lp.setAttribute("transform",t.getAttribute("transform")); lp.style.display=""; }
       placed.push(box); t.classList.remove("hide"); return;
     }
     t.classList.add("hide");
+    var lp2=$("lp-"+c.id); if(lp2) lp2.style.display="none";
   });
 }
 
@@ -881,7 +1012,7 @@ $("modal").addEventListener("click",function(e){ if(e.target===$("modal")) $("mo
 
 function planLine(l){
   var p = l.plan || planFor(l);
-  if(!p) return {cls:"none", html:"<b>No route.</b> No service chain reaches "+CITY[l.to].n+" from here."};
+  if(!p) return {cls:"none", html:"<b>No route</b> — nothing you have built reaches "+CITY[l.to].n+"."};
   var eta=S.t+p.hours, slack=l.due-eta;
   var cls = slack<0 ? "late" : slack<6 ? "tight" : "ok";
   var parts=p.legs.map(function(lg,i){
@@ -917,13 +1048,19 @@ function renderLoads(b){
     var pl=planLine(l);
     var left=l.due-S.t;
     var d=document.createElement("div");
-    d.className="card"+(pl.cls==="none"||pl.cls==="late"?" bad":pl.cls==="tight"?" warn":"");
+    d.className="card ld"+(pl.cls==="none"||pl.cls==="late"?" bad":pl.cls==="tight"?" warn":" good");
+    var urg = left<6 ? "r" : left<16 ? "a" : "";
     d.innerHTML=
-      '<div class="row"><div class="grow">'+
-        '<div class="ttl">'+G.ic+' '+G.n+' · '+l.w+'t</div>'+
-        '<div class="sub">'+flag(from.c)+' '+from.n+' → '+flag(to.c)+' '+to.n+
-        ' <span class="pill">'+l.km+'km</span> <span class="pill'+(left<8?' r':'')+'">due '+hrs(Math.max(0,left))+'</span></div>'+
-      '</div><div style="text-align:right"><div class="ttl" style="color:var(--green)">'+eur(l.pay)+'</div></div></div>'+
+      '<div class="row">'+
+        '<div class="gtile">'+G.ic+'</div>'+
+        '<div class="grow">'+
+          '<div class="ttl">'+G.n+' <span class="wt">'+l.w+'t</span></div>'+
+          '<div class="route2">'+flag(from.c)+' <b>'+from.n+'</b>'+
+            '<span class="ar">→</span>'+flag(to.c)+' <b>'+to.n+'</b></div>'+
+        '</div>'+
+        '<div class="money"><div class="amt">'+eur(l.pay)+'</div>'+
+          '<div class="pill '+urg+'">'+hrs(Math.max(0,left))+'</div></div>'+
+      '</div>'+
       '<div class="plan '+pl.cls+'">'+pl.html+'</div>';
     return d;
   }
