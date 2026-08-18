@@ -229,7 +229,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v6.3</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v6.4</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">Day</div><div class="v" id="hClock">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
@@ -276,7 +276,7 @@
       </defs>
       <rect id="seaRect" x="-4000" y="-4000" width="12000" height="12000" fill="url(#seaG)"/>
       <g id="gWorld">
-        <g id="gLand" filter="url(#coast)"></g><g id="gGrat"></g><g id="gSvc"></g><g id="gSvcFlow"></g>
+        <g id="gLand"></g><g id="gGrat"></g><g id="gSvc"></g><g id="gSvcFlow"></g>
         <g id="gCity"></g><g id="gVeh"></g>
       </g>
     </svg>
@@ -1096,13 +1096,18 @@ function servedCities(){
   S.svcs.forEach(function(s){ if(svcVehs(s).length) s.stops.forEach(function(id){set[id]=1;}); });
   return set;
 }
+// writing an attribute that is already set to the same value still costs a
+// style/layout invalidation on some engines (notably mobile Safari), and
+// this runs on every city/land path on a timer -- so only touch the DOM
+// when a value has actually changed.
+function setAttrIf(el,name,val){ if(el.getAttribute(name)!==String(val)) el.setAttribute(name,val); }
 function refreshCities(){
   var served=servedCities();
   var isoServed={};
   Object.keys(served).forEach(function(id){ isoServed[CITY[id].c]=1; });
   Array.prototype.forEach.call(gLand.children,function(p){
     var iso=p.getAttribute("data-iso");
-    p.setAttribute("class", iso&&isoServed[iso] ? "land mine" : "land");
+    setAttrIf(p,"class", iso&&isoServed[iso] ? "land mine" : "land");
   });
   var waiting={};
   S.loads.forEach(function(l){ if(!l.on&&l.at) waiting[l.at]=(waiting[l.at]||0)+1; });
@@ -1112,24 +1117,28 @@ function refreshCities(){
     var inRoute=editSvc&&editSvc.stops.indexOf(c.id)>=0;
     var cl="cpad"+(c.home?" home":served[c.id]?" served":"")+(selCity===c.id?" sel":"")+
       (editSvc?(inRoute?" inedit":" addable"):"");
-    d.setAttribute("class",cl);
-    if(editSvc&&inRoute){ d.setAttribute("stroke",editSvc.col); d.setAttribute("stroke-width",3); }
+    setAttrIf(d,"class",cl);
+    if(editSvc&&inRoute){ setAttrIf(d,"stroke",editSvc.col); setAttrIf(d,"stroke-width",3); }
     else{
       var inv=(depotLvl(c.id)||officeLvl(c.id));
-      d.setAttribute("stroke-width", inv?3:(c.home||served[c.id]?1.9:1.4));
-      if(inv) d.setAttribute("stroke","#f0a63c"); else d.removeAttribute("stroke");
+      setAttrIf(d,"stroke-width", inv?3:(c.home||served[c.id]?1.9:1.4));
+      if(inv) setAttrIf(d,"stroke","#f0a63c"); else if(d.hasAttribute("stroke")) d.removeAttribute("stroke");
     }
     var halo=$("halo-"+c.id);
-    if(halo) halo.setAttribute("class","chalo"+(waiting[c.id]&&served[c.id]?" on":""));
+    if(halo) setAttrIf(halo,"class","chalo"+(waiting[c.id]&&served[c.id]?" on":""));
     var bg=$("bg-"+c.id), bt=$("bt-"+c.id), n=waiting[c.id]||0;
-    if(bg){ bg.style.display=n?"":"none"; bt.style.display=n?"":"none";
-            if(n) bt.textContent=n>9?"9+":n; }
+    if(bg){ var show=n?"":"none"; if(bg.style.display!==show){ bg.style.display=show; bt.style.display=show; }
+            if(n&&bt.textContent!==(n>9?"9+":String(n))) bt.textContent=n>9?"9+":n; }
     // keep whatever the declutter decided -- this runs twice a second and would
     // otherwise wipe the "hide" class straight back off a suppressed label
-    l.setAttribute("class","clabel"+(served[c.id]||c.home?" served":"")+
+    setAttrIf(l,"class","clabel"+(served[c.id]||c.home?" served":"")+
       (l.classList.contains("hide")?" hide":""));
   });
 }
+// Rebuilds the route lines from scratch. Only call this when the STOP LIST
+// of a service actually changed (or on boot) -- it tears down and recreates
+// every polyline, which is wasteful to run on a timer. Profit colouring and
+// the warning badges update separately, in place, via refreshSvcHealth().
 function drawSvcs(){
   gSvc.innerHTML=""; gSvcFlow.innerHTML="";
   S.svcs.forEach(function(s){
@@ -1137,27 +1146,50 @@ function drawSvcs(){
     var pts=[];
     for(var i=0;i<=s.stops.length;i++){ var c=CITY[s.stops[i%s.stops.length]]; pts.push(c.x+","+c.y); }
     var p=pts.join(" ");
-    gSvc.appendChild(el("polyline",{class:"svccase",points:p}));
-    var vd=svcVerdict(s);
-    gSvc.appendChild(el("polyline",{class:"svcline"+(vd.cls==="bad"?" losing":""),points:p,stroke:s.col}));
-    // a losing service gets a warning badge on the map itself, at the middle
-    // of its stop list, so the answer to "which line is losing money" is
-    // visible without opening the Services tab at all
-    if(vd.cls==="bad"&&vd.rate!=null){
-      var mi=Math.floor(s.stops.length/2), mc=CITY[s.stops[mi]];
-      var txt="-"+eur(Math.abs(vd.rate))+"/h";
-      var w=Math.max(24,txt.length*4.6+8);
-      var g=el("g",{class:"svcwarn",transform:"translate("+mc.x+" "+(mc.y-16)+")"});
-      g.appendChild(el("rect",{x:-w/2,y:-7,width:w,height:14,rx:6}));
-      var t=el("text",{y:0.5}); t.textContent="⚠ "+txt;
-      g.appendChild(t);
-      gSvcFlow.appendChild(g);
-    }
-    // (an animated flow overlay lived here; it repainted every route every
-    //  frame and cost ~4fps on a throttled CPU for little the trucks do not
-    //  already say)
+    gSvc.appendChild(el("polyline",{class:"svccase","data-svc":s.id,points:p}));
+    gSvc.appendChild(el("polyline",{class:"svcline","data-svc":s.id,points:p,stroke:s.col}));
   });
   drawEditPreview();
+  refreshSvcHealth();
+}
+// Runs on the periodic UI tick. Never touches gSvc's route shapes -- only
+// toggles a class on the existing line and keeps one warning badge in sync
+// per losing service, updating text in place instead of tearing anything down.
+var svcWarnEls={};
+function refreshSvcHealth(){
+  var seen={};
+  S.svcs.forEach(function(s){
+    if(s.stops.length<2) return;
+    var vd=svcVerdict(s);
+    var line=gSvc.querySelector('.svcline[data-svc="'+s.id+'"]');
+    if(line){
+      var wantLosing=vd.cls==="bad";
+      var isLosing=line.classList.contains("losing");
+      if(wantLosing!==isLosing) line.classList.toggle("losing",wantLosing);
+    }
+    if(vd.cls==="bad"&&vd.rate!=null){
+      seen[s.id]=1;
+      var mi=Math.floor(s.stops.length/2), mc=CITY[s.stops[mi]];
+      var txt="-"+eur(Math.abs(vd.rate))+"/h";
+      var rec=svcWarnEls[s.id];
+      if(!rec){
+        var w=Math.max(24,txt.length*4.6+8);
+        var g=el("g",{class:"svcwarn","data-svc":s.id,transform:"translate("+mc.x+" "+(mc.y-16)+")"});
+        var rect=el("rect",{x:-w/2,y:-7,width:w,height:14,rx:6});
+        var t=el("text",{y:0.5}); t.textContent="⚠ "+txt;
+        g.appendChild(rect); g.appendChild(t);
+        gSvcFlow.appendChild(g);
+        svcWarnEls[s.id]={g:g,rect:rect,t:t,txt:txt};
+      }else if(rec.txt!==txt){
+        var w2=Math.max(24,txt.length*4.6+8);
+        rec.rect.setAttribute("x",-w2/2); rec.rect.setAttribute("width",w2);
+        rec.t.textContent="⚠ "+txt; rec.txt=txt;
+      }
+    }
+  });
+  for(var id in svcWarnEls){
+    if(!seen[id]){ var r=svcWarnEls[id]; if(r.g.parentNode) r.g.parentNode.removeChild(r.g); delete svcWarnEls[id]; }
+  }
 }
 // while a service is being edited, sketch the route as stops are tapped in,
 // so building it on the map is a direct loop rather than a blind list
@@ -1246,8 +1278,19 @@ function fitAll(){
 function viewK(){ var r=svg.getBoundingClientRect(); var m=svg.getScreenCTM&&svg.getScreenCTM();
   if(!m||!r.width) return {k:1,ox:0,oy:0,w:r.width||1,h:r.height||1};
   return {k:m.a||1,ox:m.e-r.left,oy:m.f-r.top,w:r.width,h:r.height}; }
-var lblRAF=0;
-function layoutLabels(){ if(lblRAF) return; lblRAF=requestAnimationFrame(function(){ lblRAF=0; doLabels(); }); }
+// doLabels() sorts and collision-tests every city on screen -- necessary
+// when the zoom level changes, wasted work on a pure pan (everything moves
+// together rigidly, so which labels collide does not change). Panning fires
+// this on every pointermove, so without a throttle it reruns full layout up
+// to 60 times a second while dragging. Labels lagging ~100ms behind a drag
+// is invisible; the drag stuttering because of them is not.
+var lblRAF=0, lblLast=0;
+function layoutLabels(){
+  if(lblRAF) return;
+  var wait=Math.max(0, 110-(performance.now()-lblLast));
+  lblRAF=setTimeout(function(){ lblRAF=0; lblLast=performance.now();
+    requestAnimationFrame(doLabels); }, wait);
+}
 function doLabels(){
   var X=viewK(), k=X.k, L=1/(k*cam.s);
   var served=servedCities();
@@ -1875,7 +1918,7 @@ function frame(now){
   panelAcc+=dtReal;
   if(panelAcc>0.7){ panelAcc=0;
     if(!(tab==="services"&&svcEdit!=null)) render();
-    refreshCities(); drawSvcs(); }
+    refreshCities(); refreshSvcHealth(); }
   requestAnimationFrame(frame);
 }
 
