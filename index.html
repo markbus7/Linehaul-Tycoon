@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
-<title>LINEHAUL — Network v5.2</title>
+<title>LINEHAUL — Network v6.0</title>
 <style>
   :root{
     --bg:#0d1116;--panel:#141a21;--panel2:#1a222b;--line:#26313c;
@@ -33,6 +33,20 @@
   .stat .v{font-family:ui-monospace,Menlo,monospace;font-weight:600;font-size:14px;font-variant-numeric:tabular-nums}
   .v.money{color:var(--amber)} .v.ok{color:var(--green)} .v.bad{color:var(--red)}
   .sp{flex:1}
+  .lvlstat{min-width:78px}
+  .xpbar{height:3px;border-radius:2px;background:#2b3742;margin-top:3px;overflow:hidden}
+  .xpbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f0a63c,#ffd08a)}
+  .ach{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:11px;margin-bottom:7px;
+    background:linear-gradient(180deg,#1a222b,#151c24);border:1px solid #28323d;opacity:.55}
+  .ach.got{opacity:1;border-color:#3f5136;background:linear-gradient(180deg,#1d2a20,#161f19)}
+  .ach .ai{font-size:20px;width:34px;height:34px;flex:0 0 auto;border-radius:9px;display:grid;place-items:center;
+    background:#212a34;border:1px solid #2f3b48}
+  .ach.got .ai{background:#22331f;border-color:#3f5136}
+  .ach .an{font-weight:650;font-size:12.5px}
+  .ach .ad{font-size:11px;color:var(--dim);margin-top:2px;line-height:1.45}
+  .ach .ar{font-family:ui-monospace,monospace;font-size:11px;color:var(--amber);flex:0 0 auto}
+  .ach.got .ar{color:var(--green)}
+  .lock{font-size:10px;color:#6d7a89;font-family:ui-monospace,monospace}
   .hbtn{padding:7px 12px;border:1px solid #33404d;border-radius:9px;font-size:12px;font-weight:700;
     background:linear-gradient(180deg,#28323d,#1d252e);box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 2px 6px rgba(0,0,0,.35)}
   .hbtn:hover{border-color:var(--amber);color:#ffd08a}
@@ -150,6 +164,9 @@
   .kv{display:flex;gap:10px;padding:8px 10px;background:var(--panel2);border:1px solid var(--line);
     border-radius:9px;margin-bottom:6px}
   .kv .k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim2);flex:0 0 88px;padding-top:2px}
+  .kv.mini{flex-direction:column;gap:3px;padding:7px 9px}
+  .kv.mini .k{flex:none;padding-top:0}
+  .kv.mini .v{font-family:ui-monospace,monospace;font-size:13px}
   .kv .v{flex:1;font-size:12.5px;line-height:1.55}
   .goods{display:flex;flex-wrap:wrap;gap:4px}
   .good{font-size:10.5px;padding:2px 7px;border-radius:6px;background:var(--line);color:#cbd4de;white-space:nowrap}
@@ -192,11 +209,13 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v5.2</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v6.0</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">Day</div><div class="v" id="hClock">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat"><div class="k">Running cost</div><div class="v" id="hBurn">—</div></div>
+  <div class="stat lvlstat"><div class="k">Level</div><div class="v" id="hLvl">1</div>
+    <div class="xpbar"><i id="hXp"></i></div></div>
   <div class="sp"></div>
   <button class="hbtn" id="btnSpeed">▶ 1×</button>
   <button class="hbtn" id="btnHelp">?</button>
@@ -252,6 +271,7 @@
       <button data-tab="services">Services<span class="bdg" id="bSvc">0</span></button>
       <button data-tab="fleet">Fleet<span class="bdg" id="bFleet">0</span></button>
       <button data-tab="city">City</button>
+      <button data-tab="co">Company<span class="bdg" id="bAch">0</span></button>
     </div>
     <div class="body" id="tabbody"></div>
   </aside>
@@ -281,14 +301,14 @@ var GOODS = {
   coal:     {n:"Coal",       ic:"⚫", rate:0.8,  t:"bulk"},
   steel:    {n:"Steel",      ic:"🔩", rate:1.3,  t:"bulk"},
   timber:   {n:"Timber",     ic:"🪵", rate:1.0,  t:"bulk"},
-  chem:     {n:"Chemicals",  ic:"🧪", rate:1.8,  t:"tank"},
+  chem:     {n:"Chemicals",  ic:"🧪", rate:1.8,  t:"tank",   req:"tank"},
   pharma:   {n:"Pharma",     ic:"💊", rate:3.2,  t:"box"},
   textiles: {n:"Textiles",   ic:"🧵", rate:1.5,  t:"box"},
   fashion:  {n:"Fashion",    ic:"👗", rate:2.6,  t:"box"},
   elec:     {n:"Electronics",ic:"💻", rate:3.0,  t:"box"},
   machines: {n:"Machinery",  ic:"🛠️", rate:1.9,  t:"heavy"},
-  cars:     {n:"Cars",       ic:"🚗", rate:2.2,  t:"heavy"},
-  food:     {n:"Food",       ic:"🍎", rate:1.4,  t:"reefer"},
+  cars:     {n:"Cars",       ic:"🚗", rate:2.2,  t:"heavy",  req:"car"},
+  food:     {n:"Food",       ic:"🍎", rate:1.4,  t:"reefer", req:"reefer"},
   cargo:    {n:"Containers", ic:"📦", rate:1.6,  t:"box"}
 };
 
@@ -433,18 +453,46 @@ function cname(c){ return (COUNTRY[c]&&COUNTRY[c].n)||c; }
 
 /* ============================================================ TRUCKS */
 var TRUCKS = [
-  {id:0, n:"Rigid",       cap:12, kmh:78, cost:38000,  fuel:0.21, dwell:0.5},
-  {id:1, n:"Semi",        cap:26, kmh:80, cost:82000,  fuel:0.27, dwell:0.7},
-  {id:2, n:"Road train",  cap:44, kmh:72, cost:165000, fuel:0.37, dwell:1.0},
-  {id:3, n:"Express van", cap:6,  kmh:105,cost:29000,  fuel:0.14, dwell:0.25}
+  {id:0, n:"Rigid",           ic:"\uD83D\uDE9A", cap:12, kmh:78, cost:38000,  fuel:0.21, dwell:0.5,  lvl:1,
+   note:"The workhorse. Carries anything that does not need special kit."},
+  {id:1, n:"Semi",            ic:"\uD83D\uDE9B", cap:26, kmh:80, cost:82000,  fuel:0.27, dwell:0.7,  lvl:1,
+   note:"Twice the box for twice the money. The backbone of a trunk service."},
+  {id:2, n:"Express van",     ic:"\uD83D\uDE90", cap:6,  kmh:105,cost:29000,  fuel:0.14, dwell:0.25, lvl:1,
+   note:"Tiny and quick. Useful for tight windows on short hops."},
+  {id:3, n:"Reefer",          ic:"\u2744\uFE0F", cap:22, kmh:76, cost:118000, fuel:0.34, dwell:0.8,  lvl:3, spec:"reefer",
+   note:"Refrigerated. The only way to move food, so Rotterdam and Spain need one."},
+  {id:4, n:"Tanker",          ic:"\uD83D\uDEE2\uFE0F", cap:28, kmh:74, cost:146000, fuel:0.36, dwell:1.1, lvl:4, spec:"tank",
+   note:"Chemicals only. Antwerp, Koln, Ludwigshafen and Lyon ship little else."},
+  {id:5, n:"Car transporter", ic:"\uD83D\uDE97", cap:18, kmh:78, cost:172000, fuel:0.33, dwell:1.2, lvl:5, spec:"car",
+   note:"Finished cars only. Wolfsburg, Stuttgart and Torino cannot ship without it."},
+  {id:6, n:"Road train",      ic:"\uD83D\uDE9A", cap:44, kmh:72, cost:238000, fuel:0.42, dwell:1.0, lvl:6,
+   note:"Enormous capacity for long trunk runs where frequency matters less."},
+  {id:7, n:"Heavy hauler",    ic:"\uD83C\uDFD7\uFE0F", cap:64, kmh:64, cost:410000, fuel:0.55, dwell:1.4, lvl:8,
+   note:"Slow and thirsty, but nothing shifts bulk steel and ore like it."}
 ];
+// a load with a `req` can only ride a truck carrying that equipment
+function truckCan(type,good){
+  var r=GOODS[good]&&GOODS[good].req;
+  if(!r) return !TRUCKS[type].spec || true;
+  return TRUCKS[type].spec===r;
+}
+function specsOn(s){
+  var out={gen:false};
+  svcVehs(s).forEach(function(v){ var sp=TRUCKS[v.type].spec; if(sp) out[sp]=true; else out.gen=true; });
+  return out;
+}
+function svcCanCarry(s,good){
+  var r=GOODS[good]&&GOODS[good].req;
+  var sp=specsOn(s);
+  return r? !!sp[r] : sp.gen || Object.keys(sp).some(function(k){return k!=="gen"&&sp[k];});
+}
 
 /* ============================================================ STATE */
 var S = null, nextId = 1;
 var WAGE_PER_H = 3.2;   // per truck, per game hour
 function fresh(){
   return {
-    cash: 260000, t: 0,             // t = game hours since start
+    cash: 260000, t: 0, xp:0, level:1, upg:{}, ach:{},   // t = game hours since start
     svcs: [], veh: [], loads: [],
     delivered: 0, late: 0, earned: 0, spent: 0,
     hist: {},                        // per-city history -> the mental story
@@ -541,7 +589,7 @@ function loopKm(s){ if(s.stops.length<2) return 0; var t=0; for(var i=0;i<s.stop
 // cycle time in hours for a given truck type, including dwell at every stop
 function cycleH(s,type){
   if(s.stops.length<2) return 0;
-  var T=TRUCKS[type==null?1:type], t=loopKm(s)/T.kmh;
+  var T=TRUCKS[type==null?1:type], t=loopKm(s)/tSpeed(T.id);
   s.stops.forEach(function(id){ t+=dwellAt(id,type==null?1:type); });
   return t;
 }
@@ -559,7 +607,7 @@ function headway(s){
 // ride time from stop index i to stop index j, going forward around the loop
 function rideH(s,i,j,type){
   var T=TRUCKS[type==null?1:type], t=0, n=s.stops.length, k=i;
-  while(k!==j){ t+=km(s.stops[k],s.stops[(k+1)%n])/T.kmh + dwellAt(s.stops[k],type==null?1:type); k=(k+1)%n; }
+  while(k!==j){ t+=km(s.stops[k],s.stops[(k+1)%n])/tSpeed(T.id) + dwellAt(s.stops[k],type==null?1:type); k=(k+1)%n; }
   return t;
 }
 
@@ -568,10 +616,14 @@ function rideH(s,i,j,type){
    expected wait), which is exactly why coverage without frequency fails.  */
 var routeCache={}, cacheKey=0;
 function invalidate(){ routeCache={}; cacheKey++; }
-function routePlan(fromId,toId){
-  var ck=fromId+">"+toId;
+function routePlan(fromId,toId,good){
+  var req=(good&&GOODS[good]&&GOODS[good].req)||"";
+  var ck=fromId+">"+toId+"|"+req;
   if(routeCache[ck]!==undefined) return routeCache[ck];
-  var live=S.svcs.filter(function(s){return s.stops.length>=2 && svcVehs(s).length>0;});
+  // only services whose trucks carry this kind of freight are usable
+  var live=S.svcs.filter(function(s){
+    return s.stops.length>=2 && svcVehs(s).length>0 && (!req || svcCanCarry(s,good));
+  });
   if(!live.length){ return (routeCache[ck]=null); }
   var dist={}, prev={}, done={};
   dist[fromId]=0;
@@ -609,17 +661,118 @@ function routePlan(fromId,toId){
   return (routeCache[ck]=plan);
 }
 function planFor(load){
-  var p=routePlan(load.at||load.from, load.to);
-  return p;
+  return routePlan(load.at||load.from, load.to, load.g);
+}
+// is the problem the network, or simply that you own no truck of this kind?
+function lacksEquipment(load){
+  var r=GOODS[load.g]&&GOODS[load.g].req;
+  if(!r) return false;
+  return !S.veh.some(function(v){ return TRUCKS[v.type].spec===r; });
 }
 
 /* ============================================================ SIM */
+/* ---- achievements. Deliberately geographic: chasing them walks you around
+   the continent and makes you notice which country a city sits in. --------- */
+function servedSet(){ return servedCities(); }
+function citiesDelivered(){ var n=0; for(var k in (S.hist||{})) if(S.hist[k].in>0) n++; return n; }
+function countriesTouched(){
+  var o={}; for(var k in (S.hist||{})) if(CITY[k]&&(S.hist[k].in>0||S.hist[k].out>0)) o[CITY[k].c]=1;
+  return Object.keys(o).length;
+}
+function countryComplete(iso){
+  var all=CITIES.filter(function(c){return c.c===iso;});
+  return all.length>0 && all.every(function(c){ return S.hist[c.id]&&(S.hist[c.id].in>0||S.hist[c.id].out>0); });
+}
+function svcCovers(list){
+  return S.svcs.some(function(s){ return svcVehs(s).length>0 &&
+    list.every(function(id){ return s.stops.indexOf(id)>=0; }); });
+}
+var ACH=[
+ {id:"first",  ic:"\uD83D\uDCE6", n:"First haul",        d:"Deliver your first load",                  r:5000,   f:function(){return S.delivered>=1;}},
+ {id:"d50",    ic:"\uD83D\uDE9A", n:"Getting rolling",   d:"Deliver 50 loads",                         r:20000,  f:function(){return S.delivered>=50;}},
+ {id:"d250",   ic:"\uD83C\uDFC5", n:"Established",       d:"Deliver 250 loads",                        r:90000,  f:function(){return S.delivered>=250;}},
+ {id:"d1000",  ic:"\uD83C\uDFC6", n:"Continental",       d:"Deliver 1000 loads",                       r:400000, f:function(){return S.delivered>=1000;}},
+ {id:"m1",     ic:"\uD83D\uDCB0", n:"First million",     d:"Earn \u20AC1,000,000 in fees",             r:60000,  f:function(){return S.earned>=1e6;}},
+ {id:"rep95",  ic:"\u23F1\uFE0F", n:"Never late",        d:"Hold 95% reputation over 40 deliveries",   r:80000,  f:function(){return (S.recent||[]).length>=40&&repScore()>=0.95;}},
+ {id:"c10",    ic:"\uD83D\uDCCD", n:"Ten cities",        d:"Deliver into 10 different cities",         r:25000,  f:function(){return citiesDelivered()>=10;}},
+ {id:"c25",    ic:"\uD83D\uDDFA\uFE0F", n:"Wide network",     d:"Deliver into 25 different cities",   r:120000, f:function(){return citiesDelivered()>=25;}},
+ {id:"ctry6",  ic:"\uD83C\uDF0D", n:"Six countries",     d:"Trade in 6 different countries",           r:45000,  f:function(){return countriesTouched()>=6;}},
+ {id:"ctry10", ic:"\uD83C\uDFF3\uFE0F", n:"All eleven",  d:"Trade in every country on the map",       r:200000, f:function(){return countriesTouched()>=11;}},
+ {id:"nl",     ic:"\uD83C\uDDF3\uD83C\uDDF1", n:"Low Countries", d:"Trade in every Dutch city",      r:30000,  f:function(){return countryComplete("NL");}},
+ {id:"de",     ic:"\uD83C\uDDE9\uD83C\uDDEA", n:"Bundesrepublik", d:"Trade in every German city",    r:110000, f:function(){return countryComplete("DE");}},
+ {id:"fr",     ic:"\uD83C\uDDEB\uD83C\uDDF7", n:"Hexagone",      d:"Trade in every French city",     r:70000,  f:function(){return countryComplete("FR");}},
+ {id:"it",     ic:"\uD83C\uDDEE\uD83C\uDDF9", n:"Il Bel Paese",  d:"Trade in every Italian city",    r:70000,  f:function(){return countryComplete("IT");}},
+ {id:"pl",     ic:"\uD83C\uDDF5\uD83C\uDDF1", n:"Silesian run",  d:"Trade in every Polish city",     r:70000,  f:function(){return countryComplete("PL");}},
+ {id:"rhine",  ic:"\uD83C\uDF0A", n:"Rhine corridor",  d:"One service linking Rotterdam, Duisburg, Koln and Basel", r:75000,
+  f:function(){return svcCovers(["rotterdam","duisburg","koln","basel"]);}},
+ {id:"alps",   ic:"\uD83C\uDFD4\uFE0F", n:"Over the Alps", d:"One service linking Basel and Milano",  r:60000,
+  f:function(){return svcCovers(["basel","milano"]);}},
+ {id:"iberia", ic:"\u2600\uFE0F", n:"Iberian reach",   d:"Deliver into Madrid, Barcelona and Porto",   r:90000,
+  f:function(){return ["madrid","barcelona","porto"].every(function(id){return S.hist[id]&&S.hist[id].in>0;});}},
+ {id:"steel",  ic:"\uD83D\uDD29", n:"Steel chain",     d:"Deliver ore into Duisburg and steel into Wolfsburg", r:65000,
+  f:function(){return S.chain&&S.chain.oreDuisburg&&S.chain.steelWolfsburg;}},
+ {id:"cloth",  ic:"\uD83E\uDDF5", n:"Rag trade",       d:"Deliver textiles into Milano and fashion into Paris", r:65000,
+  f:function(){return S.chain&&S.chain.textMilano&&S.chain.fashParis;}},
+ {id:"fleet15",ic:"\uD83D\uDE9B", n:"Real fleet",      d:"Run 15 trucks",                              r:70000,  f:function(){return S.veh.length>=15;}},
+ {id:"spec3",  ic:"\u2744\uFE0F", n:"Specialist",      d:"Own a reefer, a tanker and a transporter",   r:85000,
+  f:function(){var o={};S.veh.forEach(function(v){if(TRUCKS[v.type].spec)o[TRUCKS[v.type].spec]=1;});
+    return o.reefer&&o.tank&&o.car;}},
+ {id:"depot3", ic:"\uD83C\uDFED", n:"Proper hub",      d:"Take one depot to level 3",                  r:60000,
+  f:function(){ for(var k in (S.depot||{})) if(S.depot[k]>=3) return true; return false; }},
+ {id:"svc5",   ic:"\uD83D\uDD78\uFE0F", n:"Network",  d:"Run 5 services at once",                     r:80000,
+  f:function(){return S.svcs.filter(function(x){return svcVehs(x).length>0;}).length>=5;}}
+];
+function checkAch(){
+  if(!S.ach) S.ach={};
+  for(var i=0;i<ACH.length;i++){
+    var a=ACH[i];
+    if(S.ach[a.id]) continue;
+    var ok=false; try{ ok=a.f(); }catch(e){}
+    if(ok){ S.ach[a.id]=1; S.cash+=a.r; gainXP(40);
+      toast(a.ic+" <b>"+a.n+"</b> — "+a.d+". +"+eur(a.r)); }
+  }
+}
+/* ---- company-wide upgrades: every one changes a number the sim already uses */
+var UPG=[
+ {id:"fuel",   n:"Fuel contracts", ic:"\u26FD", d:"\u22127% fuel burn per level",        max:5, base:55000,  mul:2.1, lvl:1},
+ {id:"drivers",n:"Driver training",ic:"\uD83C\uDF93", d:"\u22126% time in the yard per level", max:5, base:70000,  mul:2.2, lvl:2},
+ {id:"sales",  n:"Sales team",     ic:"\uD83D\uDCE3", d:"+12% freight offered per level",   max:5, base:80000,  mul:2.2, lvl:2},
+ {id:"aero",   n:"Aero kits",      ic:"\uD83E\uDEB6", d:"+4% truck speed per level",        max:5, base:95000,  mul:2.3, lvl:3},
+ {id:"rates",  n:"Rate card",      ic:"\uD83D\uDCB6", d:"+7% on every fee per level",       max:5, base:120000, mul:2.4, lvl:3},
+ {id:"maint",  n:"Maintenance",    ic:"\uD83D\uDD27", d:"\u22128% wage bill per level",     max:4, base:75000,  mul:2.2, lvl:4},
+ {id:"planning",n:"Load planning", ic:"\uD83D\uDCD0", d:"+2t usable capacity per level",    max:4, base:140000, mul:2.5, lvl:5},
+ {id:"brand",  n:"Brand",          ic:"\u2B50", d:"A late load dents reputation less",       max:3, base:170000, mul:2.6, lvl:6}
+];
+function up(id){ return (S.upg&&S.upg[id])||0; }
+function upCost(u){ return Math.round(u.base*Math.pow(u.mul,up(u.id))); }
+function buyUpg(u){
+  var l=up(u.id); if(l>=u.max||S.level<u.lvl) return false;
+  var c=upCost(u); if(S.cash<c) return false;
+  S.cash-=c; S.spent+=c; if(!S.upg)S.upg={}; S.upg[u.id]=l+1; invalidate(); return true;
+}
+// derived numbers -- these are what the upgrades actually move
+function tSpeed(type){ return TRUCKS[type].kmh*(1+0.04*up("aero")); }
+function tFuel(type){ return TRUCKS[type].fuel*Math.pow(0.93,up("fuel")); }
+function tCap(type){ return TRUCKS[type].cap+2*up("planning"); }
+function payMult(){ return 1+0.07*up("rates"); }
+function wageRate(){ return WAGE_PER_H*Math.pow(0.92,up("maint")); }
+function xpNeed(l){ return Math.round(350*Math.pow(l,1.32)); }
+function gainXP(n){
+  S.xp=(S.xp||0)+n;
+  while(S.xp>=xpNeed(S.level||1)){
+    S.xp-=xpNeed(S.level); S.level=(S.level||1)+1;
+    var bonus=25000*S.level;
+    S.cash+=bonus;
+    toast("\u2B06\uFE0F <b>Company level "+S.level+"</b> — +"+eur(bonus)+
+          ". New equipment and upgrades unlocked.");
+  }
+}
 /* Investment is spatial. You do not buy abstract upgrades, you build up the
    cities you actually run through -- which is what makes a hub feel like yours. */
 var DEPOT_COST=[45000,120000,320000], OFFICE_COST=[38000,95000,240000];
 function depotLvl(id){ return (S.depot&&S.depot[id])||0; }
 function officeLvl(id){ return (S.office&&S.office[id])||0; }
-function dwellAt(cityId,type){ return TRUCKS[type].dwell*Math.pow(0.78,depotLvl(cityId)); }
+function dwellAt(cityId,type){ return TRUCKS[type].dwell*Math.pow(0.78,depotLvl(cityId))*Math.pow(0.94,up("drivers")); }
 function buyDepot(id){
   var l=depotLvl(id); if(l>=3) return false;
   var c=DEPOT_COST[l]; if(S.cash<c) return false;
@@ -632,7 +785,7 @@ function buyOffice(id){
 }
 function buyTruck(type){
   var T=TRUCKS[type];
-  if(S.cash<T.cost) return false;
+  if(S.cash<T.cost||S.level<T.lvl) return false;
   S.cash-=T.cost; S.spent+=T.cost;
   var home=CITY.duiven;
   S.veh.push({id:nextId++, type:type, svc:null, si:0, prog:0, dwell:0,
@@ -681,7 +834,7 @@ function arrive(v,s){
   });
   v.cargo=keep;
   // pick up anything here whose next leg is this service, going our way
-  var space=TRUCKS[v.type].cap - vehLoad(v);
+  var space=tCap(v.type) - vehLoad(v);
   var take=[];
   S.loads.forEach(function(l){
     if(l.on||l.at!==cityId) return;
@@ -691,6 +844,7 @@ function arrive(v,s){
     if(leg.svc!==s.id) return;
     if(s.stops.indexOf(leg.to)<0) return;
     if(l.w>space) return;
+    if(!truckCan(v.type,l.g)) return;
     space-=l.w; take.push(l);
   });
   take.forEach(function(l){
@@ -706,11 +860,18 @@ function deliver(l,cityId){
   // Late money falls away fast. Without this, a sprawling route that is late on
   // everything still out-earns a tight one by sheer volume.
   var over = S.t - l.due;
-  var pay = onTime ? l.pay : Math.round(l.pay*0.28*Math.max(0,1-over/12));
+  var base = Math.round(l.pay*payMult());
+  var pay = onTime ? base : Math.round(base*0.28*Math.max(0,1-over/12));
+  gainXP(Math.max(4,Math.round(base/120))+(onTime?10:0));
   S.cash += pay; S.earned += pay; S.delivered++;
   if(!onTime) S.late++;
-  rep(onTime?1:0);
+  rep(onTime?1:(Math.random()<0.18*up("brand")?1:0));
   var h=hist(cityId); h.in++; h.paid+=pay; if(!onTime) h.late++; if(h.first==null) h.first=S.t;
+  if(!S.chain) S.chain={};
+  if(l.g==="ore"&&cityId==="duisburg") S.chain.oreDuisburg=1;
+  if(l.g==="steel"&&cityId==="wolfsburg") S.chain.steelWolfsburg=1;
+  if(l.g==="textiles"&&cityId==="milano") S.chain.textMilano=1;
+  if(l.g==="fashion"&&cityId==="paris") S.chain.fashParis=1;
   S.loads=S.loads.filter(function(x){return x!==l;});
   pipFly(cityId, (onTime?"+":"~")+eur(pay), onTime?"#4fc98a":"#f0a63c");
 }
@@ -718,7 +879,7 @@ function step(dt){
   S.t += dt;
   // wages tick whether a truck earns or not, so idle capacity is a real loss
   if(S.veh.length){
-    var wage=S.veh.length*WAGE_PER_H*dt;
+    var wage=S.veh.length*wageRate()*dt;
     S.cash-=wage; S.spent+=wage; S.wages=(S.wages||0)+wage;
   }
   S.veh.forEach(function(v){
@@ -729,11 +890,11 @@ function step(dt){
     if(v.at===s.stops[v.si] && v.prog===0){ a=CITY[v.at]; }
     var T=TRUCKS[v.type];
     var d=km(a.id,b.id) || 1;
-    var need=d/T.kmh;
+    var need=d/tSpeed(T.id);
     v.prog += dt/need;
     v.hd=Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
     // fuel is charged on distance covered, loaded or empty
-    var burn=T.fuel*(d*(dt/need));
+    var burn=tFuel(T.id)*(d*(dt/need));
     S.cash-=burn; S.spent+=burn; S.fuel=(S.fuel||0)+burn;
     if(v.prog>=1){ v.prog=1; v.x=b.x; v.y=b.y; arrive(v,s); }
     else { v.x=a.x+(b.x-a.x)*v.prog; v.y=a.y+(b.y-a.y)*v.prog; }
@@ -858,7 +1019,7 @@ function drawVehs(){
     g.appendChild(el("rect",{x:-7*big,y:-3.1*big,width:9.4*big,height:6.2*big,rx:1.3,
       fill:loaded?"#2c3641":"#232c35",stroke:"#070c11","stroke-width":.7}));       // trailer body
     if(loaded){                                                   // livery band + fill gauge
-      var f=Math.min(1,vehLoad(v)/T.cap);
+      var f=Math.min(1,vehLoad(v)/tCap(T.id));
       g.appendChild(el("rect",{x:-6.6*big,y:-2.6*big,width:8.6*big*f,height:5.2*big,rx:1,
         fill:s.col,opacity:.92}));
     }
@@ -1012,7 +1173,18 @@ $("modal").addEventListener("click",function(e){ if(e.target===$("modal")) $("mo
 
 function planLine(l){
   var p = l.plan || planFor(l);
-  if(!p) return {cls:"none", html:"<b>No route</b> — nothing you have built reaches "+CITY[l.to].n+"."};
+  if(!p){
+    var r=GOODS[l.g]&&GOODS[l.g].req;
+    if(r&&lacksEquipment(l)){
+      var need={reefer:"a reefer",tank:"a tanker",car:"a car transporter"}[r];
+      return {cls:"none", html:"<b>You own no "+need.replace(/^an? /,"")+"</b> — "+GOODS[l.g].n.toLowerCase()+
+        " can only ride "+need+". Buy one in Fleet."};
+    }
+    if(r) return {cls:"none", html:"<b>No "+r+" service</b> — put "+
+      ({reefer:"a reefer",tank:"a tanker",car:"a transporter"}[r])+" on a service that links "+
+      CITY[l.from].n+" and "+CITY[l.to].n+"."};
+    return {cls:"none", html:"<b>No route</b> — nothing you have built reaches "+CITY[l.to].n+"."};
+  }
   var eta=S.t+p.hours, slack=l.due-eta;
   var cls = slack<0 ? "late" : slack<6 ? "tight" : "ok";
   var parts=p.legs.map(function(lg,i){
@@ -1054,7 +1226,8 @@ function renderLoads(b){
       '<div class="row">'+
         '<div class="gtile">'+G.ic+'</div>'+
         '<div class="grow">'+
-          '<div class="ttl">'+G.n+' <span class="wt">'+l.w+'t</span></div>'+
+          '<div class="ttl">'+G.n+' <span class="wt">'+l.w+'t</span>'+
+            (G.req?' <span class="pill b">'+({reefer:"reefer",tank:"tanker",car:"transporter"}[G.req])+'</span>':'')+'</div>'+
           '<div class="route2">'+flag(from.c)+' <b>'+from.n+'</b>'+
             '<span class="ar">→</span>'+flag(to.c)+' <b>'+to.n+'</b></div>'+
         '</div>'+
@@ -1094,9 +1267,9 @@ function renderServices(b){
       '<div class="sub" style="font-family:ui-monospace,monospace">'+chain+'</div></div>'+
       '<button class="btn ghost sm">Edit</button></div>'+
       '<div class="row" style="margin-top:9px;gap:6px">'+
-        '<div class="kv" style="flex:1;margin:0"><div class="k">Loop</div><div class="v mono">'+Math.round(loopKm(s))+' km</div></div>'+
-        '<div class="kv" style="flex:1;margin:0"><div class="k">Every</div><div class="v mono">'+(vs.length?hrs(hw):"—")+'</div></div>'+
-        '<div class="kv" style="flex:1;margin:0"><div class="k">Trucks</div><div class="v mono">'+vs.length+'</div></div>'+
+        '<div class="kv mini" style="flex:1;margin:0"><div class="k">Loop</div><div class="v mono">'+Math.round(loopKm(s))+' km</div></div>'+
+        '<div class="kv mini" style="flex:1;margin:0"><div class="k">Every</div><div class="v mono">'+(vs.length?hrs(hw):"—")+'</div></div>'+
+        '<div class="kv mini" style="flex:1;margin:0"><div class="k">Trucks</div><div class="v mono">'+vs.length+'</div></div>'+
       '</div>'+
       (vs.length?'':'<div class="sub" style="color:var(--amber);margin-top:6px">No trucks assigned — this service does not run.</div>');
     d.querySelector("button").onclick=function(){ svcEdit=s.id; render(); };
@@ -1129,9 +1302,9 @@ function renderSvcEditor(b,s){
   if(s.stops.length>=2){
     var info=document.createElement("div"); info.className="card";
     info.innerHTML='<div class="row" style="gap:6px">'+
-      '<div class="kv" style="flex:1;margin:0"><div class="k">Loop</div><div class="v mono">'+Math.round(loopKm(s))+' km</div></div>'+
-      '<div class="kv" style="flex:1;margin:0"><div class="k">Round trip</div><div class="v mono">'+hrs(svcCycle(s))+'</div></div>'+
-      '<div class="kv" style="flex:1;margin:0"><div class="k">Every</div><div class="v mono">'+(vs.length?hrs(hw):"—")+'</div></div></div>'+
+      '<div class="kv mini" style="flex:1;margin:0"><div class="k">Loop</div><div class="v mono">'+Math.round(loopKm(s))+' km</div></div>'+
+      '<div class="kv mini" style="flex:1;margin:0"><div class="k">Round trip</div><div class="v mono">'+hrs(svcCycle(s))+'</div></div>'+
+      '<div class="kv mini" style="flex:1;margin:0"><div class="k">Every</div><div class="v mono">'+(vs.length?hrs(hw):"—")+'</div></div></div>'+
       '<div class="sub" style="margin-top:7px">A load waits about <b>'+(vs.length?hrs(hw/2):"forever")+
       '</b> for a truck here, then rides up to <b>'+hrs(svcCycle(s))+'</b> if it needs the far side of the loop. '+
       'Add trucks to cut the wait; cut stops to shorten the ride.</div>';
@@ -1253,12 +1426,17 @@ function renderFleet(b){
   var lab2=document.createElement("div"); lab2.className="lbl"; lab2.textContent="Buy";
   b.appendChild(lab2);
   TRUCKS.forEach(function(T){
-    var ok=S.cash>=T.cost;
+    var locked=S.level<T.lvl, ok=S.cash>=T.cost&&!locked;
     var d=document.createElement("div"); d.className="card";
-    d.innerHTML='<div class="row"><div class="grow"><div class="ttl">'+T.n+'</div>'+
-      '<div class="sub">'+T.cap+'t · '+T.kmh+' km/h · '+T.dwell.toFixed(2)+'h per stop</div></div>'+
-      '<button class="btn sm" '+(ok?'':'disabled')+'>'+eur(T.cost)+'</button></div>';
-    d.querySelector("button").onclick=function(){ if(buyTruck(T.id)){ toast("Bought a "+T.n+"."); render(); } };
+    d.innerHTML='<div class="row"><div class="gtile">'+T.ic+'</div><div class="grow">'+
+      '<div class="ttl">'+T.n+(T.spec?' <span class="pill b">'+
+        ({reefer:"food only",tank:"chemicals only",car:"cars only"}[T.spec])+'</span>':'')+'</div>'+
+      '<div class="sub">'+tCap(T.id)+'t · '+Math.round(tSpeed(T.id))+' km/h · '+T.dwell.toFixed(2)+'h per stop</div>'+
+      '<div class="sub" style="color:#7f8b99">'+T.note+'</div></div>'+
+      (locked?'<span class="lock">level '+T.lvl+'</span>':
+        '<button class="btn sm" '+(ok?'':'disabled')+'>'+eur(T.cost)+'</button>')+'</div>';
+    var bt=d.querySelector("button");
+    if(bt) bt.onclick=function(){ if(buyTruck(T.id)){ toast("Bought a "+T.n+"."); render(); } };
     b.appendChild(d);
   });
 }
@@ -1315,11 +1493,52 @@ function renderCity(b){
   var bo=$("buyOffice"); if(bo) bo.onclick=function(){ if(buyOffice(c.id)){ toast("Freight office opened at <b>"+c.n+"</b>."); render(); } };
 }
 
+function renderCo(b){
+  b.innerHTML="";
+  var done=ACH.filter(function(a){return S.ach&&S.ach[a.id];}).length;
+  var head=document.createElement("div"); head.className="card";
+  head.innerHTML='<div class="row"><div class="grow"><div class="ttl" style="font-size:15px">Level '+S.level+
+    '</div><div class="sub">'+Math.round(S.xp)+' / '+xpNeed(S.level)+' xp to level '+(S.level+1)+
+    '</div></div><div style="text-align:right"><div class="ttl" style="color:var(--green)">'+eur(S.earned)+
+    '</div><div class="sub">earned all time</div></div></div>'+
+    '<div class="row" style="gap:6px;margin-top:9px">'+
+    '<div class="kv mini" style="flex:1;margin:0"><div class="k">Delivered</div><div class="v mono">'+S.delivered+'</div></div>'+
+    '<div class="kv mini" style="flex:1;margin:0"><div class="k">Cancelled</div><div class="v mono">'+(S.cancelled||0)+'</div></div>'+
+    '<div class="kv mini" style="flex:1;margin:0"><div class="k">Trophies</div><div class="v mono">'+done+'/'+ACH.length+'</div></div></div>';
+  b.appendChild(head);
+
+  var l1=document.createElement("div"); l1.className="lbl"; l1.textContent="Upgrades"; b.appendChild(l1);
+  UPG.forEach(function(u){
+    var lv=up(u.id), maxed=lv>=u.max, locked=S.level<u.lvl, cost=upCost(u);
+    var d=document.createElement("div"); d.className="card";
+    d.innerHTML='<div class="row"><div class="gtile">'+u.ic+'</div><div class="grow">'+
+      '<div class="ttl">'+u.n+(lv?' <span class="pill a">lvl '+lv+'/'+u.max+'</span>':'')+'</div>'+
+      '<div class="sub">'+u.d+'</div></div>'+
+      (maxed?'<span class="pill g">maxed</span>':
+       locked?'<span class="lock">level '+u.lvl+'</span>':
+       '<button class="btn sm" '+(S.cash>=cost?'':'disabled')+'>'+eur(cost)+'</button>')+'</div>';
+    var bt=d.querySelector("button");
+    if(bt) bt.onclick=function(){ if(buyUpg(u)){ toast(u.ic+" <b>"+u.n+"</b> upgraded."); render(); } };
+    b.appendChild(d);
+  });
+
+  var l2=document.createElement("div"); l2.className="lbl"; l2.textContent="Trophies "+done+"/"+ACH.length;
+  b.appendChild(l2);
+  ACH.slice().sort(function(x,y){ var gx=S.ach&&S.ach[x.id]?0:1, gy=S.ach&&S.ach[y.id]?0:1;
+    return gx-gy; }).forEach(function(a2){
+    var got=S.ach&&S.ach[a2.id];
+    var d=document.createElement("div"); d.className="ach"+(got?" got":"");
+    d.innerHTML='<div class="ai">'+a2.ic+'</div><div class="grow"><div class="an">'+a2.n+'</div>'+
+      '<div class="ad">'+a2.d+'</div></div><div class="ar">'+(got?"✓ ":"")+eur(a2.r)+'</div>';
+    b.appendChild(d);
+  });
+}
 function render(){
   var b=$("tabbody");
   if(tab==="loads") renderLoads(b);
   else if(tab==="services") renderServices(b);
   else if(tab==="fleet") renderFleet(b);
+  else if(tab==="co") renderCo(b);
   else renderCity(b);
   updateHeader();
   $("bSvc").textContent=S.svcs.length; $("bFleet").textContent=S.veh.length;
@@ -1329,7 +1548,11 @@ function render(){
 function updateHeader(){
   $("hCash").textContent=eur(S.cash);
   $("hClock").textContent="d"+(Math.floor(S.t/24)+1)+" "+String(Math.floor(S.t%24)).padStart(2,"0")+":00";
-  $("hBurn").textContent="−"+eur(S.veh.length*WAGE_PER_H)+"/h";
+  $("hBurn").textContent="−"+eur(S.veh.length*wageRate())+"/h";
+  $("hLvl").textContent=S.level;
+  $("hXp").style.width=Math.min(100,100*(S.xp/xpNeed(S.level)))+"%";
+  var gotN=ACH.filter(function(a){return S.ach&&S.ach[a.id];}).length;
+  var ab=$("bAch"); if(ab) ab.textContent=gotN+"/"+ACH.length;
   var ot=Math.round(repScore()*100);
   var e=$("hOnTime"); e.textContent=(S.recent&&S.recent.length)?ot+"%":"—";
   e.className="v "+(ot<75?"bad":"ok");
@@ -1358,26 +1581,90 @@ function frame(now){
   step(dt);
   spawnAcc+=dt;
   // reputation throttles how much business you are offered
-  var every = 0.85 / (0.25+0.75*repScore());
+  var every = 0.85 / ((0.25+0.75*repScore())*(1+0.12*up("sales")));
   while(spawnAcc>=every){ spawnAcc-=every; spawnLoad(); }
   drawVehs();
   uiAcc+=dtReal;
-  if(uiAcc>0.25){ uiAcc=0; updateHeader();
+  if(uiAcc>0.25){ uiAcc=0; updateHeader(); checkAch();
     if(!(tab==="services"&&svcEdit!=null)) render();
     refreshCities(); }
   requestAnimationFrame(frame);
 }
 
+/* ============================================================ SAVE
+   Progression is meaningless if a refresh wipes it. Services, trucks and
+   everything bought are stored; freight in flight is not, since it is
+   regenerated within moments anyway.                                       */
+var SAVE_KEY="linehaul-network-v1";
+function serialise(){
+  return {v:1, cash:S.cash, t:S.t, xp:S.xp, level:S.level, upg:S.upg, ach:S.ach, chain:S.chain,
+    depot:S.depot, office:S.office, hist:S.hist, recent:S.recent,
+    delivered:S.delivered, late:S.late, earned:S.earned, cancelled:S.cancelled,
+    fuel:S.fuel, wages:S.wages, spent:S.spent,
+    svcs:S.svcs.map(function(x){return {id:x.id,n:x.n,stops:x.stops,col:x.col};}),
+    veh:S.veh.map(function(v){return {type:v.type,svc:v.svc,si:v.si};}),
+    nextId:nextId, saved:Date.now()};
+}
+function saveGame(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(serialise())); }catch(e){} }
+function loadGame(){
+  var raw=null; try{ raw=localStorage.getItem(SAVE_KEY); }catch(e){}
+  if(!raw) return false;
+  var d=null; try{ d=JSON.parse(raw); }catch(e){ return false; }
+  if(!d||d.v!==1) return false;
+  S=fresh();
+  ["cash","t","xp","level","upg","ach","chain","depot","office","hist","recent",
+   "delivered","late","earned","cancelled","fuel","wages","spent"].forEach(function(k){
+    if(d[k]!==undefined&&d[k]!==null) S[k]=d[k];
+  });
+  nextId=Math.max(nextId, d.nextId||1);
+  S.svcs=(d.svcs||[]).map(function(x){
+    return {id:x.id,n:x.n,col:x.col,stops:(x.stops||[]).filter(function(id){return CITY[id];})};
+  });
+  S.veh=(d.veh||[]).map(function(v){
+    var home=CITY.duiven;
+    return {id:nextId++, type:v.type, svc:v.svc, si:v.si||0, prog:0, dwell:0,
+            x:home.x, y:home.y, at:"duiven", cargo:[]};
+  });
+  // put each truck back on its loop
+  S.veh.forEach(function(v){
+    if(v.svc==null) return;
+    var sv=svcOf(v.svc);
+    if(!sv||sv.stops.length<2){ v.svc=null; return; }
+    if(v.si>=sv.stops.length) v.si=0;
+    var c0=CITY[sv.stops[v.si]]; v.x=c0.x; v.y=c0.y; v.at=sv.stops[v.si];
+  });
+  invalidate();
+  return true;
+}
+function resetGame(){
+  if(!confirm("Wipe your company and start again?")) return;
+  try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+  location.reload();
+}
+
 /* ============================================================ BOOT */
-S=fresh();
+var loaded=loadGame();
+if(!loaded) S=fresh();
 buildMap(); fitAll(); refreshCities(); drawSvcs();
-buyTruck(1); buyTruck(1); S.cash=260000; S.spent=0;
+if(!loaded){
+  buyTruck(1); buyTruck(1); S.cash=260000; S.spent=0;
+  toast("Freight is waiting and <b>nothing moves it yet</b>. Open <b>Services</b> and build a loop — then put your two trucks on it.");
+}else{
+  toast("Welcome back — day "+(Math.floor(S.t/24)+1)+", "+S.svcs.length+" service"+
+        (S.svcs.length===1?"":"s")+", "+S.veh.length+" trucks.");
+}
 for(var i=0;i<4;i++) spawnLoad();
-setTab("loads");
-toast("Freight is waiting and <b>nothing moves it yet</b>. Open <b>Services</b> and build a loop — then put your two trucks on it.");
+setTab(loaded?"loads":"loads");
+setInterval(saveGame, 5000);
+document.addEventListener("visibilitychange",function(){ if(document.hidden) saveGame(); });
+window.addEventListener("beforeunload", saveGame);
 window.addEventListener("resize",function(){ CITIES.forEach(function(c){c._w=null;}); applyCam(); });
 // dev hook: lets an automated harness inspect and drive the sim
-window.__lh={ state:function(){return S;}, cities:CITIES, city:CITY, svcOf:svcOf,
+(function(){ var r=document.createElement("button"); r.className="hbtn"; r.textContent="⟲";
+  r.title="Reset company"; r.onclick=resetGame;
+  document.querySelector("header").appendChild(r); })();
+window.__lh={ state:function(){return S;}, save:saveGame, load:loadGame, reset:function(){
+    try{ localStorage.removeItem(SAVE_KEY); }catch(e){} }, cities:CITIES, city:CITY, svcOf:svcOf,
   cam:function(){return cam;}, viewK:viewK, headway:headway, cycle:svcCycle,
   plan:function(a,b){return routePlan(a,b);},
   addSvc:function(stops){ var s=newSvc(); s.stops=stops.slice(); invalidate(); drawSvcs(); refreshCities(); return s.id; },
