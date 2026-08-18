@@ -37,6 +37,9 @@
   .lvlstat{min-width:78px}
   .xpbar{height:3px;border-radius:2px;background:#2b3742;margin-top:3px;overflow:hidden}
   .xpbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#f0a63c,#ffd08a)}
+  .achbar{height:3px;border-radius:2px;background:#2b3742;margin-top:5px;overflow:hidden}
+  .achbar i{display:block;height:100%;background:linear-gradient(90deg,#5fa5e0,#8ec2f2)}
+  .achp{font-size:10px;color:#7f8b99;margin-top:2px}
   .ach{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:11px;margin-bottom:7px;
     background:linear-gradient(180deg,#1a222b,#151c24);border:1px solid #28323d;opacity:.55}
   .ach.got{opacity:1;border-color:#3f5136;background:linear-gradient(180deg,#1d2a20,#161f19)}
@@ -144,6 +147,8 @@
   .cpad.sel{stroke:#fff;stroke-width:2.6}
   .cpad.addable{stroke-dasharray:2.5 2;cursor:pointer}
   .cpad.inedit{cursor:pointer}
+  .cpad.locked{opacity:.42;stroke-dasharray:1.5 2.5}
+  .clabel.locked{opacity:.5}
   .editpreview{fill:none;stroke-width:2.2;stroke-dasharray:1 6;stroke-linecap:round;opacity:.9;
     vector-effect:non-scaling-stroke;pointer-events:none}
   .svcline.losing{stroke-dasharray:5 5;opacity:.55}
@@ -195,7 +200,11 @@
 
   .stops{display:flex;flex-direction:column;gap:5px}
   .stop{display:flex;align-items:center;gap:9px;background:var(--panel2);border:1px solid var(--line);
-    border-radius:9px;padding:7px 9px}
+    border-radius:9px;padding:7px 9px;transition:transform .15s}
+  .stop.dragging{transition:none;opacity:.92;box-shadow:0 6px 16px rgba(0,0,0,.45);z-index:5;position:relative}
+  .draghandle{cursor:grab;color:#5f6c7a;font-size:15px;padding:2px 5px;touch-action:none;flex:0 0 auto;
+    user-select:none}
+  .stop.dragging .draghandle{cursor:grabbing}
   .stopn{width:19px;height:19px;border-radius:50%;background:var(--line);display:grid;place-items:center;
     font-size:10px;font-family:ui-monospace,monospace;color:var(--amber);flex:0 0 auto}
   .stopbtn{width:25px;height:25px;border-radius:6px;background:var(--panel);border:1px solid var(--line);
@@ -229,7 +238,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v6.4</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v6.5</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">Day</div><div class="v" id="hClock">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
@@ -510,14 +519,19 @@ function svcCanCarry(s,good){
 /* ============================================================ STATE */
 var S = null, nextId = 1;
 var WAGE_PER_H = 3.2;   // per truck, per game hour
+// Cities you start with: your yard plus the tight Rhine cluster around it, so
+// there is an immediately playable network before any unlocking is needed.
+var STARTER_CITIES=["duiven","rotterdam","antwerp","duisburg","koln"];
 function fresh(){
+  var unlocked={}; STARTER_CITIES.forEach(function(id){ unlocked[id]=1; });
   return {
     cash: 260000, t: 0, xp:0, level:1, upg:{}, ach:{},   // t = game hours since start
     svcs: [], veh: [], loads: [],
     delivered: 0, late: 0, earned: 0, spent: 0,
     hist: {},                        // per-city history -> the mental story
-    seen: {}, speed: 1,
-    netEma: null, svcEma: {}, svcEarnEma: {}, svcCostEma: {}, svcActiveH: {}   // live profit/loss, company-wide and per service
+    seen: {}, speed: 1, unlocked: unlocked,
+    netEma: null, svcEma: {}, svcEarnEma: {}, svcCostEma: {}, svcActiveH: {},  // live profit/loss, company-wide and per service
+    vehEma: {}, vehEarnEma: {}, vehCostEma: {}, vehActiveH: {}                 // same, but per truck
   };
 }
 // exponential moving average toward `instant`, with a game-hour time constant --
@@ -663,6 +677,18 @@ function svcVerdict(s){
   }
   return {cls:"bad",word:"Losing money",help:why,rate:rate,earn:earn,cost:cost};
 }
+// same idea as svcVerdict but for one truck -- what this specific vehicle is
+// earning versus what it costs to keep on the road (wages + its own fuel burn)
+function vehRate(v){
+  if(!v.svc) return {cls:"warn",word:"Idle",rate:null};
+  var age=(S.vehActiveH&&S.vehActiveH[v.id])||0;
+  var rate=S.vehEma?S.vehEma[v.id]:null;
+  if(age<1.5||rate==null) return {cls:"warn",word:"Warming up",rate:null};
+  var earn=S.vehEarnEma?S.vehEarnEma[v.id]:null, cost=S.vehCostEma?S.vehCostEma[v.id]:null;
+  if(rate>10) return {cls:"good",word:"Profitable",rate:rate,earn:earn,cost:cost};
+  if(rate>-10) return {cls:"warn",word:"Breaking even",rate:rate,earn:earn,cost:cost};
+  return {cls:"bad",word:"Losing money",rate:rate,earn:earn,cost:cost};
+}
 function headway(s){
   var n=svcVehs(s).length;
   if(!n||s.stops.length<2) return Infinity;
@@ -747,26 +773,44 @@ function countryComplete(iso){
   var all=CITIES.filter(function(c){return c.c===iso;});
   return all.length>0 && all.every(function(c){ return S.hist[c.id]&&(S.hist[c.id].in>0||S.hist[c.id].out>0); });
 }
+function countryProgress(iso){
+  var all=CITIES.filter(function(c){return c.c===iso;});
+  var done=all.filter(function(c){ return S.hist[c.id]&&(S.hist[c.id].in>0||S.hist[c.id].out>0); }).length;
+  return [done,all.length];
+}
 function svcCovers(list){
   return S.svcs.some(function(s){ return svcVehs(s).length>0 &&
     list.every(function(id){ return s.stops.indexOf(id)>=0; }); });
 }
 var ACH=[
  {id:"first",  ic:"\uD83D\uDCE6", n:"First haul",        d:"Deliver your first load",                  r:5000,   f:function(){return S.delivered>=1;}},
- {id:"d50",    ic:"\uD83D\uDE9A", n:"Getting rolling",   d:"Deliver 50 loads",                         r:20000,  f:function(){return S.delivered>=50;}},
- {id:"d250",   ic:"\uD83C\uDFC5", n:"Established",       d:"Deliver 250 loads",                        r:90000,  f:function(){return S.delivered>=250;}},
- {id:"d1000",  ic:"\uD83C\uDFC6", n:"Continental",       d:"Deliver 1000 loads",                       r:400000, f:function(){return S.delivered>=1000;}},
- {id:"m1",     ic:"\uD83D\uDCB0", n:"First million",     d:"Earn \u20AC1,000,000 in fees",             r:60000,  f:function(){return S.earned>=1e6;}},
+ {id:"d50",    ic:"\uD83D\uDE9A", n:"Getting rolling",   d:"Deliver 50 loads",                         r:20000,  f:function(){return S.delivered>=50;},
+  p:function(){return [S.delivered,50];}},
+ {id:"d250",   ic:"\uD83C\uDFC5", n:"Established",       d:"Deliver 250 loads",                        r:90000,  f:function(){return S.delivered>=250;},
+  p:function(){return [S.delivered,250];}},
+ {id:"d1000",  ic:"\uD83C\uDFC6", n:"Continental",       d:"Deliver 1000 loads",                       r:400000, f:function(){return S.delivered>=1000;},
+  p:function(){return [S.delivered,1000];}},
+ {id:"m1",     ic:"\uD83D\uDCB0", n:"First million",     d:"Earn \u20AC1,000,000 in fees",             r:60000,  f:function(){return S.earned>=1e6;},
+  p:function(){return [S.earned,1e6];}, fmt:"eur"},
  {id:"rep95",  ic:"\u23F1\uFE0F", n:"Never late",        d:"Hold 95% reputation over 40 deliveries",   r:80000,  f:function(){return (S.recent||[]).length>=40&&repScore()>=0.95;}},
- {id:"c10",    ic:"\uD83D\uDCCD", n:"Ten cities",        d:"Deliver into 10 different cities",         r:25000,  f:function(){return citiesDelivered()>=10;}},
- {id:"c25",    ic:"\uD83D\uDDFA\uFE0F", n:"Wide network",     d:"Deliver into 25 different cities",   r:120000, f:function(){return citiesDelivered()>=25;}},
- {id:"ctry6",  ic:"\uD83C\uDF0D", n:"Six countries",     d:"Trade in 6 different countries",           r:45000,  f:function(){return countriesTouched()>=6;}},
- {id:"ctry10", ic:"\uD83C\uDFF3\uFE0F", n:"All eleven",  d:"Trade in every country on the map",       r:200000, f:function(){return countriesTouched()>=11;}},
- {id:"nl",     ic:"\uD83C\uDDF3\uD83C\uDDF1", n:"Low Countries", d:"Trade in every Dutch city",      r:30000,  f:function(){return countryComplete("NL");}},
- {id:"de",     ic:"\uD83C\uDDE9\uD83C\uDDEA", n:"Bundesrepublik", d:"Trade in every German city",    r:110000, f:function(){return countryComplete("DE");}},
- {id:"fr",     ic:"\uD83C\uDDEB\uD83C\uDDF7", n:"Hexagone",      d:"Trade in every French city",     r:70000,  f:function(){return countryComplete("FR");}},
- {id:"it",     ic:"\uD83C\uDDEE\uD83C\uDDF9", n:"Il Bel Paese",  d:"Trade in every Italian city",    r:70000,  f:function(){return countryComplete("IT");}},
- {id:"pl",     ic:"\uD83C\uDDF5\uD83C\uDDF1", n:"Silesian run",  d:"Trade in every Polish city",     r:70000,  f:function(){return countryComplete("PL");}},
+ {id:"c10",    ic:"\uD83D\uDCCD", n:"Ten cities",        d:"Deliver into 10 different cities",         r:25000,  f:function(){return citiesDelivered()>=10;},
+  p:function(){return [citiesDelivered(),10];}},
+ {id:"c25",    ic:"\uD83D\uDDFA\uFE0F", n:"Wide network",     d:"Deliver into 25 different cities",   r:120000, f:function(){return citiesDelivered()>=25;},
+  p:function(){return [citiesDelivered(),25];}},
+ {id:"ctry6",  ic:"\uD83C\uDF0D", n:"Six countries",     d:"Trade in 6 different countries",           r:45000,  f:function(){return countriesTouched()>=6;},
+  p:function(){return [countriesTouched(),6];}},
+ {id:"ctry10", ic:"\uD83C\uDFF3\uFE0F", n:"All eleven",  d:"Trade in every country on the map",       r:200000, f:function(){return countriesTouched()>=11;},
+  p:function(){return [countriesTouched(),11];}},
+ {id:"nl",     ic:"\uD83C\uDDF3\uD83C\uDDF1", n:"Low Countries", d:"Trade in every Dutch city",      r:30000,  f:function(){return countryComplete("NL");},
+  p:function(){return countryProgress("NL");}},
+ {id:"de",     ic:"\uD83C\uDDE9\uD83C\uDDEA", n:"Bundesrepublik", d:"Trade in every German city",    r:110000, f:function(){return countryComplete("DE");},
+  p:function(){return countryProgress("DE");}},
+ {id:"fr",     ic:"\uD83C\uDDEB\uD83C\uDDF7", n:"Hexagone",      d:"Trade in every French city",     r:70000,  f:function(){return countryComplete("FR");},
+  p:function(){return countryProgress("FR");}},
+ {id:"it",     ic:"\uD83C\uDDEE\uD83C\uDDF9", n:"Il Bel Paese",  d:"Trade in every Italian city",    r:70000,  f:function(){return countryComplete("IT");},
+  p:function(){return countryProgress("IT");}},
+ {id:"pl",     ic:"\uD83C\uDDF5\uD83C\uDDF1", n:"Silesian run",  d:"Trade in every Polish city",     r:70000,  f:function(){return countryComplete("PL");},
+  p:function(){return countryProgress("PL");}},
  {id:"rhine",  ic:"\uD83C\uDF0A", n:"Rhine corridor",  d:"One service linking Rotterdam, Duisburg, Koln and Basel", r:75000,
   f:function(){return svcCovers(["rotterdam","duisburg","koln","basel"]);}},
  {id:"alps",   ic:"\uD83C\uDFD4\uFE0F", n:"Over the Alps", d:"One service linking Basel and Milano",  r:60000,
@@ -777,14 +821,22 @@ var ACH=[
   f:function(){return S.chain&&S.chain.oreDuisburg&&S.chain.steelWolfsburg;}},
  {id:"cloth",  ic:"\uD83E\uDDF5", n:"Rag trade",       d:"Deliver textiles into Milano and fashion into Paris", r:65000,
   f:function(){return S.chain&&S.chain.textMilano&&S.chain.fashParis;}},
- {id:"fleet15",ic:"\uD83D\uDE9B", n:"Real fleet",      d:"Run 15 trucks",                              r:70000,  f:function(){return S.veh.length>=15;}},
+ {id:"fleet15",ic:"\uD83D\uDE9B", n:"Real fleet",      d:"Run 15 trucks",                              r:70000,  f:function(){return S.veh.length>=15;},
+  p:function(){return [S.veh.length,15];}},
  {id:"spec3",  ic:"\u2744\uFE0F", n:"Specialist",      d:"Own a reefer, a tanker and a transporter",   r:85000,
   f:function(){var o={};S.veh.forEach(function(v){if(TRUCKS[v.type].spec)o[TRUCKS[v.type].spec]=1;});
-    return o.reefer&&o.tank&&o.car;}},
+    return o.reefer&&o.tank&&o.car;},
+  p:function(){var o={};S.veh.forEach(function(v){if(TRUCKS[v.type].spec)o[TRUCKS[v.type].spec]=1;});
+    return [(o.reefer?1:0)+(o.tank?1:0)+(o.car?1:0),3];}},
  {id:"depot3", ic:"\uD83C\uDFED", n:"Proper hub",      d:"Take one depot to level 3",                  r:60000,
   f:function(){ for(var k in (S.depot||{})) if(S.depot[k]>=3) return true; return false; }},
  {id:"svc5",   ic:"\uD83D\uDD78\uFE0F", n:"Network",  d:"Run 5 services at once",                     r:80000,
-  f:function(){return S.svcs.filter(function(x){return svcVehs(x).length>0;}).length>=5;}}
+  f:function(){return S.svcs.filter(function(x){return svcVehs(x).length>0;}).length>=5;},
+  p:function(){return [S.svcs.filter(function(x){return svcVehs(x).length>0;}).length,5];}},
+ {id:"unlock10",ic:"\uD83D\uDD13", n:"Growing pains", d:"Unlock 10 cities",                          r:50000,
+  f:function(){return unlockedCount()>=10;}, p:function(){return [unlockedCount(),10];}},
+ {id:"unlock25",ic:"\uD83D\uDDDD\uFE0F", n:"Land grab",  d:"Unlock 25 cities",                        r:150000,
+  f:function(){return unlockedCount()>=25;}, p:function(){return [unlockedCount(),25];}}
 ];
 function checkAch(){
   if(!S.ach) S.ach={};
@@ -847,6 +899,26 @@ function buyOffice(id){
   var c=OFFICE_COST[l]; if(S.cash<c) return false;
   S.cash-=c; S.spent+=c; if(!S.office)S.office={}; S.office[id]=l+1; return true;
 }
+/* Cities you have not reached yet are not on the map you can build with.
+   Unlocking one is cheaper the closer it sits to network you already run --
+   growing outward from what you have, the way real hauliers do. */
+function cityLocked(id){ return !(S.unlocked&&S.unlocked[id]); }
+function nearestUnlockedKm(c){
+  var best=Infinity;
+  for(var id in S.unlocked){ if(CITY[id]){ var d=km(id,c.id); if(d<best) best=d; } }
+  return best===Infinity?0:best;
+}
+function unlockCost(c){
+  var d=nearestUnlockedKm(c);
+  return Math.round((9000+c.size*16000+d*95)/500)*500;
+}
+function unlockCity(id){
+  var c=CITY[id]; if(!c||!cityLocked(id)) return false;
+  var cost=unlockCost(c); if(S.cash<cost) return false;
+  S.cash-=cost; S.spent+=cost; if(!S.unlocked)S.unlocked={}; S.unlocked[id]=1;
+  invalidate(); return true;
+}
+function unlockedCount(){ return S.unlocked?Object.keys(S.unlocked).length:0; }
 function buyTruck(type){
   var T=TRUCKS[type];
   if(S.cash<T.cost||S.level<T.lvl) return false;
@@ -913,7 +985,7 @@ function unassign(v){
 }
 function vehLoad(v){ var t=0; v.cargo.forEach(function(l){t+=l.w;}); return t; }
 
-function arrive(v,s,tickEarn){
+function arrive(v,s,tickEarn,tickVEarn){
   var cityId=s.stops[v.si];
   v.at=cityId;
   var T=TRUCKS[v.type];
@@ -923,7 +995,7 @@ function arrive(v,s,tickEarn){
     var leg=l.plan&&l.plan.legs[l.step];
     if(leg && leg.to===cityId){
       l.on=null; l.at=cityId; l.step++;
-      if(l.step>=l.plan.legs.length){ deliver(l,cityId,s.id,tickEarn); }
+      if(l.step>=l.plan.legs.length){ deliver(l,cityId,s.id,tickEarn,v.id,tickVEarn); }
       else {
         // it changed services here: re-plan from this city, so the step index
         // must go back to the start of the new plan
@@ -958,7 +1030,7 @@ function arrive(v,s,tickEarn){
   });
   v.dwell = dwellAt(cityId,v.type) * (take.length?1:0.35);
 }
-function deliver(l,cityId,svcId,tickEarn){
+function deliver(l,cityId,svcId,tickEarn,vehId,tickVEarn){
   var onTime = S.t <= l.due;
   // Late money falls away fast. Without this, a sprawling route that is late on
   // everything still out-earns a tight one by sheer volume.
@@ -968,6 +1040,7 @@ function deliver(l,cityId,svcId,tickEarn){
   gainXP(Math.max(4,Math.round(base/120))+(onTime?10:0));
   S.cash += pay; S.earned += pay; S.delivered++;
   if(tickEarn && svcId!=null) tickEarn[svcId]=(tickEarn[svcId]||0)+pay;
+  if(tickVEarn && vehId!=null) tickVEarn[vehId]=(tickVEarn[vehId]||0)+pay;
   if(!onTime) S.late++;
   rep(onTime?1:(Math.random()<0.18*up("brand")?1:0));
   var h=hist(cityId); h.in++; h.paid+=pay; if(!onTime) h.late++; if(h.first==null) h.first=S.t;
@@ -981,17 +1054,19 @@ function deliver(l,cityId,svcId,tickEarn){
 }
 function step(dt){
   S.t += dt;
-  var tickEarn={}, tickCost={}, costTotal=0;   // per-service € this tick, for the profit readout
-  function chargeCost(svcId,amt){
+  // per-service and per-vehicle € this tick, for the profit readouts
+  var tickEarn={}, tickCost={}, tickVEarn={}, tickVCost={}, costTotal=0;
+  function chargeCost(svcId,vehId,amt){
     costTotal+=amt;
     if(svcId!=null) tickCost[svcId]=(tickCost[svcId]||0)+amt;
+    if(vehId!=null) tickVCost[vehId]=(tickVCost[vehId]||0)+amt;
   }
   // wages tick whether a truck earns or not, so idle capacity is a real loss --
   // charged per truck so it can be attributed to the service it sits on
   S.veh.forEach(function(v){
     var w=wageRate()*dt;
     S.cash-=w; S.spent+=w; S.wages=(S.wages||0)+w;
-    chargeCost(v.svc,w);
+    chargeCost(v.svc,v.id,w);
   });
   S.veh.forEach(function(v){
     var s=v.svc?svcOf(v.svc):null;
@@ -1007,8 +1082,8 @@ function step(dt){
     // fuel is charged on distance covered, loaded or empty
     var burn=tFuel(T.id)*(d*(dt/need));
     S.cash-=burn; S.spent+=burn; S.fuel=(S.fuel||0)+burn;
-    chargeCost(v.svc,burn);
-    if(v.prog>=1){ v.prog=1; v.x=b.x; v.y=b.y; arrive(v,s,tickEarn); }
+    chargeCost(v.svc,v.id,burn);
+    if(v.prog>=1){ v.prog=1; v.x=b.x; v.y=b.y; arrive(v,s,tickEarn,tickVEarn); }
     else { v.x=a.x+(b.x-a.x)*v.prog; v.y=a.y+(b.y-a.y)*v.prog; }
   });
   // a customer whose freight is a day past its window cancels it, and bills you --
@@ -1041,6 +1116,17 @@ function step(dt){
     S.svcEarnEma[sv.id]=emaStep(S.svcEarnEma[sv.id]==null?null:S.svcEarnEma[sv.id], running?e/dt:0, dt, 3);
     S.svcCostEma[sv.id]=emaStep(S.svcCostEma[sv.id]==null?null:S.svcCostEma[sv.id], running?c/dt:0, dt, 3);
     if(running) S.svcActiveH[sv.id]=(S.svcActiveH[sv.id]||0)+dt;
+  });
+  if(!S.vehEma) S.vehEma={};
+  if(!S.vehActiveH) S.vehActiveH={};
+  if(!S.vehEarnEma) S.vehEarnEma={}; if(!S.vehCostEma) S.vehCostEma={};
+  S.veh.forEach(function(v){
+    var running=!!v.svc;
+    var e=tickVEarn[v.id]||0, c=tickVCost[v.id]||0;
+    S.vehEma[v.id]=emaStep(S.vehEma[v.id]==null?null:S.vehEma[v.id], running?(e-c)/dt:0, dt, 3);
+    S.vehEarnEma[v.id]=emaStep(S.vehEarnEma[v.id]==null?null:S.vehEarnEma[v.id], running?e/dt:0, dt, 3);
+    S.vehCostEma[v.id]=emaStep(S.vehCostEma[v.id]==null?null:S.vehCostEma[v.id], running?c/dt:0, dt, 3);
+    if(running) S.vehActiveH[v.id]=(S.vehActiveH[v.id]||0)+dt;
   });
 }
 
@@ -1113,25 +1199,27 @@ function refreshCities(){
   S.loads.forEach(function(l){ if(!l.on&&l.at) waiting[l.at]=(waiting[l.at]||0)+1; });
   var editSvc=(tab==="services"&&svcEdit!=null)?svcOf(svcEdit):null;
   CITIES.forEach(function(c){
-    var d=$("dot-"+c.id), l=$("lb-"+c.id);
+    var d=$("dot-"+c.id), l=$("lb-"+c.id), g=$("gl-"+c.id);
+    var locked=cityLocked(c.id);
     var inRoute=editSvc&&editSvc.stops.indexOf(c.id)>=0;
     var cl="cpad"+(c.home?" home":served[c.id]?" served":"")+(selCity===c.id?" sel":"")+
-      (editSvc?(inRoute?" inedit":" addable"):"");
+      (locked?" locked":editSvc?(inRoute?" inedit":" addable"):"");
     setAttrIf(d,"class",cl);
     if(editSvc&&inRoute){ setAttrIf(d,"stroke",editSvc.col); setAttrIf(d,"stroke-width",3); }
     else{
-      var inv=(depotLvl(c.id)||officeLvl(c.id));
+      var inv=!locked&&(depotLvl(c.id)||officeLvl(c.id));
       setAttrIf(d,"stroke-width", inv?3:(c.home||served[c.id]?1.9:1.4));
       if(inv) setAttrIf(d,"stroke","#f0a63c"); else if(d.hasAttribute("stroke")) d.removeAttribute("stroke");
     }
+    if(g){ var wantGlyph=locked?"🔒":cityGlyph(c); if(g.textContent!==wantGlyph) g.textContent=wantGlyph; }
     var halo=$("halo-"+c.id);
     if(halo) setAttrIf(halo,"class","chalo"+(waiting[c.id]&&served[c.id]?" on":""));
     var bg=$("bg-"+c.id), bt=$("bt-"+c.id), n=waiting[c.id]||0;
-    if(bg){ var show=n?"":"none"; if(bg.style.display!==show){ bg.style.display=show; bt.style.display=show; }
+    if(bg){ var show=(n&&!locked)?"":"none"; if(bg.style.display!==show){ bg.style.display=show; bt.style.display=show; }
             if(n&&bt.textContent!==(n>9?"9+":String(n))) bt.textContent=n>9?"9+":n; }
     // keep whatever the declutter decided -- this runs twice a second and would
     // otherwise wipe the "hide" class straight back off a suppressed label
-    setAttrIf(l,"class","clabel"+(served[c.id]||c.home?" served":"")+
+    setAttrIf(l,"class","clabel"+(served[c.id]||c.home?" served":"")+(locked?" locked":"")+
       (l.classList.contains("hide")?" hide":""));
   });
 }
@@ -1377,7 +1465,12 @@ function tapMap(cx,cy){
   if(tab==="services"&&svcEdit!=null){
     var s=svcOf(svcEdit); if(!s) return;
     var idx=s.stops.indexOf(best.id);
-    if(idx>=0) s.stops.splice(idx,1); else s.stops.push(best.id);
+    if(idx>=0){ s.stops.splice(idx,1); afterEdit(s); return; }
+    if(cityLocked(best.id)){
+      toast("🔒 <b>"+best.n+"</b> is locked — unlock it in the City tab for "+eur(unlockCost(best))+".");
+      selCity=best.id; return;
+    }
+    s.stops.push(best.id);
     afterEdit(s);
     return;
   }
@@ -1423,6 +1516,10 @@ function planLine(l){
     if(r) return {cls:"none", html:"<b>No "+r+" service</b> — put "+
       ({reefer:"a reefer",tank:"a tanker",car:"a transporter"}[r])+" on a service that links "+
       CITY[l.from].n+" and "+CITY[l.to].n+"."};
+    if(cityLocked(l.to)) return {cls:"none", html:"<b>🔒 "+CITY[l.to].n+" is locked</b> — unlock it for "+
+      eur(unlockCost(CITY[l.to]))+" in the City tab, then build a route there."};
+    if(cityLocked(l.from)) return {cls:"none", html:"<b>🔒 "+CITY[l.from].n+" is locked</b> — unlock it for "+
+      eur(unlockCost(CITY[l.from]))+" in the City tab to collect this."};
     return {cls:"none", html:"<b>No route</b> — nothing you have built reaches "+CITY[l.to].n+"."};
   }
   var eta=S.t+p.hours, slack=l.due-eta;
@@ -1525,6 +1622,52 @@ function renderServices(b){
   add.onclick=function(){ var s=newSvc(); svcEdit=s.id; render(); };
   b.appendChild(add);
 }
+// Pointer-based drag reordering for the stop list -- works with touch as well
+// as mouse, unlike HTML5 drag-and-drop. The dragged row follows the pointer
+// directly; the rows it passes over slide aside to show where it will land.
+// The array itself is only spliced once, on release.
+function makeStopsDraggable(wrapS,s){
+  var rows=Array.prototype.slice.call(wrapS.querySelectorAll(".stop"));
+  if(rows.length<2) return;
+  var step=rows[1].getBoundingClientRect().top-rows[0].getBoundingClientRect().top;
+  rows.forEach(function(row,dragIdx){
+    var h=row.querySelector(".draghandle");
+    if(!h) return;
+    h.addEventListener("pointerdown",function(e){
+      e.preventDefault();
+      var startY=e.clientY, target=dragIdx;
+      row.classList.add("dragging");
+      function move(ev){
+        var dy=ev.clientY-startY;
+        row.style.transform="translateY("+dy+"px)";
+        target=Math.max(0,Math.min(rows.length-1, dragIdx+Math.round(dy/step)));
+        rows.forEach(function(r,ri){
+          if(r===row) return;
+          var shift=0;
+          if(target>dragIdx && ri>dragIdx && ri<=target) shift=-step;
+          else if(target<dragIdx && ri>=target && ri<dragIdx) shift=step;
+          r.style.transform=shift?"translateY("+shift+"px)":"";
+        });
+      }
+      function up(){
+        window.removeEventListener("pointermove",move);
+        window.removeEventListener("pointerup",up);
+        window.removeEventListener("pointercancel",up);
+        if(target!==dragIdx){
+          var id=s.stops.splice(dragIdx,1)[0];
+          s.stops.splice(target,0,id);
+          afterEdit(s);
+        }else{
+          row.classList.remove("dragging"); row.style.transform="";
+          rows.forEach(function(r){ r.style.transform=""; });
+        }
+      }
+      window.addEventListener("pointermove",move);
+      window.addEventListener("pointerup",up);
+      window.addEventListener("pointercancel",up);
+    });
+  });
+}
 function renderSvcEditor(b,s){
   var head=document.createElement("div"); head.className="row"; head.style.marginBottom="10px";
   head.innerHTML='<button class="btn ghost sm">‹ Back</button>'+
@@ -1571,7 +1714,8 @@ function renderSvcEditor(b,s){
   s.stops.forEach(function(id,i){
     var c=CITY[id];
     var r=document.createElement("div"); r.className="stop";
-    r.innerHTML='<span class="stopn">'+(i+1)+'</span><div class="grow"><div class="ttl" style="font-size:12px">'+
+    r.innerHTML='<span class="draghandle">⠿</span><span class="stopn">'+(i+1)+'</span>'+
+      '<div class="grow"><div class="ttl" style="font-size:12px">'+
       flag(c.c)+' '+c.n+'</div><div class="sub">'+(s.stops.length>1?Math.round(legKm(s,i))+'km → '+
       CITY[s.stops[(i+1)%s.stops.length]].n:'')+'</div></div>'+
       '<button class="stopbtn" '+(i===0?'disabled':'')+'>↑</button>'+
@@ -1589,13 +1733,22 @@ function renderSvcEditor(b,s){
     wrapS.appendChild(e);
   }
   b.appendChild(wrapS);
+  makeStopsDraggable(wrapS,s);
 
   var last=s.stops.length?CITY[s.stops[s.stops.length-1]]:CITY.duiven;
-  var avail=CITIES.filter(function(c){ return s.stops.indexOf(c.id)<0; })
+  var avail=CITIES.filter(function(c){ return s.stops.indexOf(c.id)<0 && !cityLocked(c.id); })
     .sort(function(a,c){ return km(last.id,a.id)-km(last.id,c.id); });
+  var lockedNearby=CITIES.filter(function(c){ return s.stops.indexOf(c.id)<0 && cityLocked(c.id); }).length;
   var lab2=document.createElement("div"); lab2.className="lbl";
   lab2.textContent="Add a stop · "+avail.length+" cities, nearest to "+last.n+" first";
   b.appendChild(lab2);
+  if(lockedNearby){
+    var lockhint=document.createElement("div"); lockhint.className="empty"; lockhint.style.padding="7px 12px";
+    lockhint.style.marginBottom="7px"; lockhint.style.fontSize="11.5px"; lockhint.style.textAlign="left";
+    lockhint.innerHTML="🔒 "+lockedNearby+" more cities exist but are not unlocked yet. Tap a locked pin "+
+      "on the map (dimmed, with a lock) or open the <b>City</b> tab to unlock one.";
+    b.appendChild(lockhint);
+  }
   var search=document.createElement("input");
   search.placeholder="filter by city or country…";
   search.value=stopFilter;
@@ -1667,14 +1820,19 @@ function renderFleet(b){
   b.appendChild(lab);
   if(!S.veh.length){ var e=document.createElement("div"); e.className="sub"; e.style.padding="0 2px 8px";
     e.textContent="No trucks. Buy one below."; b.appendChild(e); }
+  var PCLS3={good:"g",warn:"a",bad:"r"};
   S.veh.forEach(function(v){
-    var T=TRUCKS[v.type], s=v.svc?svcOf(v.svc):null;
+    var T=TRUCKS[v.type], s=v.svc?svcOf(v.svc):null, vr=vehRate(v);
     var d=document.createElement("div"); d.className="card";
     d.innerHTML='<div class="row"><div class="grow"><div class="ttl">'+T.n+
       (s?' <span class="pill" style="background:'+s.col+'22;color:'+s.col+'">'+s.n+'</span>'
         :' <span class="pill">idle</span>')+'</div>'+
       '<div class="sub">'+(s? vehLoad(v)+'/'+T.cap+'t aboard · → '+(s.stops[v.si]?CITY[s.stops[v.si]].n:'?')
-        : T.cap+'t · parked at Duiven')+'</div></div></div>';
+        : T.cap+'t · parked at Duiven')+'</div>'+
+      (s?'<div class="sub" style="margin-top:3px"><span class="pill '+PCLS3[vr.cls]+'" style="font-size:10px">'+vr.word+'</span>'+
+        (vr.rate!=null?' <span class="vrate '+vr.cls+'" style="font-size:11px">'+(vr.rate>=0?"+":"−")+eur(Math.abs(vr.rate))+'/h</span>':'')+
+        '</div>':'')+
+      '</div></div>';
     b.appendChild(d);
   });
   var lab2=document.createElement("div"); lab2.className="lbl"; lab2.textContent="Buy";
@@ -1712,20 +1870,31 @@ function renderCity(b){
   var seen={}, plist=[];
   partners.forEach(function(p){ var k=p.dir+p.id+p.g; if(seen[k])return; seen[k]=1; if(plist.length<6) plist.push(p); });
 
+  var locked=cityLocked(c.id);
+  var status=locked?' · <span style="color:var(--amber)">🔒 locked</span>':
+    (served?' · <span style="color:var(--green)">on your network</span>':' · <span style="color:var(--dim2)">not served</span>');
   b.innerHTML=
     '<div class="card"><div class="row"><div style="font-size:30px">'+flag(c.c)+'</div>'+
     '<div class="grow"><div class="ttl" style="font-size:17px">'+c.n+'</div>'+
     '<div class="sub">'+cname(c.c)+(c.port?' · seaport':'')+(c.air?' · air hub':'')+(c.capital?' · capital':'')+
-    (served?' · <span style="color:var(--green)">on your network</span>':' · <span style="color:var(--dim2)">not served</span>')+'</div></div></div>'+
+    status+'</div></div></div>'+
     '<div class="sub" style="margin-top:9px;line-height:1.6;color:#c3cbd5">'+c.fact+'</div></div>'+
+    (locked?'':
     '<div class="kv"><div class="k">Ships out</div><div class="v"><div class="goods">'+out+'</div></div></div>'+
     '<div class="kv"><div class="k">Takes in</div><div class="v"><div class="goods">'+inn+'</div></div></div>'+
     '<div class="kv"><div class="k">Trades with</div><div class="v">'+
       (plist.map(function(p){ return (p.dir==="to"?"→ ":"← ")+CITY[p.id].n+' <span class="sub">('+
-        GOODS[p.g].n.toLowerCase()+', '+p.d+'km)</span>'; }).join("<br>")||"—")+'</div></div>'+
+        GOODS[p.g].n.toLowerCase()+', '+p.d+'km)</span>'; }).join("<br>")||"—")+'</div></div>')+
+    (locked?
+    '<div class="lbl">Unlock this city</div>'+
+    '<div class="card"><div class="row"><div class="grow"><div class="ttl">'+c.n+' is not on your map yet</div>'+
+      '<div class="sub">Nothing you own can stop here or add it to a service until you unlock it. Cost drops '+
+      'the closer it is to a city you already run — grow outward from your network.</div></div>'+
+      '<button class="btn sm" id="buyUnlock" '+(S.cash>=unlockCost(c)?'':'disabled')+'>'+eur(unlockCost(c))+'</button>'+
+      '</div></div>':
     '<div class="lbl">Invest here</div>'+
-    '<div class="sub" style="margin:-2px 2px 8px;color:#7f8b99">You never buy a city — every city is open to '+
-    'you from the start. These are your own buildings on their ground.</div>'+
+    '<div class="sub" style="margin:-2px 2px 8px;color:#7f8b99">These are your own buildings on this city\'s '+
+    'ground, once you have unlocked it.</div>'+
     '<div class="card"><div class="row"><div class="grow"><div class="ttl">Depot '+
       (depotLvl(c.id)?'<span class="pill a">level '+depotLvl(c.id)+'</span>':'')+'</div>'+
       '<div class="sub">Faster turnarounds: −22% time in the yard per level. Shorter cycles mean '+
@@ -1744,7 +1913,8 @@ function renderCity(b){
     '<div class="kv"><div class="k">Collected</div><div class="v mono">'+h.out+' loads</div></div>'+
     '<div class="kv"><div class="k">Delivered</div><div class="v mono">'+h.in+' loads'+(h.late?' · '+h.late+' late':'')+'</div></div>'+
     '<div class="kv"><div class="k">Earned</div><div class="v mono">'+eur(h.paid)+'</div></div>'+
-    (h.first!=null?'<div class="kv"><div class="k">First seen</div><div class="v mono">day '+Math.floor(h.first/24+1)+'</div></div>':'');
+    (h.first!=null?'<div class="kv"><div class="k">First seen</div><div class="v mono">day '+Math.floor(h.first/24+1)+'</div></div>':''));
+  var bu=$("buyUnlock"); if(bu) bu.onclick=function(){ if(unlockCity(c.id)){ toast("🔓 <b>"+c.n+"</b> unlocked — add it to a service."); refreshCities(); render(); } };
   var bd=$("buyDepot"); if(bd) bd.onclick=function(){ if(buyDepot(c.id)){ toast("Depot built at <b>"+c.n+"</b>."); render(); } };
   var bo=$("buyOffice"); if(bo) bo.onclick=function(){ if(buyOffice(c.id)){ toast("Freight office opened at <b>"+c.n+"</b>."); render(); } };
 }
@@ -1759,7 +1929,7 @@ function renderCo(b){
     '</div><div class="sub">earned all time</div></div></div>'+
     '<div class="row" style="gap:6px;margin-top:9px">'+
     '<div class="kv mini" style="flex:1;margin:0"><div class="k">Delivered</div><div class="v mono">'+S.delivered+'</div></div>'+
-    '<div class="kv mini" style="flex:1;margin:0"><div class="k">Cancelled</div><div class="v mono">'+(S.cancelled||0)+'</div></div>'+
+    '<div class="kv mini" style="flex:1;margin:0"><div class="k">Cities</div><div class="v mono">'+unlockedCount()+'/'+CITIES.length+'</div></div>'+
     '<div class="kv mini" style="flex:1;margin:0"><div class="k">Trophies</div><div class="v mono">'+done+'/'+ACH.length+'</div></div></div>';
   b.appendChild(head);
 
@@ -1784,8 +1954,19 @@ function renderCo(b){
     return gx-gy; }).forEach(function(a2){
     var got=S.ach&&S.ach[a2.id];
     var d=document.createElement("div"); d.className="ach"+(got?" got":"");
+    var barHtml="";
+    if(!got&&a2.p){
+      var pr; try{ pr=a2.p(); }catch(e){ pr=null; }
+      if(pr){
+        var cur=pr[0], tgt=pr[1], pct=Math.max(0,Math.min(100,100*cur/tgt));
+        var curT=a2.fmt==="eur"?eur(cur):Math.round(cur).toLocaleString();
+        var tgtT=a2.fmt==="eur"?eur(tgt):Math.round(tgt).toLocaleString();
+        barHtml='<div class="achbar"><i style="width:'+pct.toFixed(1)+'%"></i></div>'+
+          '<div class="achp">'+curT+' / '+tgtT+'</div>';
+      }
+    }
     d.innerHTML='<div class="ai">'+a2.ic+'</div><div class="grow"><div class="an">'+a2.n+'</div>'+
-      '<div class="ad">'+a2.d+'</div></div><div class="ar">'+(got?"✓ ":"")+eur(a2.r)+'</div>';
+      '<div class="ad">'+a2.d+'</div>'+barHtml+'</div><div class="ar">'+(got?"✓ ":"")+eur(a2.r)+'</div>';
     b.appendChild(d);
   });
 }
@@ -1822,13 +2003,15 @@ function updateHeader(){
 
 /* ============================================================ HELP */
 var GUIDE=[
- {t:"You are a haulier, not a landlord",
-  h:"<p>All 36 cities are open to you from the very start. <em>You do not own or unlock cities</em> — "+
-    "any of them can go on a route immediately.</p>"+
-    "<p>What you own is <em>trucks</em> and the <em>services</em> you design. A city turns green on the map "+
-    "once one of your services actually calls there. That is the only sense in which a place is yours.</p>"+
-    "<p>Later you can build a depot or a freight office <em>in</em> a city — those are your buildings on "+
-    "their ground, not the city itself.</p>"},
+ {t:"Grow your network outward",
+  h:"<p>You start with your yard at Duiven and a small unlocked cluster around it. Every other city on the "+
+    "map is <em>locked</em> — dimmed, with a 🔒 pin — until you pay to open it up.</p>"+
+    "<p>Unlocking is cheapest right next to a city you already run, and gets pricier the further you reach. "+
+    "Tap a locked pin, or open the <em>City</em> tab, to see the cost.</p>"+
+    "<p>What you own is <em>trucks</em>, the <em>cities</em> you have unlocked, and the <em>services</em> "+
+    "you design between them. A city turns green on the map once one of your services actually calls there.</p>"+
+    "<p>Later you can build a depot or a freight office <em>in</em> a city you have unlocked — those are your "+
+    "buildings on its ground, not the city itself.</p>"},
  {t:"Services are the whole game",
   h:"<p>A <em>service</em> is a standing loop of cities. Trucks you assign to it drive that loop for ever, "+
     "picking up whatever freight is waiting that is heading further round the loop.</p>"+
@@ -1866,7 +2049,7 @@ var GUIDE=[
     "that city. Concentrate them on your hubs.</p>"},
  {t:"Growing",
   h:"<p>Deliveries earn experience. Levels unlock bigger and specialised trucks and further upgrades.</p>"+
-    "<p>There are 24 trophies, and most are geographic: trade in every Dutch or German city, reach all "+
+    "<p>There are "+ACH.length+" trophies, and most are geographic: trade in every Dutch or German city, reach all "+
     "eleven countries, run one service down the Rhine from Rotterdam through Duisburg and Koln to Basel, "+
     "get over the Alps to Milano.</p>"+
     "<p>Your company saves automatically. The ⟲ button in the header starts over.</p>"}
@@ -1929,7 +2112,7 @@ function frame(now){
 var SAVE_KEY="linehaul-network-v1";
 function serialise(){
   return {v:1, cash:S.cash, t:S.t, xp:S.xp, level:S.level, upg:S.upg, ach:S.ach, chain:S.chain,
-    depot:S.depot, office:S.office, hist:S.hist, recent:S.recent,
+    depot:S.depot, office:S.office, hist:S.hist, recent:S.recent, unlocked:S.unlocked,
     delivered:S.delivered, late:S.late, earned:S.earned, cancelled:S.cancelled,
     fuel:S.fuel, wages:S.wages, spent:S.spent,
     svcs:S.svcs.map(function(x){return {id:x.id,n:x.n,stops:x.stops,col:x.col};}),
@@ -1947,6 +2130,11 @@ function loadGame(){
    "delivered","late","earned","cancelled","fuel","wages","spent"].forEach(function(k){
     if(d[k]!==undefined&&d[k]!==null) S[k]=d[k];
   });
+  // saves from before city unlocking existed have no `unlocked` field -- grandfather
+  // those players into full access rather than retroactively locking a network
+  // they already built.
+  if(d.unlocked&&typeof d.unlocked==="object") S.unlocked=d.unlocked;
+  else { var allOpen={}; CITIES.forEach(function(c){ allOpen[c.id]=1; }); S.unlocked=allOpen; }
   nextId=Math.max(nextId, d.nextId||1);
   S.svcs=(d.svcs||[]).map(function(x){
     return {id:x.id,n:x.n,col:x.col,stops:(x.stops||[]).filter(function(id){return CITY[id];})};
@@ -2008,7 +2196,8 @@ window.__lh={ state:function(){return S;}, save:saveGame, load:loadGame, reset:f
   put:function(svcId,n){ var s=svcOf(svcId),k=0;
     S.veh.forEach(function(v){ if(!v.svc&&k<n){ assign(v,s); k++; } }); render(); return k; },
   buy:function(t,n){ var k=0; for(var i=0;i<n;i++) if(buyTruck(t)) k++; return k; },
-  fast:function(x){ S.speed=x; } };
+  fast:function(x){ S.speed=x; },
+  unlock:unlockCity, unlockCost:unlockCost, locked:cityLocked };
 requestAnimationFrame(frame);
 })();
 </script>
