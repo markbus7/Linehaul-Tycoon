@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
-<title>LINEHAUL — Network v6.0</title>
+<title>LINEHAUL — Network v6.1</title>
 <style>
   :root{
     --bg:#0d1116;--panel:#141a21;--panel2:#1a222b;--line:#26313c;
@@ -47,6 +47,12 @@
   .ach .ar{font-family:ui-monospace,monospace;font-size:11px;color:var(--amber);flex:0 0 auto}
   .ach.got .ar{color:var(--green)}
   .lock{font-size:10px;color:#6d7a89;font-family:ui-monospace,monospace}
+  .gbody p{font-size:13.5px;line-height:1.7;color:#c6ced8;margin-bottom:11px}
+  .gbody em{color:#ffd08a;font-style:normal;font-weight:650}
+  .gnav{display:flex;align-items:center;gap:12px;margin-top:6px;padding-top:12px;border-top:1px solid var(--line)}
+  .gdots{flex:1;display:flex;gap:5px;justify-content:center}
+  .gd{width:6px;height:6px;border-radius:50%;background:#2f3b48;display:block}
+  .gd.on{background:var(--amber);box-shadow:0 0 6px rgba(240,166,60,.6)}
   .hbtn{padding:7px 12px;border:1px solid #33404d;border-radius:9px;font-size:12px;font-weight:700;
     background:linear-gradient(180deg,#28323d,#1d252e);box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 2px 6px rgba(0,0,0,.35)}
   .hbtn:hover{border-color:var(--amber);color:#ffd08a}
@@ -126,6 +132,7 @@
   .svcflow{fill:none;stroke-width:2;opacity:.6;stroke-linecap:round;vector-effect:non-scaling-stroke;
            stroke-dasharray:1 13;animation:flow 1.4s linear infinite}
   @keyframes flow{to{stroke-dashoffset:-14}}
+  .cshadow{fill:#04080c;opacity:.55;pointer-events:none}
   .cpad{fill:url(#padG);stroke:#55677c;stroke-width:1.4;vector-effect:non-scaling-stroke;
         cursor:pointer;transition:stroke .3s}
   .cpad.served{fill:url(#padOn);stroke:var(--green);stroke-width:1.8}
@@ -133,8 +140,8 @@
   .cpad.sel{stroke:#fff;stroke-width:2.6}
   .cglyph{pointer-events:none;text-anchor:middle;dominant-baseline:central}
   .chalo{fill:none;stroke:var(--green);stroke-width:1.2;opacity:0;vector-effect:non-scaling-stroke}
-  .chalo.on{opacity:.5;animation:halo 2.6s ease-out infinite;transform-box:fill-box;transform-origin:center}
-  @keyframes halo{0%{transform:scale(.75);opacity:.55}100%{transform:scale(1.5);opacity:0}}
+  .chalo.on{opacity:.5;animation:halo 2.2s ease-in-out infinite;will-change:opacity}
+  @keyframes halo{0%{opacity:.55}70%{opacity:.12}100%{opacity:.55}}
   .cbadge{fill:var(--amber);stroke:#1a1206;stroke-width:.8;vector-effect:non-scaling-stroke}
   .cbadge-t{fill:#1a1206;font-size:7px;font-weight:800;text-anchor:middle;dominant-baseline:central;
             pointer-events:none}
@@ -209,7 +216,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v6.0</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v6.1</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">Day</div><div class="v" id="hClock">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
@@ -256,7 +263,7 @@
       </defs>
       <rect id="seaRect" x="-4000" y="-4000" width="12000" height="12000" fill="url(#seaG)"/>
       <g id="gWorld">
-        <g id="gLand"></g><g id="gGrat"></g><g id="gSvc"></g><g id="gSvcFlow"></g>
+        <g id="gLand" filter="url(#coast)"></g><g id="gGrat"></g><g id="gSvc"></g><g id="gSvcFlow"></g>
         <g id="gCity"></g><g id="gVeh"></g>
       </g>
     </svg>
@@ -924,7 +931,7 @@ var cam={s:1,tx:0,ty:0}, selCity=null;
 
 function buildMap(){
   MAP.shapes.forEach(function(sh){
-    var p=el("path",{class:"land",d:sh.d,filter:"url(#coast)"});
+    var p=el("path",{class:"land",d:sh.d});
     if(sh.iso) p.setAttribute("data-iso",sh.iso);
     gLand.appendChild(p);
   });
@@ -936,7 +943,8 @@ function buildMap(){
   CITIES.forEach(function(c){
     var g=el("g",{class:"cwrap","data-id":c.id});
     g.appendChild(el("circle",{class:"chalo",cx:c.x,cy:c.y,r:11,id:"halo-"+c.id}));
-    g.appendChild(el("circle",{class:"cpad",cx:c.x,cy:c.y,r:padR(c),id:"dot-"+c.id,filter:"url(#pinShadow)"}));
+    g.appendChild(el("circle",{class:"cshadow",cx:c.x,cy:c.y+1.2,r:padR(c)}));
+    g.appendChild(el("circle",{class:"cpad",cx:c.x,cy:c.y,r:padR(c),id:"dot-"+c.id}));
     var gy2=el("text",{class:"cglyph",x:c.x,y:c.y+0.4,id:"gl-"+c.id,"font-size":glyphSize(c)});
     gy2.textContent=cityGlyph(c); g.appendChild(gy2);
     g.appendChild(el("circle",{class:"cbadge",cx:c.x+padR(c)*0.82,cy:c.y-padR(c)*0.82,r:3.6,
@@ -1001,34 +1009,54 @@ function drawSvcs(){
     var p=pts.join(" ");
     gSvc.appendChild(el("polyline",{class:"svccase",points:p}));
     gSvc.appendChild(el("polyline",{class:"svcline",points:p,stroke:s.col}));
-    // dashes drifting along the route read as freight actually flowing
-    if(svcVehs(s).length) gSvcFlow.appendChild(el("polyline",{class:"svcflow",points:p,stroke:"#eaf2ff"}));
+    // (an animated flow overlay lived here; it repainted every route every
+    //  frame and cost ~4fps on a throttled CPU for little the trucks do not
+    //  already say)
   });
 }
+var vehEls={};
 function drawVehs(){
-  gVeh.innerHTML="";
+  var seen={};
   S.veh.forEach(function(v){
-    if(!v.svc) return;
+    if(!v.svc){ return; }
     var s=svcOf(v.svc); if(!s) return;
+    seen[v.id]=1;
+    var rec=vehEls[v.id];
+    if(rec && rec.col===s.col && rec.type===v.type){
+      // hot path: only the transform and the load bar actually change
+      rec.g.setAttribute("transform","translate("+v.x.toFixed(1)+" "+v.y.toFixed(1)+") rotate("+
+        (v.hd||0).toFixed(0)+") scale("+(1/cam.s).toFixed(3)+")");
+      var f=Math.min(1,vehLoad(v)/tCap(v.type));
+      rec.bar.setAttribute("width",(rec.barW*f).toFixed(2));
+      rec.bar.style.display=f>0?"":"none";
+      rec.body.setAttribute("fill",f>0?"#2c3641":"#232c35");
+      return;
+    }
+    if(rec&&rec.g.parentNode) rec.g.parentNode.removeChild(rec.g);
     var sc=(1/cam.s);
     var g=el("g",{class:"veh",transform:"translate("+v.x.toFixed(1)+" "+v.y.toFixed(1)+") rotate("+
       (v.hd||0).toFixed(0)+") scale("+sc.toFixed(3)+")"});
     var loaded=v.cargo.length>0, T=TRUCKS[v.type];
     var big=(T.cap>=40?1.45:T.cap>=20?1.2:1)*1.15;                     // silhouette by class
     g.appendChild(el("ellipse",{cx:0,cy:2.4*big,rx:7*big,ry:2.6*big,fill:"#03070b",opacity:.4}));
-    g.appendChild(el("rect",{x:-7*big,y:-3.1*big,width:9.4*big,height:6.2*big,rx:1.3,
-      fill:loaded?"#2c3641":"#232c35",stroke:"#070c11","stroke-width":.7}));       // trailer body
-    if(loaded){                                                   // livery band + fill gauge
-      var f=Math.min(1,vehLoad(v)/tCap(T.id));
-      g.appendChild(el("rect",{x:-6.6*big,y:-2.6*big,width:8.6*big*f,height:5.2*big,rx:1,
-        fill:s.col,opacity:.92}));
-    }
+    var body=el("rect",{x:-7*big,y:-3.1*big,width:9.4*big,height:6.2*big,rx:1.3,
+      fill:loaded?"#2c3641":"#232c35",stroke:"#070c11","stroke-width":.7});
+    g.appendChild(body);                                                           // trailer body
+    var f0=Math.min(1,vehLoad(v)/tCap(T.id));
+    var bar=el("rect",{x:-6.6*big,y:-2.6*big,width:8.6*big*f0,height:5.2*big,rx:1,
+      fill:s.col,opacity:.92});
+    if(!f0) bar.style.display="none";
+    g.appendChild(bar);                                                            // load gauge
     g.appendChild(el("rect",{x:2.6*big,y:-2.9*big,width:4.4*big,height:5.8*big,rx:1.2,
       fill:s.col,stroke:"#070c11","stroke-width":.7}));                            // cab
     g.appendChild(el("rect",{x:5.2*big,y:-2*big,width:1.5*big,height:4*big,rx:.5,
       fill:"#cfe6ff",opacity:.85}));                                               // windscreen
     gVeh.appendChild(g);
+    vehEls[v.id]={g:g,bar:bar,body:body,barW:8.6*big,col:s.col,type:v.type};
   });
+  // retire sprites for trucks that have left a service or been sold
+  for(var k in vehEls){ if(!seen[k]){ var e2=vehEls[k];
+    if(e2.g.parentNode) e2.g.parentNode.removeChild(e2.g); delete vehEls[k]; } }
 }
 function pipFly(cityId,txt,col){
   var c=CITY[cityId]; if(!c) return;
@@ -1470,6 +1498,8 @@ function renderCity(b){
       (plist.map(function(p){ return (p.dir==="to"?"→ ":"← ")+CITY[p.id].n+' <span class="sub">('+
         GOODS[p.g].n.toLowerCase()+', '+p.d+'km)</span>'; }).join("<br>")||"—")+'</div></div>'+
     '<div class="lbl">Invest here</div>'+
+    '<div class="sub" style="margin:-2px 2px 8px;color:#7f8b99">You never buy a city — every city is open to '+
+    'you from the start. These are your own buildings on their ground.</div>'+
     '<div class="card"><div class="row"><div class="grow"><div class="ttl">Depot '+
       (depotLvl(c.id)?'<span class="pill a">level '+depotLvl(c.id)+'</span>':'')+'</div>'+
       '<div class="sub">Faster turnarounds: −22% time in the yard per level. Shorter cycles mean '+
@@ -1559,7 +1589,74 @@ function updateHeader(){
 }
 
 /* ============================================================ HELP */
-$("btnHelp").onclick=function(){
+var GUIDE=[
+ {t:"You are a haulier, not a landlord",
+  h:"<p>All 36 cities are open to you from the very start. <em>You do not own or unlock cities</em> — "+
+    "any of them can go on a route immediately.</p>"+
+    "<p>What you own is <em>trucks</em> and the <em>services</em> you design. A city turns green on the map "+
+    "once one of your services actually calls there. That is the only sense in which a place is yours.</p>"+
+    "<p>Later you can build a depot or a freight office <em>in</em> a city — those are your buildings on "+
+    "their ground, not the city itself.</p>"},
+ {t:"Services are the whole game",
+  h:"<p>A <em>service</em> is a standing loop of cities. Trucks you assign to it drive that loop for ever, "+
+    "picking up whatever freight is waiting that is heading further round the loop.</p>"+
+    "<p>You never dispatch a single load by hand. You design the network and the freight finds its way "+
+    "through it.</p>"+
+    "<p><em>Open Services → New service</em>, chain a few cities together, then assign a truck.</p>"},
+ {t:"Frequency beats coverage",
+  h:"<p>The number that decides everything is <em>how often a truck comes round</em>: round-trip time "+
+    "divided by the number of trucks on that service.</p>"+
+    "<p>On one enormous loop through everywhere, a load waits ages to be collected and then rides most "+
+    "of the way around to arrive. It misses its window and you are paid a fraction.</p>"+
+    "<p>Short, dense services that meet at a shared city beat one grand tour almost every time. That is "+
+    "why real freight runs through hubs like Rotterdam and Duisburg.</p>"},
+ {t:"Freight changes services",
+  h:"<p>A load does not need one service to cover its whole journey. If two of your services share a city, "+
+    "freight can be dropped there and picked up by the other one.</p>"+
+    "<p>The Loads tab shows the exact chain it would take, the door-to-door time, and how much slack is "+
+    "left before the window closes — so when something will be late you can see which leg is too slow.</p>"},
+ {t:"Windows, and your reputation",
+  h:"<p>Every load has a delivery window. Late still pays, but badly, and the longer you are the less you "+
+    "get. Freight left a day past its window is cancelled and you are billed for it.</p>"+
+    "<p>Your <em>reputation</em> is the share of recent loads delivered on time. It decides how much work "+
+    "you are offered, so a sloppy network slowly starves itself.</p>"},
+ {t:"Some cargo needs special trucks",
+  h:"<p><em>Food</em> only rides a reefer. <em>Chemicals</em> only a tanker. <em>Cars</em> only a "+
+    "transporter.</p>"+
+    "<p>Until you own the right vehicle and put it on a service linking the two cities, those loads simply "+
+    "cannot move — and that shuts off whole regions. Rotterdam ships food, Antwerp and Ludwigshafen ship "+
+    "chemicals, Wolfsburg and Torino ship cars.</p>"},
+ {t:"Build up the cities you use",
+  h:"<p>Tap any city to see what it ships, what it needs, who it naturally trades with, and your own "+
+    "history there.</p>"+
+    "<p>A <em>depot</em> cuts time spent in the yard, which shortens every cycle through that city and so "+
+    "raises frequency on every service calling there. A <em>freight office</em> wins you more business in "+
+    "that city. Concentrate them on your hubs.</p>"},
+ {t:"Growing",
+  h:"<p>Deliveries earn experience. Levels unlock bigger and specialised trucks and further upgrades.</p>"+
+    "<p>There are 24 trophies, and most are geographic: trade in every Dutch or German city, reach all "+
+    "eleven countries, run one service down the Rhine from Rotterdam through Duisburg and Koln to Basel, "+
+    "get over the Alps to Milano.</p>"+
+    "<p>Your company saves automatically. The ⟲ button in the header starts over.</p>"}
+];
+var guidePage=0;
+function showGuide(n){
+  guidePage=Math.max(0,Math.min(GUIDE.length-1,n));
+  var g=GUIDE[guidePage];
+  var dots=GUIDE.map(function(_,i){return '<i class="gd'+(i===guidePage?" on":"")+'"></i>';}).join("");
+  openModal(g.t,
+    '<div class="gbody">'+g.h+'</div>'+
+    '<div class="gnav"><button class="btn ghost sm" id="gPrev"'+(guidePage?'':' disabled')+'>‹ Back</button>'+
+    '<div class="gdots">'+dots+'</div>'+
+    '<button class="btn sm" id="gNext">'+(guidePage===GUIDE.length-1?"Start":"Next ›")+'</button></div>');
+  $("gPrev").onclick=function(){ showGuide(guidePage-1); };
+  $("gNext").onclick=function(){
+    if(guidePage===GUIDE.length-1){ $("modal").classList.remove("show"); try{localStorage.setItem("lh-seen-guide","1");}catch(e){} }
+    else showGuide(guidePage+1);
+  };
+}
+$("btnHelp").onclick=function(){ showGuide(0); };
+function oldHelp(){
   openModal("How this works",
    "<h3>You design services, not deliveries</h3><p>A <em>service</em> is a standing loop of cities. Trucks assigned to it drive that loop for ever. Freight rides whatever chain of services gets it from its origin to its destination — changing between services at shared cities if it has to.</p>"+
    "<h3>Frequency beats coverage</h3><p>The number that matters is <em>how often a truck comes round</em>: round-trip time divided by trucks. On a giant loop through everywhere, a load waits ages to be collected and then rides most of the way around to arrive. It misses its window and you are paid a third.</p><p>Short, dense services with transfers at a hub beat one grand tour almost every time. That is why real freight runs through Rotterdam and Duisburg rather than city to city.</p>"+
@@ -1573,7 +1670,7 @@ var speeds=[1,3,8], si=0;
 $("btnSpeed").onclick=function(){ si=(si+1)%speeds.length; S.speed=speeds[si];
   $("btnSpeed").textContent="▶ "+S.speed+"×"; };
 
-var lastT=performance.now(), spawnAcc=0, uiAcc=0;
+var lastT=performance.now(), spawnAcc=0, uiAcc=0, panelAcc=0;
 var HOURS_PER_SEC=0.55;
 function frame(now){
   var dtReal=Math.min(0.1,(now-lastT)/1000); lastT=now;
@@ -1585,7 +1682,9 @@ function frame(now){
   while(spawnAcc>=every){ spawnAcc-=every; spawnLoad(); }
   drawVehs();
   uiAcc+=dtReal;
-  if(uiAcc>0.25){ uiAcc=0; updateHeader(); checkAch();
+  if(uiAcc>0.25){ uiAcc=0; updateHeader(); checkAch(); }
+  panelAcc+=dtReal;
+  if(panelAcc>0.7){ panelAcc=0;
     if(!(tab==="services"&&svcEdit!=null)) render();
     refreshCities(); }
   requestAnimationFrame(frame);
@@ -1648,7 +1747,9 @@ if(!loaded) S=fresh();
 buildMap(); fitAll(); refreshCities(); drawSvcs();
 if(!loaded){
   buyTruck(1); buyTruck(1); S.cash=260000; S.spent=0;
-  toast("Freight is waiting and <b>nothing moves it yet</b>. Open <b>Services</b> and build a loop — then put your two trucks on it.");
+  var seen=false; try{ seen=localStorage.getItem("lh-seen-guide")==="1"; }catch(e){}
+  if(seen) toast("Freight is waiting and <b>nothing moves it yet</b>. Open <b>Services</b> and build a loop.");
+  else setTimeout(function(){ showGuide(0); }, 400);
 }else{
   toast("Welcome back — day "+(Math.floor(S.t/24)+1)+", "+S.svcs.length+" service"+
         (S.svcs.length===1?"":"s")+", "+S.veh.length+" trucks.");
