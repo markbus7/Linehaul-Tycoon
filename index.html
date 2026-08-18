@@ -142,6 +142,15 @@
   .cpad.served{fill:url(#padOn);stroke:var(--green);stroke-width:1.8}
   .cpad.home{fill:url(#padHome);stroke:var(--amber);stroke-width:2}
   .cpad.sel{stroke:#fff;stroke-width:2.6}
+  .cpad.addable{stroke-dasharray:2.5 2;cursor:pointer}
+  .cpad.inedit{cursor:pointer}
+  .editpreview{fill:none;stroke-width:2.2;stroke-dasharray:1 6;stroke-linecap:round;opacity:.9;
+    vector-effect:non-scaling-stroke;pointer-events:none}
+  .svcline.losing{stroke-dasharray:5 5;opacity:.55}
+  .svcwarn{cursor:pointer}
+  .svcwarn rect{fill:#2a1210;stroke:var(--red);stroke-width:1.2;vector-effect:non-scaling-stroke}
+  .svcwarn text{font-size:8px;font-family:ui-monospace,monospace;font-weight:700;fill:#ffa79b;
+    text-anchor:middle;dominant-baseline:central;pointer-events:none}
   .cglyph{pointer-events:none;text-anchor:middle;dominant-baseline:central}
   .chalo{fill:none;stroke:var(--green);stroke-width:1.2;opacity:0;vector-effect:non-scaling-stroke}
   .chalo.on{opacity:.5;animation:halo 2.2s ease-in-out infinite;will-change:opacity}
@@ -220,7 +229,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v6.2</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v6.3</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">Day</div><div class="v" id="hClock">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
@@ -508,7 +517,7 @@ function fresh(){
     delivered: 0, late: 0, earned: 0, spent: 0,
     hist: {},                        // per-city history -> the mental story
     seen: {}, speed: 1,
-    netEma: null, svcEma: {}, svcActiveH: {}   // live profit/loss, company-wide and per service
+    netEma: null, svcEma: {}, svcEarnEma: {}, svcCostEma: {}, svcActiveH: {}   // live profit/loss, company-wide and per service
   };
 }
 // exponential moving average toward `instant`, with a game-hour time constant --
@@ -618,18 +627,41 @@ function svcCycle(s){
   var t=0; vs.forEach(function(v){ t+=cycleH(s,v.type); });
   return t/vs.length;
 }
-// plain-language read on a service: is it actually working? `rate` is the
-// smoothed net EUR/h whenever there is one to show, else null.
+// plain-language read on a service: is it actually working, and specifically
+// WHY not, when it isn't. `rate`/`earn`/`cost` are smoothed EUR/h whenever
+// there is data to show, else null.
 function svcVerdict(s){
   var vs=svcVehs(s);
-  if(!s.stops||s.stops.length<2) return {cls:"bad",word:"No route",help:"Needs at least 2 stops.",rate:null};
-  if(!vs.length) return {cls:"bad",word:"Idle",help:"No trucks assigned — nothing moves on this loop.",rate:null};
+  if(!s.stops||s.stops.length<2) return {cls:"bad",word:"No route",help:"Needs at least 2 stops.",rate:null,earn:null,cost:null};
+  if(!vs.length) return {cls:"bad",word:"Idle",help:"No trucks assigned — nothing moves on this loop.",rate:null,earn:null,cost:null};
   var age=(S.svcActiveH&&S.svcActiveH[s.id])||0;
   var rate=S.svcEma?S.svcEma[s.id]:null;
-  if(age<1.5||rate==null) return {cls:"warn",word:"Warming up",help:"Just started — give it a little longer to show a trend.",rate:null};
-  if(rate>15) return {cls:"good",word:"Profitable",help:"Earning "+eur(rate)+"/h more than it costs to run.",rate:rate};
-  if(rate>-15) return {cls:"warn",word:"Breaking even",help:"Roughly covering its own costs — look for more freight on this loop, or fewer stops.",rate:rate};
-  return {cls:"bad",word:"Losing money",help:"Costing "+eur(-rate)+"/h more than it earns — too few loads, too many trucks, or a loop that is too long.",rate:rate};
+  var earn=S.svcEarnEma?S.svcEarnEma[s.id]:null, cost=S.svcCostEma?S.svcCostEma[s.id]:null;
+  if(age<1.5||rate==null) return {cls:"warn",word:"Warming up",help:"Just started — give it a little longer to show a trend.",rate:null,earn:null,cost:null};
+  if(rate>15) return {cls:"good",word:"Profitable",help:"Earning "+eur(rate)+"/h more than it costs to run.",rate:rate,earn:earn,cost:cost};
+  if(rate>-15) return {cls:"warn",word:"Breaking even",
+    help:"Earning "+eur(earn)+"/h against "+eur(cost)+"/h in costs — roughly covering itself. A little more freight on this loop would tip it into profit.",
+    rate:rate,earn:earn,cost:cost};
+  // losing money: work out which of the three real causes actually applies
+  // here, instead of naming all of them and leaving the player to guess
+  var wageOnly=vs.length*wageRate();
+  var why;
+  if(earn<8){
+    why="This loop is carrying almost nothing — only "+eur(earn)+"/h in fees. These cities may not trade much "+
+        "with each other. Check each city's Ships out / Takes in list, or extend the loop toward one that wants "+
+        "what your stops produce.";
+  }else if(vs.length>1){
+    why=vs.length+" trucks are chasing "+eur(earn)+"/h of freight here — that is not enough to go round. "+
+        "Remove a truck, or find this loop more freight, rather than adding more capacity.";
+  }else if(cost-wageOnly>wageOnly && loopKm(s)>700){
+    why="The loop itself is the cost: "+Math.round(loopKm(s))+"km round trip burns roughly "+
+        eur(cost-wageOnly)+"/h in fuel alone. Shorten it, or hand the far leg to a second service "+
+        "that meets this one partway, instead of running the whole distance yourself.";
+  }else{
+    why="Earning "+eur(earn)+"/h against "+eur(cost)+"/h in costs — close, but not quite covering itself yet. "+
+        "A little more freight on this route would tip it into profit.";
+  }
+  return {cls:"bad",word:"Losing money",help:why,rate:rate,earn:earn,cost:cost};
 }
 function headway(s){
   var n=svcVehs(s).length;
@@ -1001,10 +1033,13 @@ function step(dt){
   S.netEma=emaStep(S.netEma,(earnTotal-costTotal)/dt,dt,3);
   if(!S.svcEma) S.svcEma={};
   if(!S.svcActiveH) S.svcActiveH={};
+  if(!S.svcEarnEma) S.svcEarnEma={}; if(!S.svcCostEma) S.svcCostEma={};
   S.svcs.forEach(function(sv){
     var running=svcVehs(sv).length>0;
     var e=tickEarn[sv.id]||0, c=tickCost[sv.id]||0;
     S.svcEma[sv.id]=emaStep(S.svcEma[sv.id]==null?null:S.svcEma[sv.id], running?(e-c)/dt:0, dt, 3);
+    S.svcEarnEma[sv.id]=emaStep(S.svcEarnEma[sv.id]==null?null:S.svcEarnEma[sv.id], running?e/dt:0, dt, 3);
+    S.svcCostEma[sv.id]=emaStep(S.svcCostEma[sv.id]==null?null:S.svcCostEma[sv.id], running?c/dt:0, dt, 3);
     if(running) S.svcActiveH[sv.id]=(S.svcActiveH[sv.id]||0)+dt;
   });
 }
@@ -1071,13 +1106,19 @@ function refreshCities(){
   });
   var waiting={};
   S.loads.forEach(function(l){ if(!l.on&&l.at) waiting[l.at]=(waiting[l.at]||0)+1; });
+  var editSvc=(tab==="services"&&svcEdit!=null)?svcOf(svcEdit):null;
   CITIES.forEach(function(c){
     var d=$("dot-"+c.id), l=$("lb-"+c.id);
-    var cl="cpad"+(c.home?" home":served[c.id]?" served":"")+(selCity===c.id?" sel":"");
+    var inRoute=editSvc&&editSvc.stops.indexOf(c.id)>=0;
+    var cl="cpad"+(c.home?" home":served[c.id]?" served":"")+(selCity===c.id?" sel":"")+
+      (editSvc?(inRoute?" inedit":" addable"):"");
     d.setAttribute("class",cl);
-    var inv=(depotLvl(c.id)||officeLvl(c.id));
-    d.setAttribute("stroke-width", inv?3:(c.home||served[c.id]?1.9:1.4));
-    if(inv) d.setAttribute("stroke","#f0a63c");
+    if(editSvc&&inRoute){ d.setAttribute("stroke",editSvc.col); d.setAttribute("stroke-width",3); }
+    else{
+      var inv=(depotLvl(c.id)||officeLvl(c.id));
+      d.setAttribute("stroke-width", inv?3:(c.home||served[c.id]?1.9:1.4));
+      if(inv) d.setAttribute("stroke","#f0a63c"); else d.removeAttribute("stroke");
+    }
     var halo=$("halo-"+c.id);
     if(halo) halo.setAttribute("class","chalo"+(waiting[c.id]&&served[c.id]?" on":""));
     var bg=$("bg-"+c.id), bt=$("bt-"+c.id), n=waiting[c.id]||0;
@@ -1097,11 +1138,38 @@ function drawSvcs(){
     for(var i=0;i<=s.stops.length;i++){ var c=CITY[s.stops[i%s.stops.length]]; pts.push(c.x+","+c.y); }
     var p=pts.join(" ");
     gSvc.appendChild(el("polyline",{class:"svccase",points:p}));
-    gSvc.appendChild(el("polyline",{class:"svcline",points:p,stroke:s.col}));
+    var vd=svcVerdict(s);
+    gSvc.appendChild(el("polyline",{class:"svcline"+(vd.cls==="bad"?" losing":""),points:p,stroke:s.col}));
+    // a losing service gets a warning badge on the map itself, at the middle
+    // of its stop list, so the answer to "which line is losing money" is
+    // visible without opening the Services tab at all
+    if(vd.cls==="bad"&&vd.rate!=null){
+      var mi=Math.floor(s.stops.length/2), mc=CITY[s.stops[mi]];
+      var txt="-"+eur(Math.abs(vd.rate))+"/h";
+      var w=Math.max(24,txt.length*4.6+8);
+      var g=el("g",{class:"svcwarn",transform:"translate("+mc.x+" "+(mc.y-16)+")"});
+      g.appendChild(el("rect",{x:-w/2,y:-7,width:w,height:14,rx:6}));
+      var t=el("text",{y:0.5}); t.textContent="⚠ "+txt;
+      g.appendChild(t);
+      gSvcFlow.appendChild(g);
+    }
     // (an animated flow overlay lived here; it repainted every route every
     //  frame and cost ~4fps on a throttled CPU for little the trucks do not
     //  already say)
   });
+  drawEditPreview();
+}
+// while a service is being edited, sketch the route as stops are tapped in,
+// so building it on the map is a direct loop rather than a blind list
+function drawEditPreview(){
+  var old=gSvcFlow.querySelector(".editprev-g"); if(old) old.remove();
+  if(!(tab==="services"&&svcEdit!=null)) return;
+  var s=svcOf(svcEdit); if(!s||s.stops.length<1) return;
+  var g=el("g",{class:"editprev-g"});
+  var pts=s.stops.map(function(id){ var c=CITY[id]; return c.x+","+c.y; });
+  if(s.stops.length>=2) pts.push(pts[0]);
+  g.appendChild(el("polyline",{class:"editpreview",points:pts.join(" "),stroke:s.col}));
+  gSvcFlow.appendChild(g);
 }
 var vehEls={};
 function drawVehs(){
@@ -1259,7 +1327,18 @@ function tapMap(cx,cy){
   var p=toSvg(cx,cy), wx=(p.x-cam.tx)/cam.s, wy=(p.y-cam.ty)/cam.s;
   var best=null, bd=16/cam.s;
   CITIES.forEach(function(c){ var d=Math.hypot(c.x-wx,c.y-wy); if(d<bd){ bd=d; best=c; } });
-  if(best){ selCity=best.id; setTab("city"); refreshCities(); }
+  if(!best) return;
+  // editing a service: tapping the map IS building the route -- tap a new
+  // city to append it, tap one already on the loop to drop it. This is the
+  // whole point of showing the map at all instead of just a text list.
+  if(tab==="services"&&svcEdit!=null){
+    var s=svcOf(svcEdit); if(!s) return;
+    var idx=s.stops.indexOf(best.id);
+    if(idx>=0) s.stops.splice(idx,1); else s.stops.push(best.id);
+    afterEdit(s);
+    return;
+  }
+  selCity=best.id; setTab("city"); refreshCities();
 }
 wrap.addEventListener("pointerup",upH); wrap.addEventListener("pointercancel",upH);
 wrap.addEventListener("wheel",function(e){ e.preventDefault();
@@ -1437,6 +1516,12 @@ function renderSvcEditor(b,s){
     b.appendChild(info);
   }
 
+  var mapHint=document.createElement("div"); mapHint.className="empty"; mapHint.style.padding="9px 12px";
+  mapHint.style.marginBottom="9px"; mapHint.style.fontSize="11.5px"; mapHint.style.textAlign="left";
+  mapHint.innerHTML='🗺️ <b style="color:var(--ink)">Tap cities on the map</b> to add or remove stops — '+
+    'dashed pins are up for grabs, solid rings ('+
+    '<span style="color:'+s.col+'">●</span>) are already on this loop.';
+  b.appendChild(mapHint);
   var lab=document.createElement("div"); lab.className="lbl"; lab.textContent="Stops · loop returns to the first";
   b.appendChild(lab);
   var wrapS=document.createElement("div"); wrapS.className="stops";
@@ -1790,7 +1875,7 @@ function frame(now){
   panelAcc+=dtReal;
   if(panelAcc>0.7){ panelAcc=0;
     if(!(tab==="services"&&svcEdit!=null)) render();
-    refreshCities(); }
+    refreshCities(); drawSvcs(); }
   requestAnimationFrame(frame);
 }
 
