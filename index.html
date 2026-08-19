@@ -239,7 +239,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v7.8</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v7.9</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat netstat"><div class="k">Net / h</div><div class="v" id="hNet">—</div></div>
@@ -2444,7 +2444,11 @@ function serialise(){
     veh:S.veh.map(function(v){return {type:v.type,svc:v.svc,si:v.si};}),
     nextId:nextId, saved:Date.now()};
 }
-function saveGame(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(serialise())); }catch(e){} }
+// Set while a reset is in flight so the beforeunload/visibilitychange
+// autosave handlers below don't immediately write the old, pre-reset state
+// straight back to localStorage during the reload that follows.
+var resetting=false;
+function saveGame(){ if(resetting) return; try{ localStorage.setItem(SAVE_KEY, JSON.stringify(serialise())); }catch(e){} }
 function loadGame(){
   var raw=null; try{ raw=localStorage.getItem(SAVE_KEY); }catch(e){}
   if(!raw) return false;
@@ -2482,6 +2486,7 @@ function loadGame(){
 }
 function resetGame(){
   if(!confirm("Wipe your company and start again?")) return;
+  resetting=true;
   try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
   location.reload();
 }
@@ -2514,7 +2519,7 @@ window.addEventListener("resize",function(){ CITIES.forEach(function(c){c._w=nul
   r.title="Reset company"; r.onclick=resetGame;
   document.querySelector("header").appendChild(r); })();
 window.__lh={ state:function(){return S;}, save:saveGame, load:loadGame, reset:function(){
-    try{ localStorage.removeItem(SAVE_KEY); }catch(e){} }, cities:CITIES, city:CITY, svcOf:svcOf,
+    resetting=true; try{ localStorage.removeItem(SAVE_KEY); }catch(e){} }, cities:CITIES, city:CITY, svcOf:svcOf,
   cam:function(){return cam;}, viewK:viewK, headway:headway, cycle:svcCycle,
   plan:function(a,b){return routePlan(a,b);},
   addSvc:function(stops){ var s=newSvc(); s.stops=stops.slice(); invalidate(); drawSvcs(); refreshCities(); return s.id; },
