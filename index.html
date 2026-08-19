@@ -238,7 +238,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v7.2</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v7.3</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat netstat"><div class="k">Net / h</div><div class="v" id="hNet">—</div></div>
@@ -1666,7 +1666,10 @@ function doLabels(){
 var ptrs={}, drag=false, lastPt=null, pinch=null;
 function toSvg(cx,cy){ var m=svg.getScreenCTM(); if(!m) return {x:cx,y:cy};
   var p=svg.createSVGPoint(); p.x=cx;p.y=cy; var r=p.matrixTransform(m.inverse()); return {x:r.x,y:r.y}; }
-function zoomAt(x,y,ns){ ns=Math.max(0.6,Math.min(6,ns));
+// The world map's base scale (px per degree) is ~5.5x coarser than the old
+// Europe-only map's was, so the zoom ceiling has to rise to match -- without
+// this, the old cap of 6 left no way to focus tight on, say, just Benelux.
+function zoomAt(x,y,ns){ ns=Math.max(0.6,Math.min(16,ns));
   var wx=(x-cam.tx)/cam.s, wy=(y-cam.ty)/cam.s;
   cam.s=ns; cam.tx=x-ns*wx; cam.ty=y-ns*wy; applyCam(); }
 var wrap=$("mapwrap");
