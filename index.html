@@ -238,7 +238,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v7.0</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v7.1</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat netstat"><div class="k">Net / h</div><div class="v" id="hNet">—</div></div>
@@ -1586,9 +1586,17 @@ function applyCam(){
   gWorld.setAttribute("transform","translate("+cam.tx.toFixed(2)+" "+cam.ty.toFixed(2)+") scale("+cam.s.toFixed(4)+")");
   layoutLabels();
 }
+// Fits the continents you actually have cities unlocked on, not the whole
+// world -- a fresh game only has Europe unlocked, so this should frame
+// Europe exactly like it always did, not shrink it into a world view. It
+// grows to include a new continent the moment you unlock a city there.
 function fitAll(){
+  var touched={};
+  for(var id in (S.unlocked||{})) if(CITY[id]) touched[cityContinent(CITY[id])]=1;
+  if(!Object.keys(touched).length) touched.eu=1;
   var minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9;
-  CITIES.forEach(function(c){ minx=Math.min(minx,c.x);maxx=Math.max(maxx,c.x);
+  CITIES.forEach(function(c){ if(!touched[cityContinent(c)]) return;
+    minx=Math.min(minx,c.x);maxx=Math.max(maxx,c.x);
     miny=Math.min(miny,c.y);maxy=Math.max(maxy,c.y); });
   var pad=40; minx-=pad;miny-=pad;maxx+=pad;maxy+=pad;
   var s=Math.min(VW/(maxx-minx), VH/(maxy-miny));
