@@ -238,7 +238,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v7.3</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v7.4</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat netstat"><div class="k">Net / h</div><div class="v" id="hNet">—</div></div>
@@ -1371,19 +1371,42 @@ function buildMap(){
     gGrat.appendChild(el("line",{class:"grat",x1:-400,y1:gy,x2:VW+400,y2:gy})); }
   CITIES.forEach(function(c){
     var g=el("g",{class:"cwrap","data-id":c.id});
-    g.appendChild(el("circle",{class:"chalo",cx:c.x,cy:c.y,r:11,id:"halo-"+c.id}));
-    g.appendChild(el("circle",{class:"cshadow",cx:c.x,cy:c.y+1.2,r:padR(c)}));
-    g.appendChild(el("circle",{class:"cpad",cx:c.x,cy:c.y,r:padR(c),id:"dot-"+c.id}));
+    // pin geometry (halo/shadow/pad/glyph/badge) lives in its own sub-group so it
+    // can be counter-scaled at deep zoom -- see updatePinScale(). The label has
+    // its own independent counter-scale already, in doLabels().
+    var pin=el("g",{class:"cpin",id:"cp-"+c.id});
+    pin.appendChild(el("circle",{class:"chalo",cx:c.x,cy:c.y,r:11,id:"halo-"+c.id}));
+    pin.appendChild(el("circle",{class:"cshadow",cx:c.x,cy:c.y+1.2,r:padR(c)}));
+    pin.appendChild(el("circle",{class:"cpad",cx:c.x,cy:c.y,r:padR(c),id:"dot-"+c.id}));
     var gy2=el("text",{class:"cglyph",x:c.x,y:c.y+0.4,id:"gl-"+c.id,"font-size":glyphSize(c)});
-    gy2.textContent=cityGlyph(c); g.appendChild(gy2);
-    g.appendChild(el("circle",{class:"cbadge",cx:c.x+padR(c)*0.82,cy:c.y-padR(c)*0.82,r:3.6,
+    gy2.textContent=cityGlyph(c); pin.appendChild(gy2);
+    pin.appendChild(el("circle",{class:"cbadge",cx:c.x+padR(c)*0.82,cy:c.y-padR(c)*0.82,r:3.6,
       id:"bg-"+c.id,style:"display:none"}));
     var bt=el("text",{class:"cbadge-t",x:c.x+padR(c)*0.82,y:c.y-padR(c)*0.82+0.2,id:"bt-"+c.id,
-      style:"display:none"}); g.appendChild(bt);
+      style:"display:none"}); pin.appendChild(bt);
+    g.appendChild(pin);
     g.appendChild(el("rect",{class:"lplate",id:"lp-"+c.id,x:0,y:0,width:0,height:0,rx:3}));
     var t=el("text",{class:"clabel",x:c.x,y:c.y-8,"text-anchor":"middle",id:"lb-"+c.id});
     t.textContent=c.n; g.appendChild(t);
     gCity.appendChild(g);
+  });
+}
+// Pin geometry is plain world-space size, same as it always was, up to the zoom
+// level the map used to top out at (PIN_CAP). Past that, this holds the pin's
+// on-screen size fixed instead of letting it keep growing with the camera --
+// otherwise the deeper zoom this round added makes every pin balloon.
+var PIN_CAP=6, lastPinS=null;
+function updatePinScale(){
+  if(cam.s===lastPinS) return;
+  lastPinS=cam.s;
+  var k=Math.min(1,PIN_CAP/cam.s);
+  CITIES.forEach(function(c){
+    var p=$("cp-"+c.id); if(!p) return;
+    var tr=k===1?"":"translate("+c.x.toFixed(1)+" "+c.y.toFixed(1)+") scale("+k.toFixed(4)+
+      ") translate("+(-c.x).toFixed(1)+" "+(-c.y).toFixed(1)+")";
+    if(p.getAttribute("transform")!==tr){
+      if(tr) p.setAttribute("transform",tr); else p.removeAttribute("transform");
+    }
   });
 }
 function padR(c){ return c.home?7.5 : 4.6+Math.min(3.2,c.size*0.72); }
@@ -1584,6 +1607,7 @@ function pipFly(cityId,txt,col){
 }
 function applyCam(){
   gWorld.setAttribute("transform","translate("+cam.tx.toFixed(2)+" "+cam.ty.toFixed(2)+") scale("+cam.s.toFixed(4)+")");
+  updatePinScale();
   layoutLabels();
 }
 // Fits the continents you actually have cities unlocked on, not the whole
