@@ -238,7 +238,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v7.5</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v7.6</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat netstat"><div class="k">Net / h</div><div class="v" id="hNet">—</div></div>
@@ -1763,8 +1763,15 @@ wrap.addEventListener("wheel",function(e){ e.preventDefault();
 ["pointerdown","pointermove","pointerup","pointercancel"].forEach(function(t){
   document.querySelector(".mapctl").addEventListener(t,function(e){e.stopPropagation();});
 });
-$("zIn").onclick=function(){ zoomAt(VW/2,VH/2,cam.s*1.35); };
-$("zOut").onclick=function(){ zoomAt(VW/2,VH/2,cam.s/1.35); };
+// Zoom anchored on the middle of whatever is currently on screen, not a fixed
+// point on the map -- VW/2,VH/2 used to work by coincidence when the map was
+// Europe-only (that happened to be roughly the middle of the continent), but
+// on the world map it lands somewhere over central Africa, so every +/- click
+// dragged the view away from wherever you were actually looking (e.g.
+// Benelux) toward there instead of zooming in on it.
+function viewCenter(){ var r=svg.getBoundingClientRect(); return toSvg(r.left+r.width/2, r.top+r.height/2); }
+$("zIn").onclick=function(){ var c=viewCenter(); zoomAt(c.x,c.y,cam.s*1.35); };
+$("zOut").onclick=function(){ var c=viewCenter(); zoomAt(c.x,c.y,cam.s/1.35); };
 $("zFit").onclick=function(){ fitAll(); };
 
 /* ============================================================ UI */
