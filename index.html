@@ -135,7 +135,7 @@
   .svccase{fill:none;stroke:#070d13;stroke-width:6;opacity:.85;stroke-linejoin:round;
            stroke-linecap:round;vector-effect:non-scaling-stroke}
   .svcline{fill:none;stroke-width:3;opacity:.95;stroke-linejoin:round;stroke-linecap:round;
-           vector-effect:non-scaling-stroke}
+           vector-effect:non-scaling-stroke;cursor:pointer}
   .svcflow{fill:none;stroke-width:2;opacity:.6;stroke-linecap:round;vector-effect:non-scaling-stroke;
            stroke-dasharray:1 13;animation:flow 1.4s linear infinite}
   @keyframes flow{to{stroke-dashoffset:-14}}
@@ -151,11 +151,12 @@
   .clabel.locked{opacity:.5}
   .editpreview{fill:none;stroke-width:2.2;stroke-dasharray:1 6;stroke-linecap:round;opacity:.9;
     vector-effect:non-scaling-stroke;pointer-events:none}
-  .svcline.losing{stroke-dasharray:5 5;opacity:.55}
-  .svcwarn{cursor:pointer}
-  .svcwarn rect{fill:#2a1210;stroke:var(--red);stroke-width:1.2;vector-effect:non-scaling-stroke}
-  .svcwarn text{font-size:8px;font-family:ui-monospace,monospace;font-weight:700;fill:#ffa79b;
-    text-anchor:middle;dominant-baseline:central;pointer-events:none}
+  /* route colour tells you how a service is doing at a glance -- green pays,
+     amber is treading water, red is losing money and dashed to make sure it
+     doesn't rely on colour alone. Tap the line for the full breakdown. */
+  .svcline.perf-good{stroke:var(--green)}
+  .svcline.perf-warn{stroke:var(--amber)}
+  .svcline.perf-bad{stroke:var(--red);stroke-dasharray:6 5;opacity:.8}
   .cglyph{pointer-events:none;text-anchor:middle;dominant-baseline:central}
   .chalo{fill:none;stroke:var(--green);stroke-width:1.2;opacity:0;vector-effect:non-scaling-stroke}
   .chalo.on{opacity:.5;animation:halo 2.2s ease-in-out infinite;will-change:opacity}
@@ -238,7 +239,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v7.7</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v7.8</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat netstat"><div class="k">Net / h</div><div class="v" id="hNet">—</div></div>
@@ -1437,15 +1438,6 @@ function updatePinScale(){
       if(tr) p.setAttribute("transform",tr); else p.removeAttribute("transform");
     }
   });
-  // same cap as the pins, and for the same reason: below the old zoom
-  // ceiling it renders exactly as it always did (this is where its size was
-  // tuned), past that it holds instead of ballooning. NOT a constant size at
-  // every zoom -- it would look shrunken at the normal zoom range that was
-  // never a problem to begin with.
-  for(var id in svcWarnEls) setWarnTransform(svcWarnEls[id],k);
-}
-function setWarnTransform(rec,k){
-  rec.g.setAttribute("transform","translate("+rec.x.toFixed(1)+" "+rec.y.toFixed(1)+") scale("+k.toFixed(4)+")");
 }
 function padR(c){ return c.home?7.5 : 4.6+Math.min(3.2,c.size*0.72); }
 function glyphSize(c){ return (padR(c)*1.18).toFixed(1); }
@@ -1505,8 +1497,8 @@ function refreshCities(){
 }
 // Rebuilds the route lines from scratch. Only call this when the STOP LIST
 // of a service actually changed (or on boot) -- it tears down and recreates
-// every polyline, which is wasteful to run on a timer. Profit colouring and
-// the warning badges update separately, in place, via refreshSvcHealth().
+// every polyline, which is wasteful to run on a timer. The performance
+// colour updates separately, in place, via refreshSvcHealth().
 function drawSvcs(){
   gSvc.innerHTML=""; gSvcFlow.innerHTML="";
   S.svcs.forEach(function(s){
@@ -1515,50 +1507,30 @@ function drawSvcs(){
     for(var i=0;i<=s.stops.length;i++){ var c=CITY[s.stops[i%s.stops.length]]; pts.push(c.x+","+c.y); }
     var p=pts.join(" ");
     gSvc.appendChild(el("polyline",{class:"svccase","data-svc":s.id,points:p}));
-    gSvc.appendChild(el("polyline",{class:"svcline","data-svc":s.id,points:p,stroke:s.col}));
+    gSvc.appendChild(el("polyline",{class:"svcline","data-svc":s.id,points:p}));
   });
   drawEditPreview();
   refreshSvcHealth();
 }
 // Runs on the periodic UI tick. Never touches gSvc's route shapes -- only
-// toggles a class on the existing line and keeps one warning badge in sync
-// per losing service, updating text in place instead of tearing anything down.
-var svcWarnEls={};
+// recolours the existing line by how the service is actually doing. With
+// several services running, a floating "-EUR/h" label per losing one gets
+// unreadable fast and doesn't say which line it belongs to -- the line's own
+// colour says that for free, and tapping it (see hitSvcLine in tapMap) opens
+// the full breakdown instead.
+var PERF_CLS={good:"perf-good",warn:"perf-warn",bad:"perf-bad"};
 function refreshSvcHealth(){
-  var seen={};
   S.svcs.forEach(function(s){
     if(s.stops.length<2) return;
     var vd=svcVerdict(s);
     var line=gSvc.querySelector('.svcline[data-svc="'+s.id+'"]');
-    if(line){
-      var wantLosing=vd.cls==="bad";
-      var isLosing=line.classList.contains("losing");
-      if(wantLosing!==isLosing) line.classList.toggle("losing",wantLosing);
-    }
-    if(vd.cls==="bad"&&vd.rate!=null){
-      seen[s.id]=1;
-      var mi=Math.floor(s.stops.length/2), mc=CITY[s.stops[mi]];
-      var txt="-"+eur(Math.abs(vd.rate))+"/h";
-      var rec=svcWarnEls[s.id];
-      if(!rec){
-        var w=Math.max(24,txt.length*4.6+8);
-        var g=el("g",{class:"svcwarn","data-svc":s.id});
-        var rect=el("rect",{x:-w/2,y:-7,width:w,height:14,rx:6});
-        var t=el("text",{y:0.5}); t.textContent="⚠ "+txt;
-        g.appendChild(rect); g.appendChild(t);
-        gSvcFlow.appendChild(g);
-        svcWarnEls[s.id]={g:g,rect:rect,t:t,txt:txt,x:mc.x,y:mc.y-16};
-        setWarnTransform(svcWarnEls[s.id],pinK());
-      }else if(rec.txt!==txt){
-        var w2=Math.max(24,txt.length*4.6+8);
-        rec.rect.setAttribute("x",-w2/2); rec.rect.setAttribute("width",w2);
-        rec.t.textContent="⚠ "+txt; rec.txt=txt;
-      }
+    if(!line) return;
+    var want=PERF_CLS[vd.cls]||"";
+    if(!line.classList.contains(want)){
+      line.classList.remove("perf-good","perf-warn","perf-bad");
+      if(want) line.classList.add(want);
     }
   });
-  for(var id in svcWarnEls){
-    if(!seen[id]){ var r=svcWarnEls[id]; if(r.g.parentNode) r.g.parentNode.removeChild(r.g); delete svcWarnEls[id]; }
-  }
 }
 // while a service is being edited, sketch the route as stops are tapped in,
 // so building it on the map is a direct loop rather than a blind list
@@ -1762,11 +1734,39 @@ function upH(e){
     if(!wasDrag && e.clientX!=null) tapMap(e.clientX,e.clientY);
   }
 }
+// distance from a point to the nearest point on a line segment -- used to
+// tell whether a tap landed on a route line, not just a city pin
+function distToSeg(px,py,x1,y1,x2,y2){
+  var dx=x2-x1, dy=y2-y1, len2=dx*dx+dy*dy;
+  var t=len2>0 ? Math.max(0,Math.min(1,((px-x1)*dx+(py-y1)*dy)/len2)) : 0;
+  return Math.hypot(px-(x1+t*dx),py-(y1+t*dy));
+}
+function hitSvcLine(wx,wy){
+  var bd=9/cam.s, best=null;
+  S.svcs.forEach(function(s){
+    if(s.stops.length<2) return;
+    for(var i=0;i<s.stops.length;i++){
+      var a=CITY[s.stops[i]], b=CITY[s.stops[(i+1)%s.stops.length]];
+      var d=distToSeg(wx,wy,a.x,a.y,b.x,b.y);
+      if(d<bd){ bd=d; best=s; }
+    }
+  });
+  return best;
+}
 function tapMap(cx,cy){
   var p=toSvg(cx,cy), wx=(p.x-cam.tx)/cam.s, wy=(p.y-cam.ty)/cam.s;
   var best=null, bd=16/cam.s;
   CITIES.forEach(function(c){ var d=Math.hypot(c.x-wx,c.y-wy); if(d<bd){ bd=d; best=c; } });
-  if(!best) return;
+  if(!best){
+    // no city under the tap -- maybe a route line was tapped instead. Not
+    // while actively editing a (possibly different) service, since taps
+    // there are already spoken for by the route-building gesture below.
+    if(!(tab==="services"&&svcEdit!=null)){
+      var hitSvc=hitSvcLine(wx,wy);
+      if(hitSvc){ svcEdit=hitSvc.id; setTab("services"); render(); }
+    }
+    return;
+  }
   // editing a service: tapping the map IS building the route -- tap a new
   // city to append it, tap one already on the loop to drop it. This is the
   // whole point of showing the map at all instead of just a text list.
