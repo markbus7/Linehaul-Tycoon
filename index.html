@@ -84,6 +84,15 @@
   .tabs .bdg{display:inline-block;min-width:16px;padding:0 4px;margin-left:3px;border-radius:8px;
     background:var(--line);color:var(--ink);font-size:10px;line-height:16px;font-family:ui-monospace,monospace}
   .tabs .bdg.warn{background:#5a2420;color:#ffb3a8}
+  .nextstep{flex:0 0 auto;padding:9px 12px;background:linear-gradient(180deg,#1d2a22,#182219);
+    border-bottom:1px solid #2f4436;cursor:pointer}
+  .nextstep .nsk{font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:#6f9c7e;font-weight:700}
+  .nextstep .nst{font-size:13px;font-weight:700;color:var(--ink);margin-top:2px}
+  .nextstep .nsw{font-size:11.5px;color:#9fb0a4;margin-top:3px;line-height:1.5}
+  .nextstep .nsp{height:3px;border-radius:2px;background:#2b3742;margin-top:7px;overflow:hidden}
+  .nextstep .nsp i{display:block;height:100%;background:linear-gradient(90deg,#4fc98a,#8fe3b4)}
+  .nextstep.done{background:linear-gradient(180deg,#26221a,#1f1c16);border-bottom-color:#4a3f2a}
+  .nextstep.done .nsk{color:#c9a25f}
   .body{flex:1;overflow-y:auto;padding:11px;-webkit-overflow-scrolling:touch;
     background:radial-gradient(120% 60% at 50% 0%,#171f27,#121820)}
   .body::-webkit-scrollbar{width:9px}
@@ -239,7 +248,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v7.9</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v8.0</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat netstat"><div class="k">Net / h</div><div class="v" id="hNet">—</div></div>
@@ -302,6 +311,7 @@
       <button data-tab="city">City</button>
       <button data-tab="co">Company<span class="bdg" id="bAch">0</span></button>
     </div>
+    <div class="nextstep" id="nextStep" style="display:none"></div>
     <div class="body" id="tabbody"></div>
   </aside>
 </main>
@@ -744,6 +754,25 @@ function specsOn(s){
   svcVehs(s).forEach(function(v){ var sp=TRUCKS[v.type].spec; if(sp) out[sp]=true; else out.gen=true; });
   return out;
 }
+// Which goods this loop can actually earn from: a stop that SHIPS something
+// paired with a different stop that TAKES it. A loop with no such pair earns
+// nothing at all no matter how many trucks are on it -- the single most
+// confusing failure in the game, because nothing on screen used to say so.
+function svcTradePairs(s){
+  var out=[], seen={};
+  if(!s.stops||s.stops.length<2) return out;
+  s.stops.forEach(function(fromId){
+    (CITY[fromId].out||[]).forEach(function(g){
+      s.stops.forEach(function(toId){
+        if(toId===fromId) return;
+        if((CITY[toId].in||[]).indexOf(g)<0) return;
+        var k=g+fromId+toId; if(seen[k]) return; seen[k]=1;
+        out.push({g:g, from:fromId, to:toId});
+      });
+    });
+  });
+  return out;
+}
 function svcCanCarry(s,good){
   var r=GOODS[good]&&GOODS[good].req;
   var sp=specsOn(s);
@@ -770,6 +799,23 @@ function fresh(){
 }
 // exponential moving average toward `instant`, with a game-hour time constant --
 // this is what turns noisy per-tick cash flow into a readable trend
+// Earnings arrive as lump sums when a truck completes a delivery -- roughly
+// every headway, so every 5-10 game hours. Smoothing over only 3 hours meant
+// the readout spiked on each delivery and sagged to negative in between, so a
+// perfectly healthy line flickered between "Profitable" and "Losing money".
+// A full game day spans several deliveries and gives a stable, honest trend.
+var EMA_TAU=24;
+// Hysteresis so the verdict word does not flap around a threshold: it takes a
+// clearly positive rate to earn "Profitable" and a clearly negative one to be
+// called "Losing money", with a wide neutral band in between that a service
+// falls back into before it can flip to the opposite verdict.
+function classifyRate(rate, last){
+  if(last==="good") return rate<-8 ? (rate<-25?"bad":"warn") : "good";
+  if(last==="bad")  return rate>8  ? (rate>25?"good":"warn") : "bad";
+  if(rate>25) return "good";
+  if(rate<-25) return "bad";
+  return "warn";
+}
 function emaStep(prev, instant, dt, tau){
   if(prev==null) return instant;
   var k = 1-Math.exp(-dt/tau);
@@ -793,7 +839,17 @@ function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
 function spawnLoad(){
   var capLoads=Math.min(44, 6+3*S.veh.length);
   if(S.loads.length>=capLoads) return;
-  var gs=Object.keys(GOODS).filter(function(g){return PRODUCERS[g].length&&CONSUMERS[g].length;});
+  // Only cities you have unlocked can offer or receive freight. A shipper in a
+  // city where you have no presence at all would never call you -- and since an
+  // expired load used to bill you, offering work between two locked cities was
+  // charging the player for jobs they had no possible way to accept.
+  var opnP={}, opnC={};
+  Object.keys(GOODS).forEach(function(g){
+    opnP[g]=PRODUCERS[g].filter(function(c){return !cityLocked(c.id);});
+    opnC[g]=CONSUMERS[g].filter(function(c){return !cityLocked(c.id);});
+  });
+  var gs=Object.keys(GOODS).filter(function(g){return opnP[g].length&&opnC[g].length;});
+  if(!gs.length) return;
   var g=pick(gs);
   // Business follows your network. Most freight offered touches a city you
   // actually serve, so building a service immediately brings work -- with a
@@ -803,12 +859,12 @@ function spawnLoad(){
   // First try to offer work that runs between two cities you serve -- winning a
   // customer is the reward for having built a useful corridor.
   if(servedIds.length && Math.random()<0.68){
-    var pairGoods=Object.keys(GOODS).filter(function(gg){
-      return PRODUCERS[gg].some(function(c){return served[c.id];}) &&
-             CONSUMERS[gg].some(function(c){return served[c.id];}); });
+    var pairGoods=gs.filter(function(gg){
+      return opnP[gg].some(function(c){return served[c.id];}) &&
+             opnC[gg].some(function(c){return served[c.id];}); });
     if(pairGoods.length){
       g=pick(pairGoods);
-      var ps=PRODUCERS[g].filter(function(c){return served[c.id];});
+      var ps=opnP[g].filter(function(c){return served[c.id];});
       // weight origins by freight office too
       var wsum=0,ws=ps.map(function(c){var w=1+0.5*officeLvl(c.id);wsum+=w;return w;});
       var r2=Math.random()*wsum; from=ps[0];
@@ -816,15 +872,15 @@ function spawnLoad(){
     }
   }
   if(!from && servedIds.length && Math.random()<0.6){
-    var onNet=PRODUCERS[g].filter(function(c){return served[c.id];});
-    from = onNet.length ? pick(onNet) : pick(PRODUCERS[g]);
+    var onNet=opnP[g].filter(function(c){return served[c.id];});
+    from = onNet.length ? pick(onNet) : pick(opnP[g]);
   } else if(!from && !servedIds.length){
     // before you have anything, keep the offers close to the yard
-    var near=PRODUCERS[g].filter(function(c){return km("duiven",c.id)<520;});
-    from = near.length ? pick(near) : pick(PRODUCERS[g]);
-  } else if(!from) from=pick(PRODUCERS[g]);
+    var near=opnP[g].filter(function(c){return km("duiven",c.id)<520;});
+    from = near.length ? pick(near) : pick(opnP[g]);
+  } else if(!from) from=pick(opnP[g]);
   // prefer a nearby consumer: real freight is mostly regional
-  var cands=CONSUMERS[g].filter(function(c){return c.id!==from.id;});
+  var cands=opnC[g].filter(function(c){return c.id!==from.id;});
   if(!cands.length) return;
   var scored=cands.map(function(c){
     var w=(c.size+1)/Math.pow(Math.max(120,km(from.id,c.id))/500,1.35);
@@ -885,9 +941,18 @@ function svcVerdict(s){
   var age=(S.svcActiveH&&S.svcActiveH[s.id])||0;
   var rate=S.svcEma?S.svcEma[s.id]:null;
   var earn=S.svcEarnEma?S.svcEarnEma[s.id]:null, cost=S.svcCostEma?S.svcCostEma[s.id]:null;
-  if(age<1.5||rate==null) return {cls:"warn",word:"Warming up",help:"Just started — give it a little longer to show a trend.",rate:null,earn:null,cost:null};
-  if(rate>15) return {cls:"good",word:"Profitable",help:"Earning "+eur(rate)+"/h more than it costs to run.",rate:rate,earn:earn,cost:cost};
-  if(rate>-15) return {cls:"warn",word:"Breaking even",
+  // No verdict until at least one full round trip has had time to happen --
+  // before that the line has paid wages and fuel but has not yet been paid for
+  // anything, so any reading is guaranteed to look terrible and mean nothing.
+  var warm=Math.max(8, svcCycle(s));
+  if(age<warm||rate==null) return {cls:"warn",word:"Warming up",
+    help:"Give it one full round trip ("+hrs(warm)+") before judging — it has paid wages and fuel but has not been paid for a delivery yet.",
+    rate:null,earn:null,cost:null};
+  if(!S.svcCls) S.svcCls={};
+  var cls=classifyRate(rate, S.svcCls[s.id]);
+  S.svcCls[s.id]=cls;
+  if(cls==="good") return {cls:"good",word:"Profitable",help:"Earning "+eur(rate)+"/h more than it costs to run.",rate:rate,earn:earn,cost:cost};
+  if(cls==="warn") return {cls:"warn",word:"Breaking even",
     help:"Earning "+eur(earn)+"/h against "+eur(cost)+"/h in costs — roughly covering itself. A little more freight on this loop would tip it into profit.",
     rate:rate,earn:earn,cost:cost};
   // losing money: work out which of the three real causes actually applies
@@ -917,11 +982,15 @@ function vehRate(v){
   if(!v.svc) return {cls:"warn",word:"Idle",rate:null};
   var age=(S.vehActiveH&&S.vehActiveH[v.id])||0;
   var rate=S.vehEma?S.vehEma[v.id]:null;
-  if(age<1.5||rate==null) return {cls:"warn",word:"Warming up",rate:null};
+  var s=svcOf(v.svc);
+  var warm=Math.max(8, s?svcCycle(s):8);
+  if(age<warm||rate==null) return {cls:"warn",word:"Warming up",rate:null};
   var earn=S.vehEarnEma?S.vehEarnEma[v.id]:null, cost=S.vehCostEma?S.vehCostEma[v.id]:null;
-  if(rate>10) return {cls:"good",word:"Profitable",rate:rate,earn:earn,cost:cost};
-  if(rate>-10) return {cls:"warn",word:"Breaking even",rate:rate,earn:earn,cost:cost};
-  return {cls:"bad",word:"Losing money",rate:rate,earn:earn,cost:cost};
+  if(!S.vehCls) S.vehCls={};
+  var cls=classifyRate(rate, S.vehCls[v.id]);
+  S.vehCls[v.id]=cls;
+  return {cls:cls, word:cls==="good"?"Profitable":cls==="warn"?"Breaking even":"Losing money",
+          rate:rate, earn:earn, cost:cost};
 }
 function headway(s){
   var n=svcVehs(s).length;
@@ -1019,6 +1088,82 @@ function countryProgress(iso){
 function svcCovers(list){
   return S.svcs.some(function(s){ return svcVehs(s).length>0 &&
     list.every(function(id){ return s.stops.indexOf(id)>=0; }); });
+}
+/* ---- The next step. A haulage sim is opaque at the start: you are given a
+   map, some trucks and no instruction, and every individual screen makes sense
+   while the sequence between them does not. This is one always-visible line
+   telling you the single next thing worth doing, in the order that actually
+   teaches the game -- build a loop, make sure it can carry something, put a
+   truck on it, get it into profit, then expand. It advances on its own and
+   retires once you are clearly running the business yourself. */
+var STEPS=[
+ {k:"Step 1", t:"Build your first route",
+  w:"Open <b>Services</b> → <b>New service</b>, then tap cities on the map to chain them into a loop. Two stops is enough to start.",
+  tab:"services",
+  f:function(){ return S.svcs.some(function(s){return s.stops.length>=2;}); }},
+ {k:"Step 2", t:"Make sure the loop can actually carry something",
+  w:"A route only earns where one stop <b>ships</b> what another stop <b>takes in</b>. The editor tells you which goods your loop can carry — if it says it will earn nothing, add a city that wants what your stops produce.",
+  tab:"services",
+  f:function(){ return S.svcs.some(function(s){return s.stops.length>=2 && svcTradePairs(s).length>0;}); }},
+ {k:"Step 3", t:"Put a truck on it",
+  w:"Nothing moves until a truck is assigned. Open the service and assign one from <b>Idle in the yard</b> — you start with two.",
+  tab:"services",
+  f:function(){ return S.svcs.some(function(s){return svcVehs(s).length>0;}); }},
+ {k:"Step 4", t:"Complete your first delivery",
+  w:"Freight waiting at your stops will be picked up automatically and carried round the loop. Watch the <b>Loads</b> tab — you get paid on arrival.",
+  tab:"loads",
+  f:function(){ return S.delivered>=1; },
+  p:function(){ return [S.delivered,1]; }},
+ {k:"Step 5", t:"Get a route into profit",
+  w:"Give it a full round trip, then check the route's colour on the map: <span style='color:var(--green)'>green</span> pays, <span style='color:var(--red)'>red</span> loses. Tap the line for the reason why.",
+  tab:"services",
+  f:function(){ return S.svcs.some(function(s){return svcVerdict(s).cls==="good";}); }},
+ {k:"Step 6", t:"Unlock a new city",
+  w:"Your network only grows where you have cities. Tap a locked 🔒 pin to see its price — the closer to what you already run, the cheaper it is.",
+  tab:"city",
+  f:function(){ return unlockedCount()>STARTER_CITIES.length; },
+  p:function(){ return [unlockedCount()-STARTER_CITIES.length,1]; }},
+ {k:"Step 7", t:"Run a second route",
+  w:"Two shorter routes that meet at a shared city beat one long one: freight can change between them, and each comes round more often.",
+  tab:"services",
+  f:function(){ return S.svcs.filter(function(s){return svcVehs(s).length>0;}).length>=2; },
+  p:function(){ return [S.svcs.filter(function(s){return svcVehs(s).length>0;}).length,2]; }},
+ {k:"Step 8", t:"Grow the fleet",
+  w:"More trucks on a route means freight waits less. Buy one in <b>Fleet</b> — but watch the route stays profitable, since every truck draws wages whether it is loaded or not.",
+  tab:"fleet",
+  f:function(){ return S.veh.length>=4; },
+  p:function(){ return [S.veh.length,4]; }}
+];
+function currentStep(){
+  for(var i=0;i<STEPS.length;i++){
+    var ok=false; try{ ok=STEPS[i].f(); }catch(e){}
+    if(!ok) return {i:i, s:STEPS[i]};
+  }
+  return null;
+}
+function renderNextStep(){
+  var box=$("nextStep"); if(!box) return;
+  if(S.stepsDone){ box.style.display="none"; return; }
+  var cur=currentStep();
+  if(!cur){
+    box.style.display="";
+    box.className="nextstep done";
+    box.innerHTML='<div class="nsk">You are running the business</div>'+
+      '<div class="nst">🏆 That is the whole loop — build, carry, profit, expand</div>'+
+      '<div class="nsw">From here it is your call: chase the trophies in <b>Company</b>, push into another '+
+      'continent with a ship or a plane, or just make the network you have pay better. Tap to dismiss.</div>';
+    box.onclick=function(){ S.stepsDone=1; box.style.display="none"; };
+    return;
+  }
+  var st=cur.s;
+  var prog="";
+  if(st.p){ var pr=st.p(); var pct=Math.max(0,Math.min(100,100*pr[0]/pr[1]));
+    prog='<div class="nsp"><i style="width:'+pct.toFixed(0)+'%"></i></div>'; }
+  box.style.display="";
+  box.className="nextstep";
+  box.innerHTML='<div class="nsk">Next step · '+(cur.i+1)+' of '+STEPS.length+'</div>'+
+    '<div class="nst">'+st.t+'</div><div class="nsw">'+st.w+'</div>'+prog;
+  box.onclick=function(){ if(st.tab) setTab(st.tab); };
 }
 var ACH=[
  {id:"first",  ic:"\uD83D\uDCE6", n:"First haul",        d:"Deliver your first load",                  r:5000,   f:function(){return S.delivered>=1;}},
@@ -1340,11 +1485,19 @@ function step(dt){
   S.loads=S.loads.filter(function(l){
     if(l.on) return true;
     if(S.t > l.due + 36){
-      var fee=Math.round(l.pay*0.4);
-      S.cash-=fee; S.spent+=fee; S.cancelled=(S.cancelled||0)+1; rep(0);
-      costTotal+=fee;
-      hist(l.from).late++;
-      pipFly(l.from, "-"+eur(fee), "#e5675a");
+      // You are only on the hook for freight you could actually have moved. If
+      // no route existed the whole time it sat there, you never took the job --
+      // it just expires. Billing for those made the early game punish you for
+      // work you had no way to accept.
+      var couldHave = !!(l.plan || planFor(l));
+      if(couldHave){
+        var fee=Math.round(l.pay*0.4);
+        S.cash-=fee; S.spent+=fee; rep(0);
+        costTotal+=fee;
+        hist(l.from).late++;
+        pipFly(l.from, "-"+eur(fee), "#e5675a");
+      }
+      S.cancelled=(S.cancelled||0)+1;
       return false;
     }
     return true;
@@ -1353,16 +1506,16 @@ function step(dt){
   // header and the service cards show, and it is the whole answer to "am I
   // doing this right"
   var earnTotal=0; for(var ek in tickEarn) earnTotal+=tickEarn[ek];
-  S.netEma=emaStep(S.netEma,(earnTotal-costTotal)/dt,dt,3);
+  S.netEma=emaStep(S.netEma,(earnTotal-costTotal)/dt,dt,EMA_TAU);
   if(!S.svcEma) S.svcEma={};
   if(!S.svcActiveH) S.svcActiveH={};
   if(!S.svcEarnEma) S.svcEarnEma={}; if(!S.svcCostEma) S.svcCostEma={};
   S.svcs.forEach(function(sv){
     var running=svcVehs(sv).length>0;
     var e=tickEarn[sv.id]||0, c=tickCost[sv.id]||0;
-    S.svcEma[sv.id]=emaStep(S.svcEma[sv.id]==null?null:S.svcEma[sv.id], running?(e-c)/dt:0, dt, 3);
-    S.svcEarnEma[sv.id]=emaStep(S.svcEarnEma[sv.id]==null?null:S.svcEarnEma[sv.id], running?e/dt:0, dt, 3);
-    S.svcCostEma[sv.id]=emaStep(S.svcCostEma[sv.id]==null?null:S.svcCostEma[sv.id], running?c/dt:0, dt, 3);
+    S.svcEma[sv.id]=emaStep(S.svcEma[sv.id]==null?null:S.svcEma[sv.id], running?(e-c)/dt:0, dt, EMA_TAU);
+    S.svcEarnEma[sv.id]=emaStep(S.svcEarnEma[sv.id]==null?null:S.svcEarnEma[sv.id], running?e/dt:0, dt, EMA_TAU);
+    S.svcCostEma[sv.id]=emaStep(S.svcCostEma[sv.id]==null?null:S.svcCostEma[sv.id], running?c/dt:0, dt, EMA_TAU);
     if(running) S.svcActiveH[sv.id]=(S.svcActiveH[sv.id]||0)+dt;
   });
   if(!S.vehEma) S.vehEma={};
@@ -1371,9 +1524,9 @@ function step(dt){
   S.veh.forEach(function(v){
     var running=!!v.svc;
     var e=tickVEarn[v.id]||0, c=tickVCost[v.id]||0;
-    S.vehEma[v.id]=emaStep(S.vehEma[v.id]==null?null:S.vehEma[v.id], running?(e-c)/dt:0, dt, 3);
-    S.vehEarnEma[v.id]=emaStep(S.vehEarnEma[v.id]==null?null:S.vehEarnEma[v.id], running?e/dt:0, dt, 3);
-    S.vehCostEma[v.id]=emaStep(S.vehCostEma[v.id]==null?null:S.vehCostEma[v.id], running?c/dt:0, dt, 3);
+    S.vehEma[v.id]=emaStep(S.vehEma[v.id]==null?null:S.vehEma[v.id], running?(e-c)/dt:0, dt, EMA_TAU);
+    S.vehEarnEma[v.id]=emaStep(S.vehEarnEma[v.id]==null?null:S.vehEarnEma[v.id], running?e/dt:0, dt, EMA_TAU);
+    S.vehCostEma[v.id]=emaStep(S.vehCostEma[v.id]==null?null:S.vehCostEma[v.id], running?c/dt:0, dt, EMA_TAU);
     if(running) S.vehActiveH[v.id]=(S.vehActiveH[v.id]||0)+dt;
   });
 }
@@ -2017,6 +2170,35 @@ function renderSvcEditor(b,s){
     b.appendChild(info);
   }
 
+  // What this loop can actually earn from. A route only makes money where one
+  // stop ships something another stop takes -- without this, a loop of cities
+  // that simply do not trade with each other looks perfectly reasonable and
+  // silently earns nothing.
+  if(s.stops.length>=2){
+    var pairs=svcTradePairs(s);
+    var tw=document.createElement("div"); tw.className="card";
+    tw.style.borderColor=pairs.length?"rgba(79,201,138,.4)":"var(--red)";
+    if(pairs.length){
+      var byGood={};
+      pairs.forEach(function(p){ (byGood[p.g]=byGood[p.g]||[]).push(p); });
+      var lines=Object.keys(byGood).slice(0,6).map(function(g){
+        var p=byGood[g][0], more=byGood[g].length-1;
+        return '<div class="sub" style="margin-top:2px">'+GOODS[g].ic+' <b style="color:var(--ink)">'+GOODS[g].n+
+          '</b> · '+CITY[p.from].n+' → '+CITY[p.to].n+(more>0?' <span style="color:var(--dim2)">+'+more+' more</span>':'')+'</div>';
+      }).join("");
+      tw.innerHTML='<div class="ttl" style="font-size:12px;color:var(--green)">✓ This loop can earn from '+
+        Object.keys(byGood).length+' kind'+(Object.keys(byGood).length===1?'':'s')+' of freight</div>'+lines;
+    }else{
+      tw.innerHTML='<div class="ttl" style="font-size:12px;color:var(--red)">⚠ This loop will earn nothing</div>'+
+        '<div class="sub" style="margin-top:3px">No stop here ships anything another stop takes in, so there is '+
+        'no freight for it to carry — trucks would drive the loop empty and only cost you wages and fuel.</div>'+
+        '<div class="sub" style="margin-top:5px">Add a city that <b style="color:var(--ink)">takes in</b> what your '+
+        'stops ship out. Cities that produce nothing are exactly the ones worth adding — you get paid to deliver '+
+        '<em>into</em> them.</div>';
+    }
+    b.appendChild(tw);
+  }
+
   var mapHint=document.createElement("div"); mapHint.className="empty"; mapHint.style.padding="9px 12px";
   mapHint.style.marginBottom="9px"; mapHint.style.fontSize="11.5px"; mapHint.style.textAlign="left";
   mapHint.innerHTML='🗺️ <b style="color:var(--ink)">Tap cities on the map</b> to add or remove stops — '+
@@ -2174,7 +2356,9 @@ function renderCity(b){
   if(!selCity){ b.innerHTML='<div class="empty">Tap a city on the map to see what it makes, what it needs, and your history with it.</div>'; return; }
   var c=CITY[selCity], h=hist(c.id);
   var served=servedCities()[c.id];
-  var out=(c.out||[]).map(function(g){return '<span class="good out">'+GOODS[g].ic+' '+GOODS[g].n+'</span>';}).join("")||'<span class="sub">nothing — it only consumes</span>';
+  var out=(c.out||[]).map(function(g){return '<span class="good out">'+GOODS[g].ic+' '+GOODS[g].n+'</span>';}).join("")||
+    '<span class="sub">nothing — this is a <b style="color:var(--green)">destination</b>, and you get paid to deliver into it. '+
+    'Every profitable loop needs at least one.</span>';
   var inn=(c.in||[]).map(function(g){return '<span class="good in">'+GOODS[g].ic+' '+GOODS[g].n+'</span>';}).join("")||'<span class="sub">nothing</span>';
   // who this city naturally trades with -- the corridors worth building
   var partners=[];
@@ -2332,6 +2516,11 @@ var GUIDE=[
     "picking up whatever freight is waiting that is heading further round the loop.</p>"+
     "<p>You never dispatch a single load by hand. You design the network and the freight finds its way "+
     "through it.</p>"+
+    "<p><b>A loop only earns where one stop ships what another stop takes in.</b> Three cities that all "+
+    "produce steel and none that wants it will earn you nothing at all, however many trucks you put on it. "+
+    "This is why cities that produce <em>nothing</em> matter: they are destinations, and you get paid to "+
+    "deliver into them. The service editor lists exactly which goods your loop can carry, and warns you when "+
+    "the answer is none.</p>"+
     "<p><em>Open Services → New service</em>, chain a few cities together, then assign a truck.</p>"},
  {t:"Frequency beats coverage",
   h:"<p>The number that decides everything is <em>how often a truck comes round</em>: round-trip time "+
@@ -2422,7 +2611,7 @@ function frame(now){
   while(spawnAcc>=every){ spawnAcc-=every; spawnLoad(); }
   drawVehs();
   uiAcc+=dtReal;
-  if(uiAcc>0.25){ uiAcc=0; updateHeader(); checkAch(); }
+  if(uiAcc>0.25){ uiAcc=0; updateHeader(); checkAch(); renderNextStep(); }
   panelAcc+=dtReal;
   if(panelAcc>0.7){ panelAcc=0;
     if(!(tab==="services"&&svcEdit!=null)) render();
@@ -2437,7 +2626,7 @@ function frame(now){
 var SAVE_KEY="linehaul-network-v1";
 function serialise(){
   return {v:1, cash:S.cash, t:S.t, xp:S.xp, level:S.level, upg:S.upg, ach:S.ach, chain:S.chain,
-    depot:S.depot, office:S.office, hist:S.hist, recent:S.recent, unlocked:S.unlocked,
+    depot:S.depot, office:S.office, hist:S.hist, recent:S.recent, unlocked:S.unlocked, stepsDone:S.stepsDone,
     delivered:S.delivered, late:S.late, earned:S.earned, cancelled:S.cancelled,
     fuel:S.fuel, wages:S.wages, spent:S.spent,
     svcs:S.svcs.map(function(x){return {id:x.id,n:x.n,stops:x.stops,col:x.col};}),
@@ -2456,7 +2645,7 @@ function loadGame(){
   if(!d||d.v!==1) return false;
   S=fresh();
   ["cash","t","xp","level","upg","ach","chain","depot","office","hist","recent",
-   "delivered","late","earned","cancelled","fuel","wages","spent"].forEach(function(k){
+   "delivered","late","earned","cancelled","fuel","wages","spent","stepsDone"].forEach(function(k){
     if(d[k]!==undefined&&d[k]!==null) S[k]=d[k];
   });
   // saves from before city unlocking existed have no `unlocked` field -- grandfather
@@ -2510,6 +2699,7 @@ if(!seenGuide) setTimeout(function(){ showGuide(0); }, 400);
 else if(!loaded) toast("Freight is waiting and <b>nothing moves it yet</b>. Open <b>Services</b> and build a loop.");
 for(var i=0;i<4;i++) spawnLoad();
 setTab(loaded?"loads":"loads");
+renderNextStep();
 setInterval(saveGame, 5000);
 document.addEventListener("visibilitychange",function(){ if(document.hidden) saveGame(); });
 window.addEventListener("beforeunload", saveGame);
@@ -2527,6 +2717,13 @@ window.__lh={ state:function(){return S;}, save:saveGame, load:loadGame, reset:f
     S.veh.forEach(function(v){ if(!v.svc&&k<n){ assign(v,s); k++; } }); render(); return k; },
   buy:function(t,n){ var k=0; for(var i=0;i<n;i++) if(buyTruck(t)) k++; return k; },
   fast:function(x){ S.speed=x; },
+  // drive the sim directly, for balance measurement without waiting real time
+  sim:function(hours,dt){ dt=dt||0.05; var n=Math.round(hours/dt), every=0.85;
+    var acc=0;
+    for(var i=0;i<n;i++){ step(dt); acc+=dt;
+      var e=0.85/((0.25+0.75*repScore())*(1+0.12*up("sales")));
+      while(acc>=e){ acc-=e; spawnLoad(); } } },
+  verdict:svcVerdict, vehRate:vehRate,
   unlock:unlockCity, unlockCost:unlockCost, locked:cityLocked };
 requestAnimationFrame(frame);
 })();
