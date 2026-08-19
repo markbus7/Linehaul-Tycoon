@@ -238,7 +238,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v7.4</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v7.5</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat netstat"><div class="k">Net / h</div><div class="v" id="hNet">—</div></div>
@@ -1396,10 +1396,11 @@ function buildMap(){
 // on-screen size fixed instead of letting it keep growing with the camera --
 // otherwise the deeper zoom this round added makes every pin balloon.
 var PIN_CAP=6, lastPinS=null;
+function pinK(){ return Math.min(1,PIN_CAP/cam.s); }
 function updatePinScale(){
   if(cam.s===lastPinS) return;
   lastPinS=cam.s;
-  var k=Math.min(1,PIN_CAP/cam.s);
+  var k=pinK();
   CITIES.forEach(function(c){
     var p=$("cp-"+c.id); if(!p) return;
     var tr=k===1?"":"translate("+c.x.toFixed(1)+" "+c.y.toFixed(1)+") scale("+k.toFixed(4)+
@@ -1408,6 +1409,15 @@ function updatePinScale(){
       if(tr) p.setAttribute("transform",tr); else p.removeAttribute("transform");
     }
   });
+  // same cap as the pins, and for the same reason: below the old zoom
+  // ceiling it renders exactly as it always did (this is where its size was
+  // tuned), past that it holds instead of ballooning. NOT a constant size at
+  // every zoom -- it would look shrunken at the normal zoom range that was
+  // never a problem to begin with.
+  for(var id in svcWarnEls) setWarnTransform(svcWarnEls[id],k);
+}
+function setWarnTransform(rec,k){
+  rec.g.setAttribute("transform","translate("+rec.x.toFixed(1)+" "+rec.y.toFixed(1)+") scale("+k.toFixed(4)+")");
 }
 function padR(c){ return c.home?7.5 : 4.6+Math.min(3.2,c.size*0.72); }
 function glyphSize(c){ return (padR(c)*1.18).toFixed(1); }
@@ -1504,12 +1514,13 @@ function refreshSvcHealth(){
       var rec=svcWarnEls[s.id];
       if(!rec){
         var w=Math.max(24,txt.length*4.6+8);
-        var g=el("g",{class:"svcwarn","data-svc":s.id,transform:"translate("+mc.x+" "+(mc.y-16)+")"});
+        var g=el("g",{class:"svcwarn","data-svc":s.id});
         var rect=el("rect",{x:-w/2,y:-7,width:w,height:14,rx:6});
         var t=el("text",{y:0.5}); t.textContent="⚠ "+txt;
         g.appendChild(rect); g.appendChild(t);
         gSvcFlow.appendChild(g);
-        svcWarnEls[s.id]={g:g,rect:rect,t:t,txt:txt};
+        svcWarnEls[s.id]={g:g,rect:rect,t:t,txt:txt,x:mc.x,y:mc.y-16};
+        setWarnTransform(svcWarnEls[s.id],pinK());
       }else if(rec.txt!==txt){
         var w2=Math.max(24,txt.length*4.6+8);
         rec.rect.setAttribute("x",-w2/2); rec.rect.setAttribute("width",w2);
