@@ -248,7 +248,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v8.0</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v8.1</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat netstat"><div class="k">Net / h</div><div class="v" id="hNet">—</div></div>
@@ -1132,7 +1132,11 @@ var STEPS=[
   w:"More trucks on a route means freight waits less. Buy one in <b>Fleet</b> — but watch the route stays profitable, since every truck draws wages whether it is loaded or not.",
   tab:"fleet",
   f:function(){ return S.veh.length>=4; },
-  p:function(){ return [S.veh.length,4]; }}
+  p:function(){ return [S.veh.length,4]; }},
+ {k:"Step 9", t:"Build your first project",
+  w:"Projects are paid for in <b>delivered freight</b>, not cash. The Rhine Container Terminal wants ore and containers into Duisburg — both ship from Rotterdam. See <b>Company</b> for what each one needs.",
+  tab:"co",
+  f:function(){ return PROJECTS.some(function(p){return projDone(p.id);}); }}
 ];
 function currentStep(){
   for(var i=0;i<STEPS.length;i++){
@@ -1252,6 +1256,62 @@ var UPG=[
  {id:"brand",  n:"Brand",          ic:"\u2B50", d:"A late load dents reputation less",       max:3, base:170000, mul:2.6, lvl:6}
 ];
 function up(id){ return (S.upg&&S.upg[id])||0; }
+/* ---- Infrastructure projects. Everything else in the game is bought with
+   cash, which makes every decision the same decision: can I afford it. A
+   project is bought with *freight* instead -- you have to physically deliver
+   specific goods into a specific city -- so for the first time a particular
+   corridor is worth building for a reason other than its fee, and the
+   produce/consume map starts driving your route planning.
+
+   Hard rule: every required good must be something the host city actually
+   takes in, otherwise no load for it is ever generated and the project can
+   never be finished. Each `need` below is checked against that city's `in`. */
+var PROJECTS=[
+ {id:"rhine", n:"Rhine Container Terminal", at:"duisburg", ic:"🏗️",
+  need:{ore:30, cargo:30}, perk:"yard",
+  d:"Rotterdam ships both ore and containers up the Rhine — the natural first build.",
+  r:"Every city turns trucks round 12% faster"},
+ {id:"koln", n:"Köln Freight Interchange", at:"koln", ic:"🏭",
+  need:{cargo:40, elec:25}, perk:"rates",
+  d:"A sorting hub where the Rhine meets the east–west motorways.",
+  r:"+10% on every delivery fee"},
+ {id:"antwerp", n:"Antwerp Ore Dock", at:"antwerp", ic:"⚓",
+  need:{ore:50, machines:35}, perk:"fuel",
+  d:"Deep-water berths and the cranes to work them. Machinery comes from the south.",
+  r:"−15% fuel burn on every vehicle"},
+ {id:"paris", n:"Paris Distribution Centre", at:"paris", ic:"🏬",
+  need:{cargo:70, elec:40, textiles:25}, perk:"volume",
+  d:"Serving the largest consumer market on the continent brings in far more work.",
+  r:"+20% freight offered to you"},
+ {id:"berlin", n:"Berlin Logistics Park", at:"berlin", ic:"📦",
+  need:{cargo:90, elec:50, pharma:40}, perk:"cap",
+  d:"Purpose-built cross-docking on the gateway east.",
+  r:"+6t usable capacity on every vehicle"},
+ {id:"suez", n:"Suez Transshipment Hub", at:"cairo", ic:"🌍",
+  need:{machines:120, elec:90}, perk:"speed",
+  d:"The hinge between Europe and Asia. A long way from home, and worth it.",
+  r:"+12% speed on every vehicle"}
+];
+function projDone(id){ return !!(S.projDone&&S.projDone[id]); }
+function projGot(id,g){ return (S.proj&&S.proj[id]&&S.proj[id][g])||0; }
+function projPerk(key){
+  var n=0; PROJECTS.forEach(function(p){ if(p.perk===key&&projDone(p.id)) n++; });
+  return n;
+}
+// credit a delivery toward any unfinished project sited at this city
+function projDeliver(cityId, good, tons){
+  PROJECTS.forEach(function(p){
+    if(p.at!==cityId||projDone(p.id)||!p.need[good]) return;
+    if(!S.proj) S.proj={}; if(!S.proj[p.id]) S.proj[p.id]={};
+    S.proj[p.id][good]=Math.min(p.need[good],(S.proj[p.id][good]||0)+tons);
+    var all=Object.keys(p.need).every(function(g){ return projGot(p.id,g)>=p.need[g]; });
+    if(all){
+      if(!S.projDone) S.projDone={}; S.projDone[p.id]=1;
+      gainXP(200);
+      toast(p.ic+" <b>"+p.n+"</b> complete — "+p.r+".");
+    }
+  });
+}
 function upCost(u){ return Math.round(u.base*Math.pow(u.mul,up(u.id))); }
 function buyUpg(u){
   var l=up(u.id); if(l>=u.max||S.level<u.lvl) return false;
@@ -1259,10 +1319,10 @@ function buyUpg(u){
   S.cash-=c; S.spent+=c; if(!S.upg)S.upg={}; S.upg[u.id]=l+1; invalidate(); return true;
 }
 // derived numbers -- these are what the upgrades actually move
-function tSpeed(type){ return TRUCKS[type].kmh*(1+0.04*up("aero")); }
-function tFuel(type){ return TRUCKS[type].fuel*Math.pow(0.93,up("fuel")); }
-function tCap(type){ return TRUCKS[type].cap+2*up("planning"); }
-function payMult(){ return 1+0.07*up("rates"); }
+function tSpeed(type){ return TRUCKS[type].kmh*(1+0.04*up("aero"))*(1+0.12*projPerk("speed")); }
+function tFuel(type){ return TRUCKS[type].fuel*Math.pow(0.93,up("fuel"))*Math.pow(0.85,projPerk("fuel")); }
+function tCap(type){ return TRUCKS[type].cap+2*up("planning")+6*projPerk("cap"); }
+function payMult(){ return (1+0.07*up("rates"))*(1+0.10*projPerk("rates")); }
 function wageRate(){ return WAGE_PER_H*Math.pow(0.92,up("maint")); }
 function xpNeed(l){ return Math.round(350*Math.pow(l,1.32)); }
 function gainXP(n){
@@ -1280,7 +1340,7 @@ function gainXP(n){
 var DEPOT_COST=[45000,120000,320000], OFFICE_COST=[38000,95000,240000];
 function depotLvl(id){ return (S.depot&&S.depot[id])||0; }
 function officeLvl(id){ return (S.office&&S.office[id])||0; }
-function dwellAt(cityId,type){ return TRUCKS[type].dwell*Math.pow(0.78,depotLvl(cityId))*Math.pow(0.94,up("drivers")); }
+function dwellAt(cityId,type){ return TRUCKS[type].dwell*Math.pow(0.78,depotLvl(cityId))*Math.pow(0.94,up("drivers"))*Math.pow(0.88,projPerk("yard")); }
 function buyDepot(id){
   var l=depotLvl(id); if(l>=3) return false;
   var c=DEPOT_COST[l]; if(S.cash<c) return false;
@@ -1438,6 +1498,7 @@ function deliver(l,cityId,svcId,tickEarn,vehId,tickVEarn){
   rep(onTime?1:(Math.random()<0.18*up("brand")?1:0));
   var h=hist(cityId); h.in++; h.paid+=pay; if(!onTime) h.late++; if(h.first==null) h.first=S.t;
   if(!S.chain) S.chain={};
+  projDeliver(cityId, l.g, l.w);
   if(l.g==="ore"&&cityId==="duisburg") S.chain.oreDuisburg=1;
   if(l.g==="steel"&&cityId==="wolfsburg") S.chain.steelWolfsburg=1;
   if(l.g==="textiles"&&cityId==="milano") S.chain.textMilano=1;
@@ -2351,6 +2412,34 @@ function renderFleet(b){
   });
 }
 
+// What is actually sitting on the dock at a city, waiting for a truck. Without
+// this you can see that a city has freight only as a number on its map pin,
+// with no way to find out what it is, where it wants to go, or why it is stuck.
+function waitingHtml(c){
+  if(cityLocked(c.id)) return "";
+  var here=S.loads.filter(function(l){ return !l.on && l.at===c.id; })
+    .sort(function(x,y){ return (x.due-S.t)-(y.due-S.t); });
+  var h='<div class="lbl">Waiting here · '+here.length+' load'+(here.length===1?'':'s')+'</div>';
+  if(!here.length){
+    return h+'<div class="sub" style="padding:0 2px 6px">'+(servedCities()[c.id]
+      ? 'Nothing waiting — your trucks are keeping up here.'
+      : 'Nothing yet. Freight builds up at cities your services actually call at.')+'</div>';
+  }
+  here.slice(0,10).forEach(function(l){
+    var pl=planLine(l), slack=l.due-S.t;
+    h+='<div class="card" style="padding:7px 9px"><div class="row">'+
+      '<div class="gtile" style="width:30px;height:30px;font-size:15px">'+GOODS[l.g].ic+'</div>'+
+      '<div class="grow"><div class="ttl" style="font-size:12px">'+GOODS[l.g].n+
+      ' <span class="sub">'+l.w+'t</span>'+
+      '<span class="mono" style="float:right;color:var(--green)">'+eur(l.pay)+'</span></div>'+
+      '<div class="sub">→ '+flag(CITY[l.to].c)+' '+CITY[l.to].n+' · <span style="color:'+
+      (slack<0?'var(--red)':slack<6?'var(--amber)':'var(--dim2)')+'">'+
+      (slack<0?hrs(-slack)+' overdue':hrs(slack)+' left')+'</span></div>'+
+      '<div class="sub" style="margin-top:2px">'+pl.html+'</div></div></div></div>';
+  });
+  if(here.length>10) h+='<div class="sub" style="padding:2px">…and '+(here.length-10)+' more.</div>';
+  return h;
+}
 function renderCity(b){
   b.innerHTML="";
   if(!selCity){ b.innerHTML='<div class="empty">Tap a city on the map to see what it makes, what it needs, and your history with it.</div>'; return; }
@@ -2384,7 +2473,8 @@ function renderCity(b){
     '<div class="kv"><div class="k">Takes in</div><div class="v"><div class="goods">'+inn+'</div></div></div>'+
     '<div class="kv"><div class="k">Trades with</div><div class="v">'+
       (plist.map(function(p){ return (p.dir==="to"?"→ ":"← ")+CITY[p.id].n+' <span class="sub">('+
-        GOODS[p.g].n.toLowerCase()+', '+p.d+'km)</span>'; }).join("<br>")||"—")+'</div></div>')+
+        GOODS[p.g].n.toLowerCase()+', '+p.d+'km)</span>'; }).join("<br>")||"—")+'</div></div>'+
+    waitingHtml(c))+
     (locked?
     '<div class="lbl">Unlock this city</div>'+
     '<div class="card"><div class="row"><div class="grow"><div class="ttl">'+c.n+' is not on your map yet</div>'+
@@ -2393,8 +2483,8 @@ function renderCity(b){
       '<button class="btn sm" id="buyUnlock" '+(S.cash>=unlockCost(c)?'':'disabled')+'>'+eur(unlockCost(c))+'</button>'+
       '</div></div>':
     '<div class="lbl">Invest here</div>'+
-    '<div class="sub" style="margin:-2px 2px 8px;color:#7f8b99">These are your own buildings on this city\'s '+
-    'ground, once you have unlocked it.</div>'+
+    '<div class="sub" style="margin:-2px 2px 8px;color:#7f8b99">Your own buildings on this city\'s ground — '+
+    'they speed up and win work for every service that calls here.</div>'+
     '<div class="card"><div class="row"><div class="grow"><div class="ttl">Depot '+
       (depotLvl(c.id)?'<span class="pill a">level '+depotLvl(c.id)+'</span>':'')+'</div>'+
       '<div class="sub">Faster turnarounds: −22% time in the yard per level. Shorter cycles mean '+
@@ -2432,6 +2522,30 @@ function renderCo(b){
     '<div class="kv mini" style="flex:1;margin:0"><div class="k">Cities</div><div class="v mono">'+unlockedCount()+'/'+CITIES.length+'</div></div>'+
     '<div class="kv mini" style="flex:1;margin:0"><div class="k">Trophies</div><div class="v mono">'+done+'/'+ACH.length+'</div></div></div>';
   b.appendChild(head);
+
+  // Projects: paid for in delivered freight rather than cash, so they are the
+  // one thing that makes a *specific* corridor worth building.
+  var lp=document.createElement("div"); lp.className="lbl";
+  lp.textContent="Projects · built with freight, not cash"; b.appendChild(lp);
+  PROJECTS.forEach(function(p){
+    var done=projDone(p.id), host=CITY[p.at], locked=cityLocked(p.at);
+    var d=document.createElement("div"); d.className="card";
+    var rows=Object.keys(p.need).map(function(g){
+      var got=projGot(p.id,g), want=p.need[g], pct=Math.min(100,100*got/want);
+      return '<div style="margin-top:5px"><div class="sub">'+GOODS[g].ic+' '+GOODS[g].n+
+        ' <span class="mono" style="float:right;color:'+(got>=want?'var(--green)':'var(--dim2)')+'">'+
+        Math.floor(got)+'/'+want+'t</span></div>'+
+        '<div class="achbar"><i style="width:'+pct.toFixed(0)+'%"></i></div></div>';
+    }).join("");
+    d.innerHTML='<div class="row"><div class="gtile">'+p.ic+'</div><div class="grow">'+
+      '<div class="ttl">'+p.n+(done?' <span class="pill g">built</span>':'')+'</div>'+
+      '<div class="sub">Deliver into '+flag(host.c)+' <b style="color:var(--ink)">'+host.n+'</b>'+
+      (locked?' <span style="color:var(--amber)">· 🔒 city still locked</span>':'')+'</div>'+
+      '<div class="sub" style="color:#7f8b99;margin-top:3px">'+p.d+'</div>'+
+      '<div class="sub" style="color:var(--green);margin-top:3px">🎁 '+p.r+'</div>'+
+      '</div></div>'+(done?"":rows);
+    b.appendChild(d);
+  });
 
   var l1=document.createElement("div"); l1.className="lbl"; l1.textContent="Upgrades"; b.appendChild(l1);
   UPG.forEach(function(u){
@@ -2607,7 +2721,7 @@ function frame(now){
   step(dt);
   spawnAcc+=dt;
   // reputation throttles how much business you are offered
-  var every = 0.85 / ((0.25+0.75*repScore())*(1+0.12*up("sales")));
+  var every = 0.85 / ((0.25+0.75*repScore())*(1+0.12*up("sales"))*(1+0.20*projPerk("volume")));
   while(spawnAcc>=every){ spawnAcc-=every; spawnLoad(); }
   drawVehs();
   uiAcc+=dtReal;
@@ -2626,7 +2740,7 @@ function frame(now){
 var SAVE_KEY="linehaul-network-v1";
 function serialise(){
   return {v:1, cash:S.cash, t:S.t, xp:S.xp, level:S.level, upg:S.upg, ach:S.ach, chain:S.chain,
-    depot:S.depot, office:S.office, hist:S.hist, recent:S.recent, unlocked:S.unlocked, stepsDone:S.stepsDone,
+    depot:S.depot, office:S.office, hist:S.hist, recent:S.recent, unlocked:S.unlocked, stepsDone:S.stepsDone, proj:S.proj, projDone:S.projDone,
     delivered:S.delivered, late:S.late, earned:S.earned, cancelled:S.cancelled,
     fuel:S.fuel, wages:S.wages, spent:S.spent,
     svcs:S.svcs.map(function(x){return {id:x.id,n:x.n,stops:x.stops,col:x.col};}),
@@ -2645,7 +2759,7 @@ function loadGame(){
   if(!d||d.v!==1) return false;
   S=fresh();
   ["cash","t","xp","level","upg","ach","chain","depot","office","hist","recent",
-   "delivered","late","earned","cancelled","fuel","wages","spent","stepsDone"].forEach(function(k){
+   "delivered","late","earned","cancelled","fuel","wages","spent","stepsDone","proj","projDone"].forEach(function(k){
     if(d[k]!==undefined&&d[k]!==null) S[k]=d[k];
   });
   // saves from before city unlocking existed have no `unlocked` field -- grandfather
@@ -2721,7 +2835,7 @@ window.__lh={ state:function(){return S;}, save:saveGame, load:loadGame, reset:f
   sim:function(hours,dt){ dt=dt||0.05; var n=Math.round(hours/dt), every=0.85;
     var acc=0;
     for(var i=0;i<n;i++){ step(dt); acc+=dt;
-      var e=0.85/((0.25+0.75*repScore())*(1+0.12*up("sales")));
+      var e=0.85/((0.25+0.75*repScore())*(1+0.12*up("sales"))*(1+0.20*projPerk("volume")));
       while(acc>=e){ acc-=e; spawnLoad(); } } },
   verdict:svcVerdict, vehRate:vehRate,
   unlock:unlockCity, unlockCost:unlockCost, locked:cityLocked };
