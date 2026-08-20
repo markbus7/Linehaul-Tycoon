@@ -255,7 +255,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v8.4</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v8.5</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat netstat"><div class="k">Net / h</div><div class="v" id="hNet">—</div></div>
@@ -753,7 +753,11 @@ function truckCan(type,good){
 // it will leave a stop, and whether it takes anything or holds out for one
 // kind of freight.
 var FILL_OPTS=[{v:1,n:"Full load"},{v:0.5,n:"50% full"},{v:0.25,n:"25% full"},{v:0,n:"Don't wait"}];
-var MAX_HOLD=18;   // game hours: a safety valve so a truck can never be stranded
+// "Wait until full" means exactly that -- a truck holds out as long as it
+// takes rather than running half empty. MAX_HOLD is only a backstop against
+// an unforeseen stall, not the intended behaviour.
+var MAX_HOLD=48;
+var MIN_LOAD_T=3;  // spawnLoad never creates a load smaller than this
 // Default is a full load: an empty or half-empty truck still burns the same
 // wages and nearly the same fuel, so waiting to fill up is the sane opening
 // position. `null` means "never set", which is what an older save carries.
@@ -1486,7 +1490,7 @@ function assign(v,s){
 }
 function unassign(v){
   v.cargo.forEach(function(l){ l.on=null; l.at=v.at||"duiven"; l.plan=null; });
-  v.cargo=[]; v.svc=null; v.dwell=0; v.prog=0;
+  v.cargo=[]; v.svc=null; v.dwell=0; v.prog=0; v.waiting=false; v.held=0;
   invalidate();
 }
 function vehLoad(v){ var t=0; v.cargo.forEach(function(l){t+=l.w;}); return t; }
@@ -1543,16 +1547,18 @@ function arrive(v,s,tickEarn,tickVEarn){
 // or freight-type filter accepts -- leaves empty rather than blocking the
 // loop, and MAX_HOLD stops any wait becoming indefinite.
 function shouldHold(v,s){
+  v.waiting=false;
   var want=vFill(v); if(!want) return false;
-  if((v.held||0)>=MAX_HOLD) return false;
-  var capT=tCap(v.type);
-  if(vehLoad(v) >= capT*want - 1e-9) return false;
-  var cityId=s.stops[v.si], space=capT-vehLoad(v);
-  return S.loads.some(function(l){
+  var capT=tCap(v.type), space=capT-vehLoad(v);
+  if(vehLoad(v) >= capT*want - 1e-9) return false;   // reached the target fill
+  // As full as it can physically get: no load the game will ever generate is
+  // smaller than MIN_LOAD_T, so once less than that is free, holding out for a
+  // perfect 100% would be waiting for something that cannot exist.
+  if(space < MIN_LOAD_T) return false;
+  if((v.held||0)>=MAX_HOLD) return false;            // backstop against a stall
+  var cityId=s.stops[v.si];
+  var hasNow=S.loads.some(function(l){
     if(l.on||l.at!==cityId) return false;
-    // must actually fit in what is left, or waiting achieves nothing: a truck
-    // at 24 of 26t sitting out an 18-hour wait for a 5t load it can never
-    // squeeze in is how "full load" ended up meaning "leave nearly empty".
     if(l.w>space) return false;
     if(!vehTakes(v,l.g)) return false;
     if(!l.plan) l.plan=planFor(l);
@@ -1560,6 +1566,17 @@ function shouldHold(v,s){
     var leg=l.plan.legs[l.step];
     return leg.svc===s.id && s.stops.indexOf(leg.to)>=0;
   });
+  // Wait as long as it takes -- but only while there is actually something
+  // here to wait for. On a typical loop most stops can never load a given
+  // vehicle at all: of the five starter cities, a general-freight truck can
+  // only ever pick up at Rotterdam and Antwerp, because Duiven ships nothing,
+  // Duisburg ships steel that nothing on the loop wants, and Koln ships
+  // chemicals a box trailer cannot carry. Holding at those stops is waiting
+  // for freight that cannot exist, so the truck goes on empty -- which is the
+  // stated exception: if the city has nothing to offer it, it should leave.
+  if(!hasNow) return false;
+  v.waiting=true;
+  return true;
 }
 function deliver(l,cityId,svcId,tickEarn,vehId,tickVEarn){
   var onTime = S.t <= l.due;
@@ -1593,9 +1610,15 @@ function step(dt){
     if(svcId!=null) tickCost[svcId]=(tickCost[svcId]||0)+amt;
     if(vehId!=null) tickVCost[vehId]=(tickVCost[vehId]||0)+amt;
   }
-  // wages tick whether a truck earns or not, so idle capacity is a real loss --
-  // charged per truck so it can be attributed to the service it sits on
+  // Wages tick whether a truck earns or not, so idle capacity is a real loss --
+  // charged per truck so it can be attributed to the service it sits on.
+  // A truck holding out for a fuller load is the exception: the trailer is
+  // standing at a dock, not running, and a driver whose shift has not started
+  // is not on the clock. Waiting therefore costs time, not money -- which is
+  // what makes trading frequency for a full trailer a real decision instead of
+  // a straight penalty.
   S.veh.forEach(function(v){
+    if(v.waiting) return;
     var w=wageRate()*dt;
     S.cash-=w; S.spent+=w; S.wages=(S.wages||0)+w;
     chargeCost(v.svc,v.id,w);
@@ -1614,10 +1637,11 @@ function step(dt){
           if(v.dwell<=0) v.dwell=0.5;
           return;
         }
-        v.held=0; v.si=(v.si+1)%s.stops.length; v.prog=0;
+        v.held=0; v.waiting=false; v.si=(v.si+1)%s.stops.length; v.prog=0;
       }
       return;
     }
+    v.waiting=false;   // rolling: back on the clock
     var a=CITY[s.stops[(v.si-1+s.stops.length)%s.stops.length]], b=CITY[s.stops[v.si]];
     if(v.at===s.stops[v.si] && v.prog===0){ a=CITY[v.at]; }
     var T=TRUCKS[v.type];
@@ -2512,9 +2536,12 @@ function renderFleet(b){
       '<button class="optb'+(vPick(v)==="all"?' on':'')+'" data-pick="all">All</button>'+
       carriable.map(function(g){ return '<button class="optb'+(vPick(v)===g?' on':'')+
         '" data-pick="'+g+'" title="'+GOODS[g].n+'">'+GOODS[g].ic+'</button>'; }).join("")+'</div>'+
-      (vFill(v)? '<div class="sub" style="margin-top:4px;color:#7f8b99">Waits at a stop until it is '+
-        Math.round(vFill(v)*100)+'% full ('+Math.ceil(tCap(v.type)*vFill(v))+'t). Leaves anyway if the stop '+
-        'has nothing it can take, or after '+hrs(MAX_HOLD)+'.</div>' : '');
+      (vFill(v)? '<div class="sub" style="margin-top:4px;color:#7f8b99">Waits as long as it takes to reach '+
+        Math.round(vFill(v)*100)+'% full ('+Math.ceil(tCap(v.type)*vFill(v))+'t), and <b style="color:var(--green)">'+
+        'draws no wages while it waits</b> — a parked trailer is not a driver on the clock. Moves on if the stop '+
+        'has nothing left it can load.</div>'
+        : '<div class="sub" style="margin-top:4px;color:#7f8b99">Takes whatever is ready and leaves straight away. '+
+          'Most trips, most freight moved — at the cost of running part loaded.</div>');
     opt.querySelectorAll("[data-fill]").forEach(function(bt){
       bt.onclick=function(){ v.minFill=parseFloat(bt.getAttribute("data-fill")); v.held=0; render(); };
     });
