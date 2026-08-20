@@ -255,7 +255,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v8.7</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v8.8</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat netstat"><div class="k">Net / h</div><div class="v" id="hNet">—</div></div>
@@ -831,6 +831,7 @@ function fresh(){
     svcs: [], veh: [], loads: [],
     delivered: 0, late: 0, earned: 0, spent: 0,
     hist: {},                        // per-city history -> the mental story
+    netHist: [], histStep: 2, lastHistT: 0,   // company net-worth over time -> the "am I winning" chart
     seen: {}, speed: 1, unlocked: unlocked,
     netEma: null, svcEma: {}, svcEarnEma: {}, svcCostEma: {}, svcActiveH: {},  // live profit/loss, company-wide and per service
     vehEma: {}, vehEarnEma: {}, vehCostEma: {}, vehActiveH: {}                 // same, but per truck
@@ -859,6 +860,42 @@ function emaStep(prev, instant, dt, tau){
   if(prev==null) return instant;
   var k = 1-Math.exp(-dt/tau);
   return prev + (instant-prev)*k;
+}
+// Turns the net-worth samples into plotting-ready points, scaled into a
+// fixed 0..100 x 0..34 box regardless of how much history there is or how
+// wide the swings are -- the caller just drops the points into an <svg
+// viewBox="0 0 100 34">. Always ends on the live cash figure, so the line
+// reaches "right now" even between samples.
+function netHistChart(){
+  var hst=(S.netHist||[]).slice();
+  hst.push({t:S.t,cash:S.cash});
+  if(hst.length<2) return null;
+  var W=100,H=34,PAD=2;
+  var minC=hst[0].cash,maxC=hst[0].cash;
+  hst.forEach(function(p){ if(p.cash<minC)minC=p.cash; if(p.cash>maxC)maxC=p.cash; });
+  if(maxC===minC){ maxC+=1; minC-=1; }
+  var t0=hst[0].t, t1=hst[hst.length-1].t;
+  var span=Math.max(1e-6,t1-t0);
+  var pts=hst.map(function(p){
+    var x=PAD+(W-2*PAD)*((p.t-t0)/span);
+    var y=PAD+(H-2*PAD)*(1-(p.cash-minC)/(maxC-minC));
+    return x.toFixed(1)+","+y.toFixed(1);
+  });
+  var line=pts.join(" ");
+  var area=pts[0].split(",")[0]+","+(H-PAD)+" "+line+" "+pts[pts.length-1].split(",")[0]+","+(H-PAD);
+  return {W:W,H:H,line:line,area:area,up:hst[hst.length-1].cash>=hst[0].cash,t0:t0};
+}
+// How cash has moved over roughly the last week of play -- the direct answer
+// to "am I doing better or worse than before". Falls back to the oldest
+// sample on hand if the game is younger than that.
+function netHistDelta(){
+  var hst=S.netHist||[];
+  if(!hst.length) return null;
+  var target=S.t-168, ref=hst[0];
+  for(var i=0;i<hst.length;i++){ if(hst[i].t<=target) ref=hst[i]; else break; }
+  var days=(S.t-ref.t)/24;
+  if(days<0.15) return null;   // too little elapsed time to mean anything
+  return {change:S.cash-ref.cash, days:days};
 }
 function rep(v){ if(!S.recent) S.recent=[]; S.recent.push(v); if(S.recent.length>40) S.recent.shift(); }
 function repScore(){ if(!S.recent||!S.recent.length) return 1;
@@ -1751,6 +1788,20 @@ function step(dt){
   // doing this right"
   var earnTotal=0; for(var ek in tickEarn) earnTotal+=tickEarn[ek];
   S.netEma=emaStep(S.netEma,(earnTotal-costTotal)/dt,dt,EMA_TAU);
+  // A running record of net worth, sampled every histStep game-hours, for the
+  // performance chart -- "am I doing better than before" needs a trend, not
+  // just a snapshot. Capped at 180 points: once full, every other point is
+  // dropped and the sampling interval doubles, so the whole game's history
+  // always fits in a fixed, cheap-to-save amount of data.
+  if(S.t-(S.lastHistT||0)>=(S.histStep||2)){
+    S.lastHistT=S.t;
+    if(!S.netHist) S.netHist=[];
+    S.netHist.push({t:S.t,cash:Math.round(S.cash)});
+    if(S.netHist.length>180){
+      S.netHist=S.netHist.filter(function(_,i){return i%2===0;});
+      S.histStep=(S.histStep||2)*2;
+    }
+  }
   if(!S.svcEma) S.svcEma={};
   if(!S.svcActiveH) S.svcActiveH={};
   if(!S.svcEarnEma) S.svcEarnEma={}; if(!S.svcCostEma) S.svcCostEma={};
@@ -2832,6 +2883,31 @@ function renderCo(b){
     '<div class="kv mini" style="flex:1;margin:0"><div class="k">Trophies</div><div class="v mono">'+done+'/'+ACH.length+'</div></div></div>';
   b.appendChild(head);
 
+  // The performance chart: cash over time, so "am I doing better or worse
+  // than before" has an actual answer instead of a gut feeling.
+  var chart=netHistChart(), delta=netHistDelta();
+  var perf=document.createElement("div"); perf.className="card";
+  if(!chart){
+    perf.innerHTML='<div class="lbl" style="margin:0 0 4px">Company performance</div>'+
+      '<div class="sub">Play a little longer and your cash trend will show up here.</div>';
+  } else {
+    var col=chart.up?"var(--green)":"var(--red)";
+    perf.innerHTML='<div class="row" style="align-items:flex-start">'+
+      '<div class="grow"><div class="lbl" style="margin:0 0 2px">Company performance</div>'+
+      '<div class="sub">Cash on hand, day '+Math.max(1,Math.floor(chart.t0/24+1))+' to now</div></div>'+
+      (delta?'<div style="text-align:right"><div class="ttl" style="color:'+(delta.change>=0?"var(--green)":"var(--red)")+'">'+
+        (delta.change>=0?"+":"−")+eur(Math.abs(delta.change))+'</div>'+
+        '<div class="sub">last '+(delta.days>=6?Math.round(delta.days)+'d':delta.days.toFixed(1)+'d')+'</div></div>':'')+
+      '</div>'+
+      '<svg viewBox="0 0 '+chart.W+' '+chart.H+'" preserveAspectRatio="none" style="width:100%;height:70px;display:block;margin-top:6px">'+
+      '<polygon points="'+chart.area+'" fill="'+col+'" opacity="0.14"></polygon>'+
+      '<polyline points="'+chart.line+'" fill="none" stroke="'+col+'" stroke-width="1.6" vector-effect="non-scaling-stroke"></polyline>'+
+      '</svg>'+
+      '<div class="sub" style="display:flex;justify-content:space-between;margin-top:2px">'+
+      '<span>'+eur(S.cash)+' now</span></div>';
+  }
+  b.appendChild(perf);
+
   // Projects: paid for in delivered freight rather than cash, so they are the
   // one thing that makes a *specific* corridor worth building.
   var lp=document.createElement("div"); lp.className="lbl";
@@ -3050,6 +3126,7 @@ var SAVE_KEY="linehaul-network-v1";
 function serialise(){
   return {v:1, cash:S.cash, t:S.t, xp:S.xp, level:S.level, upg:S.upg, ach:S.ach, chain:S.chain,
     depot:S.depot, office:S.office, hist:S.hist, recent:S.recent, unlocked:S.unlocked, stepsDone:S.stepsDone, proj:S.proj, projDone:S.projDone,
+    netHist:S.netHist, histStep:S.histStep, lastHistT:S.lastHistT,
     delivered:S.delivered, late:S.late, earned:S.earned, cancelled:S.cancelled,
     fuel:S.fuel, wages:S.wages, spent:S.spent,
     svcs:S.svcs.map(function(x){return {id:x.id,n:x.n,stops:x.stops,col:x.col};}),
@@ -3068,7 +3145,8 @@ function loadGame(){
   if(!d||d.v!==1) return false;
   S=fresh();
   ["cash","t","xp","level","upg","ach","chain","depot","office","hist","recent",
-   "delivered","late","earned","cancelled","fuel","wages","spent","stepsDone","proj","projDone"].forEach(function(k){
+   "delivered","late","earned","cancelled","fuel","wages","spent","stepsDone","proj","projDone",
+   "netHist","histStep","lastHistT"].forEach(function(k){
     if(d[k]!==undefined&&d[k]!==null) S[k]=d[k];
   });
   // saves from before city unlocking existed have no `unlocked` field -- grandfather
