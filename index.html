@@ -248,7 +248,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v8.1</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v8.2</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat netstat"><div class="k">Net / h</div><div class="v" id="hNet">—</div></div>
@@ -1969,8 +1969,22 @@ function hitSvcLine(wx,wy){
 }
 function tapMap(cx,cy){
   var p=toSvg(cx,cy), wx=(p.x-cam.tx)/cam.s, wy=(p.y-cam.ty)/cam.s;
-  var best=null, bd=16/cam.s;
-  CITIES.forEach(function(c){ var d=Math.hypot(c.x-wx,c.y-wy); if(d<bd){ bd=d; best=c; } });
+  // Tap target has to match the pin you can actually see. It used to be a flat
+  // 16px regardless of zoom, while the pin is drawn at padR and then held at a
+  // constant on-screen size past PIN_CAP -- so a pin that looked big had a
+  // small target, and tapping its edge silently did nothing (or worse, fell
+  // through to the route line underneath). Size the target off the rendered
+  // radius instead, plus a finger's worth of margin.
+  // Two passes so the margin can never steal a tap from the pin you actually
+  // hit: anything inside a drawn pin wins outright, and only if the tap landed
+  // on bare map do we widen to the surrounding margin.
+  var best=null, bd=Infinity, near=null, nd=Infinity, k=pinK();
+  CITIES.forEach(function(c){
+    var d=Math.hypot(c.x-wx,c.y-wy), r=padR(c)*k;
+    if(d<=r){ if(d<bd){ bd=d; best=c; } }
+    else if(d<=r+11/cam.s && d<nd){ nd=d; near=c; }
+  });
+  if(!best) best=near;
   if(!best){
     // no city under the tap -- maybe a route line was tapped instead. Not
     // while actively editing a (possibly different) service, since taps
@@ -2471,10 +2485,10 @@ function renderCity(b){
     (locked?'':
     '<div class="kv"><div class="k">Ships out</div><div class="v"><div class="goods">'+out+'</div></div></div>'+
     '<div class="kv"><div class="k">Takes in</div><div class="v"><div class="goods">'+inn+'</div></div></div>'+
+    waitingHtml(c)+
     '<div class="kv"><div class="k">Trades with</div><div class="v">'+
       (plist.map(function(p){ return (p.dir==="to"?"→ ":"← ")+CITY[p.id].n+' <span class="sub">('+
-        GOODS[p.g].n.toLowerCase()+', '+p.d+'km)</span>'; }).join("<br>")||"—")+'</div></div>'+
-    waitingHtml(c))+
+        GOODS[p.g].n.toLowerCase()+', '+p.d+'km)</span>'; }).join("<br>")||"—")+'</div></div>')+
     (locked?
     '<div class="lbl">Unlock this city</div>'+
     '<div class="card"><div class="row"><div class="grow"><div class="ttl">'+c.n+' is not on your map yet</div>'+
