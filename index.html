@@ -255,7 +255,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v8.9</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v9.0</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat netstat"><div class="k">Net / h</div><div class="v" id="hNet">—</div></div>
@@ -1996,6 +1996,14 @@ function drawSvcs(){
     var p=pts.join(" ");
     gSvc.appendChild(el("polyline",{class:"svccase","data-svc":s.id,points:p}));
     gSvc.appendChild(el("polyline",{class:"svcline","data-svc":s.id,points:p}));
+    // a thin dashed line, animated to march along the loop, so a running
+    // route visibly carries traffic instead of just sitting there coloured
+    // in. Only drawn for routes actually working (a truck assigned) -- an
+    // empty route has no traffic to show. Plain stroke-dasharray animation,
+    // not a filter: cheap to repaint on every pan/zoom frame, unlike the
+    // coastline drop-shadow that cost 80% of pan fps and got pulled in v6.4.
+    if(svcVehs(s).length) gSvcFlow.appendChild(el("polyline",
+      {class:"svcflow","data-svc":s.id,points:p,stroke:s.col}));
   });
   drawEditPreview();
   refreshSvcHealth();
@@ -3260,7 +3268,7 @@ window.__lh={ state:function(){return S;}, save:saveGame, load:loadGame, reset:f
   plan:function(a,b){return routePlan(a,b);},
   addSvc:function(stops){ var s=newSvc(); s.stops=stops.slice(); invalidate(); drawSvcs(); refreshCities(); return s.id; },
   put:function(svcId,n){ var s=svcOf(svcId),k=0;
-    S.veh.forEach(function(v){ if(!v.svc&&k<n){ assign(v,s); k++; } }); render(); return k; },
+    S.veh.forEach(function(v){ if(!v.svc&&k<n){ assign(v,s); k++; } }); drawSvcs(); render(); return k; },
   buy:function(t,n){ var k=0; for(var i=0;i<n;i++) if(buyTruck(t)) k++; return k; },
   fast:function(x){ S.speed=x; },
   // drive the sim directly, for balance measurement without waiting real time
