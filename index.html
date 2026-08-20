@@ -220,6 +220,13 @@
   .stopbtn{width:25px;height:25px;border-radius:6px;background:var(--panel);border:1px solid var(--line);
     font-size:11px;display:grid;place-items:center}
   .stopbtn:disabled{opacity:.28}
+  .vopt{margin-top:7px;border-top:1px solid var(--line);padding-top:7px}
+  .optrow{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:4px}
+  .optk{font-size:10px;color:var(--dim2);letter-spacing:.05em;text-transform:uppercase;
+    flex:0 0 68px}
+  .optb{background:var(--panel2);border:1px solid var(--line);border-radius:6px;color:var(--dim);
+    font-size:10.5px;padding:3px 7px;min-height:24px}
+  .optb.on{background:#233043;border-color:var(--blue);color:var(--ink);font-weight:650}
   .gtile{width:38px;height:38px;flex:0 0 auto;border-radius:10px;display:grid;place-items:center;
     font-size:19px;background:linear-gradient(180deg,#28323d,#1b232b);border:1px solid #333f4c;
     box-shadow:0 1px 0 rgba(255,255,255,.05) inset}
@@ -248,7 +255,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v8.2</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v8.3</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat netstat"><div class="k">Net / h</div><div class="v" id="hNet">—</div></div>
@@ -727,10 +734,34 @@ var TRUCKS = [
    note:"Perishables by air \u2014 flowers and fresh produce, gone stale if they wait for a ship."}
 ];
 // a load with a `req` can only ride a truck carrying that equipment
+// What a vehicle is physically able to carry.
+//   tanker / bulk carrier  -- liquids only. A tank cannot hold boxes.
+//   car transporter        -- finished cars only, for the same reason.
+//   reefer / reefer plane  -- a refrigerated trailer is still a box, so it
+//                             carries dry freight as well as food, exactly as
+//                             real reefers do on their return legs.
+//   everything else        -- general freight only.
+// (This used to read `!TRUCKS[type].spec || true`, which is always true, so
+//  every specialised vehicle could also haul general cargo -- making tankers
+//  and transporters strictly better than plain trucks rather than a trade-off.)
 function truckCan(type,good){
-  var r=GOODS[good]&&GOODS[good].req;
-  if(!r) return !TRUCKS[type].spec || true;
-  return TRUCKS[type].spec===r;
+  var r=GOODS[good]&&GOODS[good].req, sp=TRUCKS[type].spec;
+  if(!r) return !sp || sp==="reefer";
+  return sp===r;
+}
+// Load rules the player sets per vehicle: how full it insists on being before
+// it will leave a stop, and whether it takes anything or holds out for one
+// kind of freight.
+var FILL_OPTS=[{v:0,n:"Leave at once"},{v:0.25,n:"25% full"},{v:0.5,n:"50% full"},{v:1,n:"Full load"}];
+var MAX_HOLD=18;   // game hours: a safety valve so a truck can never be stranded
+function vFill(v){ return v.minFill||0; }
+function vPick(v){ return v.pickG||"all"; }
+// goods this vehicle is allowed to load right now, given its own equipment and
+// the freight-type filter the player chose
+function vehTakes(v,good){
+  if(!truckCan(v.type,good)) return false;
+  var p=vPick(v);
+  return p==="all" || p===good;
 }
 // Ships need a port at every stop, planes an air hub at every stop, and a
 // road vehicle needs every stop reachable overland -- Europe/Africa/Asia are
@@ -1472,7 +1503,7 @@ function arrive(v,s,tickEarn,tickVEarn){
     if(leg.svc!==s.id) return;
     if(s.stops.indexOf(leg.to)<0) return;
     if(l.w>space) return;
-    if(!truckCan(v.type,l.g)) return;
+    if(!vehTakes(v,l.g)) return;
     space-=l.w; take.push(l);
   });
   take.forEach(function(l){
@@ -1482,6 +1513,27 @@ function arrive(v,s,tickEarn,tickVEarn){
     var h=hist(cityId); h.out++; if(h.first==null) h.first=S.t;
   });
   v.dwell = dwellAt(cityId,v.type) * (take.length?1:0.35);
+}
+// Should this vehicle sit at its current stop waiting for a fuller load?
+// Only if the player asked it to, it is genuinely under that threshold, and
+// there is freight here it could actually still load. A truck at a city that
+// will never offer it anything -- nothing exported, or nothing its equipment
+// or freight-type filter accepts -- leaves empty rather than blocking the
+// loop, and MAX_HOLD stops any wait becoming indefinite.
+function shouldHold(v,s){
+  var want=vFill(v); if(!want) return false;
+  if((v.held||0)>=MAX_HOLD) return false;
+  var capT=tCap(v.type);
+  if(vehLoad(v) >= capT*want - 1e-9) return false;
+  var cityId=s.stops[v.si];
+  return S.loads.some(function(l){
+    if(l.on||l.at!==cityId) return false;
+    if(!vehTakes(v,l.g)) return false;
+    if(!l.plan) l.plan=planFor(l);
+    if(!l.plan||!l.plan.legs[l.step]) return false;
+    var leg=l.plan.legs[l.step];
+    return leg.svc===s.id && s.stops.indexOf(leg.to)>=0;
+  });
 }
 function deliver(l,cityId,svcId,tickEarn,vehId,tickVEarn){
   var onTime = S.t <= l.due;
@@ -1525,7 +1577,21 @@ function step(dt){
   S.veh.forEach(function(v){
     var s=v.svc?svcOf(v.svc):null;
     if(!s||s.stops.length<2){ return; }
-    if(v.dwell>0){ v.dwell-=dt; if(v.dwell<=0){ v.si=(v.si+1)%s.stops.length; v.prog=0; } return; }
+    if(v.dwell>0){
+      v.dwell-=dt;
+      // time spent at this stop while still short of the player's fill target
+      if(vFill(v) && vehLoad(v) < tCap(v.type)*vFill(v)) v.held=(v.held||0)+dt;
+      if(v.dwell<=0){
+        if(shouldHold(v,s)){
+          // stay put and try to top up from whatever has arrived since
+          arrive(v,s,tickEarn,tickVEarn);
+          if(v.dwell<=0) v.dwell=0.5;
+          return;
+        }
+        v.held=0; v.si=(v.si+1)%s.stops.length; v.prog=0;
+      }
+      return;
+    }
     var a=CITY[s.stops[(v.si-1+s.stops.length)%s.stops.length]], b=CITY[s.stops[v.si]];
     if(v.at===s.stops[v.si] && v.prog===0){ a=CITY[v.at]; }
     var T=TRUCKS[v.type];
@@ -2404,8 +2470,31 @@ function renderFleet(b){
         : T.cap+'t · parked at Duiven')+'</div>'+
       (s?'<div class="sub" style="margin-top:3px"><span class="pill '+PCLS3[vr.cls]+'" style="font-size:10px">'+vr.word+'</span>'+
         (vr.rate!=null?' <span class="vrate '+vr.cls+'" style="font-size:11px">'+(vr.rate>=0?"+":"−")+eur(Math.abs(vr.rate))+'/h</span>':'')+
+        (vFill(v)&&(v.held||0)>0.05&&vehLoad(v)<tCap(v.type)*vFill(v)
+          ? ' <span class="sub">· holding for a load, '+hrs(Math.max(0,MAX_HOLD-(v.held||0)))+' left</span>':'')+
         '</div>':'')+
+      '<div class="vopt"></div>'+
       '</div></div>';
+    // Load rules: how full it insists on being before it leaves, and whether
+    // it holds out for one kind of freight.
+    var opt=d.querySelector(".vopt");
+    var carriable=Object.keys(GOODS).filter(function(g){ return truckCan(v.type,g); });
+    opt.innerHTML='<div class="optrow"><span class="optk">Leaves when</span>'+
+      FILL_OPTS.map(function(o){ return '<button class="optb'+(vFill(v)===o.v?' on':'')+
+        '" data-fill="'+o.v+'">'+o.n+'</button>'; }).join("")+'</div>'+
+      '<div class="optrow"><span class="optk">Picks up</span>'+
+      '<button class="optb'+(vPick(v)==="all"?' on':'')+'" data-pick="all">All</button>'+
+      carriable.map(function(g){ return '<button class="optb'+(vPick(v)===g?' on':'')+
+        '" data-pick="'+g+'" title="'+GOODS[g].n+'">'+GOODS[g].ic+'</button>'; }).join("")+'</div>'+
+      (vFill(v)? '<div class="sub" style="margin-top:4px;color:#7f8b99">Waits at a stop until it is '+
+        Math.round(vFill(v)*100)+'% full ('+Math.ceil(tCap(v.type)*vFill(v))+'t). Leaves anyway if the stop '+
+        'has nothing it can take, or after '+hrs(MAX_HOLD)+'.</div>' : '');
+    opt.querySelectorAll("[data-fill]").forEach(function(bt){
+      bt.onclick=function(){ v.minFill=parseFloat(bt.getAttribute("data-fill")); v.held=0; render(); };
+    });
+    opt.querySelectorAll("[data-pick]").forEach(function(bt){
+      bt.onclick=function(){ v.pickG=bt.getAttribute("data-pick"); v.held=0; render(); };
+    });
     b.appendChild(d);
   });
   var lab2=document.createElement("div"); lab2.className="lbl"; lab2.textContent="Buy";
@@ -2758,7 +2847,7 @@ function serialise(){
     delivered:S.delivered, late:S.late, earned:S.earned, cancelled:S.cancelled,
     fuel:S.fuel, wages:S.wages, spent:S.spent,
     svcs:S.svcs.map(function(x){return {id:x.id,n:x.n,stops:x.stops,col:x.col};}),
-    veh:S.veh.map(function(v){return {type:v.type,svc:v.svc,si:v.si};}),
+    veh:S.veh.map(function(v){return {type:v.type,svc:v.svc,si:v.si,minFill:v.minFill,pickG:v.pickG};}),
     nextId:nextId, saved:Date.now()};
 }
 // Set while a reset is in flight so the beforeunload/visibilitychange
@@ -2788,6 +2877,7 @@ function loadGame(){
   S.veh=(d.veh||[]).map(function(v){
     var home=CITY.duiven;
     return {id:nextId++, type:v.type, svc:v.svc, si:v.si||0, prog:0, dwell:0,
+            minFill:v.minFill||0, pickG:v.pickG||"all", held:0,
             x:home.x, y:home.y, at:"duiven", cargo:[]};
   });
   // put each truck back on its loop
@@ -2851,7 +2941,7 @@ window.__lh={ state:function(){return S;}, save:saveGame, load:loadGame, reset:f
     for(var i=0;i<n;i++){ step(dt); acc+=dt;
       var e=0.85/((0.25+0.75*repScore())*(1+0.12*up("sales"))*(1+0.20*projPerk("volume")));
       while(acc>=e){ acc-=e; spawnLoad(); } } },
-  verdict:svcVerdict, vehRate:vehRate,
+  verdict:svcVerdict, vehRate:vehRate, truckCan:truckCan,
   unlock:unlockCity, unlockCost:unlockCost, locked:cityLocked };
 requestAnimationFrame(frame);
 })();
