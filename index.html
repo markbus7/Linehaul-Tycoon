@@ -255,7 +255,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v8.5</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v8.6</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat netstat"><div class="k">Net / h</div><div class="v" id="hNet">—</div></div>
@@ -1049,6 +1049,64 @@ function vehRate(v){
   return {cls:cls, word:cls==="good"?"Profitable":cls==="warn"?"Breaking even":"Losing money",
           rate:rate, earn:earn, cost:cost};
 }
+// Is this line short of trucks, or short of freight? Both are fixable, but by
+// opposite moves -- more vehicles versus a freight office, another stop, or
+// different equipment -- and telling them apart from the profit figure alone
+// is guesswork. This compares what the loop's trucks actually carry against
+// what is standing at its stops waiting for them.
+function svcSupply(s){
+  var vs=svcVehs(s);
+  if(!vs.length||s.stops.length<2) return null;
+  var fill=(S.svcFillEma&&S.svcFillEma[s.id]);
+  if(fill==null) return null;
+  // freight standing at this loop's stops that these trucks could actually load
+  var waitT=0, strandedT=0, strandedG={};
+  s.stops.forEach(function(cid){
+    S.loads.forEach(function(l){
+      if(l.on||l.at!==cid) return;
+      // only freight this loop could plausibly move: both ends on the loop.
+      // Anything bound elsewhere is another service's business, not evidence
+      // that this one is mis-equipped.
+      if(s.stops.indexOf(l.to)<0) return;
+      if(vs.some(function(v){ return vehTakes(v,l.g); })) waitT+=l.w;
+      else { strandedT+=l.w; strandedG[l.g]=(strandedG[l.g]||0)+l.w; }
+    });
+  });
+  var capT=0; vs.forEach(function(v){ capT+=tCap(v.type); });
+  var pct=Math.round(fill*100), why, cls;
+  // Primary read: are these trucks short of freight, or is the freight short
+  // of trucks? Those need opposite fixes.
+  if(waitT>capT*1.5){
+    cls="warn";
+    why="About "+Math.round(waitT)+"t is standing against "+capT+"t of capacity — well over what these trucks can lift "+
+        "in one pass, and they are leaving "+pct+"% full. Another truck here would have freight waiting for it.";
+  }else if(pct<45 && waitT<capT*0.5){
+    cls="warn";
+    why="Trucks leave only "+pct+"% full and just "+Math.round(waitT)+"t is waiting against "+capT+"t of capacity — "+
+        "there is more truck here than freight. Build a freight office at a stop that ships, add a stop that ships "+
+        "what these trucks carry, or move a truck to another loop.";
+  }else{
+    cls="good";
+    why="Trucks leave about "+pct+"% full with roughly "+Math.round(waitT)+"t standing — capacity and freight are "+
+        "reasonably matched on this loop.";
+  }
+  // Freight this loop generates that its current vehicles physically cannot
+  // take is a separate problem with a separate fix, so it is called out
+  // separately rather than replacing the headline.
+  if(strandedT>Math.max(20,capT*0.35)){
+    var gs=Object.keys(strandedG).sort(function(x,y){return strandedG[y]-strandedG[x];});
+    var need={};
+    gs.forEach(function(g){ var r=GOODS[g].req; if(r) need[r]=1; });
+    var kit=Object.keys(need).map(function(r){
+      return {reefer:"a reefer",tank:"a tanker",car:"a car transporter"}[r]; }).filter(Boolean);
+    why+=" Separately, about "+Math.round(strandedT)+"t of "+
+      gs.slice(0,3).map(function(g){return GOODS[g].n.toLowerCase();}).join(", ")+
+      " is waiting that none of these vehicles can carry"+
+      (kit.length? " — "+kit.join(" and ")+" on this loop would pick it up." : ".");
+    if(cls==="good") cls="warn";
+  }
+  return {fillPct:pct, waitT:Math.round(waitT), strandedT:Math.round(strandedT), capT:capT, cls:cls, why:why};
+}
 function headway(s){
   var n=svcVehs(s).length;
   if(!n||s.stops.length<2) return Infinity;
@@ -1694,6 +1752,15 @@ function step(dt){
     S.svcEarnEma[sv.id]=emaStep(S.svcEarnEma[sv.id]==null?null:S.svcEarnEma[sv.id], running?e/dt:0, dt, EMA_TAU);
     S.svcCostEma[sv.id]=emaStep(S.svcCostEma[sv.id]==null?null:S.svcCostEma[sv.id], running?c/dt:0, dt, EMA_TAU);
     if(running) S.svcActiveH[sv.id]=(S.svcActiveH[sv.id]||0)+dt;
+    // How full this loop's trucks actually run while moving. Together with how
+    // much freight is standing at its stops, this is what tells you whether a
+    // line is short of trucks or short of freight.
+    if(!S.svcFillEma) S.svcFillEma={};
+    var mv=svcVehs(sv).filter(function(v){ return v.prog>0 && v.prog<1; });
+    if(mv.length){
+      var f=0; mv.forEach(function(v){ f+=Math.min(1,vehLoad(v)/tCap(v.type)); });
+      S.svcFillEma[sv.id]=emaStep(S.svcFillEma[sv.id]==null?null:S.svcFillEma[sv.id], f/mv.length, dt, EMA_TAU);
+    }
   });
   if(!S.vehEma) S.vehEma={};
   if(!S.vehActiveH) S.vehActiveH={};
@@ -2288,7 +2355,6 @@ function renderServices(b){
 function makeStopsDraggable(wrapS,s){
   var rows=Array.prototype.slice.call(wrapS.querySelectorAll(".stop"));
   if(rows.length<2) return;
-  var step=rows[1].getBoundingClientRect().top-rows[0].getBoundingClientRect().top;
   rows.forEach(function(row,dragIdx){
     var h=row.querySelector(".draghandle");
     if(!h) return;
@@ -2296,15 +2362,26 @@ function makeStopsDraggable(wrapS,s){
       e.preventDefault();
       var startY=e.clientY, target=dragIdx;
       row.classList.add("dragging");
+      // Rows are not all the same height -- a stop with a long "ships ..." line
+      // wraps -- so work out where the drag has landed by comparing the dragged
+      // row's centre against each row's own centre, rather than assuming a
+      // uniform row pitch.
+      var mids=rows.map(function(r){ var b=r.getBoundingClientRect(); return b.top+b.height/2; });
       function move(ev){
         var dy=ev.clientY-startY;
         row.style.transform="translateY("+dy+"px)";
-        target=Math.max(0,Math.min(rows.length-1, dragIdx+Math.round(dy/step)));
+        var c=mids[dragIdx]+dy;
+        target=dragIdx;
+        for(var t=0;t<rows.length;t++){
+          if(t<dragIdx && c<mids[t]){ target=t; break; }
+          if(t>dragIdx && c>mids[t]) target=t;
+        }
+        var rh=row.getBoundingClientRect().height;
         rows.forEach(function(r,ri){
           if(r===row) return;
           var shift=0;
-          if(target>dragIdx && ri>dragIdx && ri<=target) shift=-step;
-          else if(target<dragIdx && ri>=target && ri<dragIdx) shift=step;
+          if(target>dragIdx && ri>dragIdx && ri<=target) shift=-rh;
+          else if(target<dragIdx && ri>=target && ri<dragIdx) shift=rh;
           r.style.transform=shift?"translateY("+shift+"px)":"";
         });
       }
@@ -2361,6 +2438,22 @@ function renderSvcEditor(b,s){
     b.appendChild(info);
   }
 
+  // Trucks vs freight: the balance the player has to strike between how much a
+  // loop's cities offer and how much capacity is parked on it.
+  var sup=svcSupply(s);
+  if(sup){
+    var sc=document.createElement("div"); sc.className="card";
+    sc.style.borderColor = sup.cls==="good" ? "rgba(79,201,138,.4)" : "rgba(240,166,60,.5)";
+    sc.innerHTML='<div class="ttl" style="font-size:12px;color:'+(sup.cls==="good"?"var(--green)":"var(--amber)")+'">'+
+      (sup.cls==="good"?"✓":"⚠")+' Trucks vs freight</div>'+
+      '<div class="row" style="gap:6px;margin-top:7px">'+
+      '<div class="kv mini" style="flex:1;margin:0"><div class="k">Leaving</div><div class="v mono">'+sup.fillPct+'% full</div></div>'+
+      '<div class="kv mini" style="flex:1;margin:0"><div class="k">Waiting</div><div class="v mono">'+sup.waitT+'t</div></div>'+
+      '<div class="kv mini" style="flex:1;margin:0"><div class="k">Can lift</div><div class="v mono">'+sup.capT+'t</div></div></div>'+
+      '<div class="sub" style="margin-top:7px">'+sup.why+'</div>';
+    b.appendChild(sc);
+  }
+
   // What this loop can actually earn from. A route only makes money where one
   // stop ships something another stop takes -- without this, a loop of cities
   // that simply do not trade with each other looks perfectly reasonable and
@@ -2402,9 +2495,25 @@ function renderSvcEditor(b,s){
   s.stops.forEach(function(id,i){
     var c=CITY[id];
     var r=document.createElement("div"); r.className="stop";
+    // does this stop actually supply the trucks on this loop, or is it a
+    // drop-off only? That is what decides whether waiting here can ever pay,
+    // and whether it is worth topping up at the next city instead.
+    var vsNow=svcVehs(s);
+    // one entry per GOOD, not per destination -- a city shipping containers to
+    // three different stops on the loop is still shipping one thing
+    var seenG={}, sup2=[];
+    svcTradePairs(s).forEach(function(pr){
+      if(pr.from!==c.id||seenG[pr.g]) return;
+      if(vsNow.length && !vsNow.some(function(v){ return vehTakes(v,pr.g); })) return;
+      seenG[pr.g]=1; sup2.push(pr.g);
+    });
+    var supTxt = sup2.length
+      ? '<span style="color:var(--green)">ships '+sup2.slice(0,3).map(function(g){return GOODS[g].n.toLowerCase();}).join(", ")+
+        (sup2.length>3?' +'+(sup2.length-3):'')+'</span>'
+      : '<span style="color:var(--dim2)">drop-off only</span>';
     r.innerHTML='<span class="draghandle">⠿</span><span class="stopn">'+(i+1)+'</span>'+
       '<div class="grow"><div class="ttl" style="font-size:12px">'+
-      flag(c.c)+' '+c.n+'</div><div class="sub">'+(s.stops.length>1?Math.round(legKm(s,i))+'km → '+
+      flag(c.c)+' '+c.n+'</div><div class="sub">'+supTxt+(s.stops.length>1?' · '+Math.round(legKm(s,i))+'km → '+
       CITY[s.stops[(i+1)%s.stops.length]].n:'')+'</div></div>'+
       '<button class="stopbtn" '+(i===0?'disabled':'')+'>↑</button>'+
       '<button class="stopbtn" '+(i===s.stops.length-1?'disabled':'')+'>↓</button>'+
@@ -2994,7 +3103,7 @@ window.__lh={ state:function(){return S;}, save:saveGame, load:loadGame, reset:f
     for(var i=0;i<n;i++){ step(dt); acc+=dt;
       var e=0.85/((0.25+0.75*repScore())*(1+0.12*up("sales"))*(1+0.20*projPerk("volume")));
       while(acc>=e){ acc-=e; spawnLoad(); } } },
-  verdict:svcVerdict, vehRate:vehRate, truckCan:truckCan, cap:tCap,
+  verdict:svcVerdict, vehRate:vehRate, truckCan:truckCan, cap:tCap, supply:svcSupply,
   unlock:unlockCity, unlockCost:unlockCost, locked:cityLocked };
 requestAnimationFrame(frame);
 })();
