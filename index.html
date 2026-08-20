@@ -4,13 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
-<title>LINEHAUL — Network v6.1</title>
+<title>Linehaul Tycoon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0d1116;--panel:#141a21;--panel2:#1a222b;--line:#26313c;
-    --ink:#e6eaef;--dim:#8895a4;--dim2:#5d6b7a;
-    --amber:#f0a63c;--green:#4fc98a;--red:#e5675a;--blue:#5fa5e0;--violet:#b48ce8;
-    --sea:#0a1015;--land:#1d262f;--landln:#2d3a46;
+    --bg:#0c1016;--panel:#151b23;--panel2:#1b232c;--line:#283442;
+    --ink:#eef1f5;--dim:#8fa0b3;--dim2:#5f7086;
+    --amber:#ffab2e;--green:#3ddb96;--red:#ff5b62;--blue:#4fb4f5;--violet:#c191f2;
+    --sea:#0d1e2c;--land:#1d262f;--landln:#2d3a46;
+    --font-display:'Rajdhani',ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;background:var(--bg);color:var(--ink);
@@ -20,17 +24,20 @@
   button{font:inherit;color:inherit;border:none;background:none;cursor:pointer}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
 
-  header{display:flex;align-items:center;gap:16px;padding:9px 14px;flex:0 0 auto;flex-wrap:wrap;
-    background:linear-gradient(180deg,#1b232c,#131a21);border-bottom:1px solid #2b3742;
+  header{display:flex;align-items:center;gap:16px;padding:10px 16px;flex:0 0 auto;flex-wrap:wrap;
+    background:linear-gradient(180deg,#1c2530,#121820);border-bottom:1px solid #2b3742;
     box-shadow:0 2px 14px rgba(0,0,0,.45);position:relative;z-index:5}
-  header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;
-    background:linear-gradient(90deg,transparent,rgba(240,166,60,.35),transparent)}
-  .brand{font-weight:800;letter-spacing:.16em;font-size:13px;
-    background:linear-gradient(180deg,#ffd08a,#e2921f);-webkit-background-clip:text;background-clip:text;
+  header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;
+    background:linear-gradient(90deg,transparent,rgba(255,171,46,.55),rgba(79,180,245,.35),transparent)}
+  .brand{font-family:var(--font-display);font-weight:700;letter-spacing:.14em;font-size:18px;
+    display:flex;align-items:center;gap:7px}
+  .brand .bmark{font-size:17px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
+  .brand .bword{background:linear-gradient(180deg,#ffd88f,#ff9d1f);-webkit-background-clip:text;background-clip:text;
     color:transparent;text-shadow:0 1px 0 rgba(0,0,0,.4)}
   .stat{display:flex;flex-direction:column;line-height:1.15}
-  .stat .k{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim2)}
-  .stat .v{font-family:ui-monospace,Menlo,monospace;font-weight:600;font-size:14px;font-variant-numeric:tabular-nums}
+  .stat .k{font-family:var(--font-display);font-size:10px;font-weight:600;letter-spacing:.13em;
+    text-transform:uppercase;color:var(--dim2)}
+  .stat .v{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
   .v.money{color:var(--amber)} .v.ok{color:var(--green)} .v.bad{color:var(--red)} .v.warn2{color:var(--amber)}
   .netstat{min-width:74px}
   .sp{flex:1}
@@ -57,11 +64,12 @@
   .gdots{flex:1;display:flex;gap:5px;justify-content:center}
   .gd{width:6px;height:6px;border-radius:50%;background:#2f3b48;display:block}
   .gd.on{background:var(--amber);box-shadow:0 0 6px rgba(240,166,60,.6)}
-  .hbtn{padding:7px 12px;border:1px solid #33404d;border-radius:9px;font-size:12px;font-weight:700;
-    background:linear-gradient(180deg,#28323d,#1d252e);box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 2px 6px rgba(0,0,0,.35)}
+  .hbtn{font-family:var(--font-display);padding:7px 13px;border:1px solid #33404d;border-radius:10px;
+    font-size:13px;font-weight:700;letter-spacing:.02em;
+    background:linear-gradient(180deg,#2b3541,#1d252e);box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 2px 6px rgba(0,0,0,.35);
+    transition:border-color .15s,color .15s,transform .1s}
   .hbtn:hover{border-color:var(--amber);color:#ffd08a}
   .hbtn:active{transform:translateY(1px)}
-  .hbtn:hover{border-color:var(--amber)}
   .hbtn.on{border-color:var(--amber);color:var(--amber)}
 
   main{flex:1;display:flex;min-height:0}
@@ -75,8 +83,8 @@
   @media(max-width:900px){aside{width:auto;border-left:none;border-top:1px solid var(--line);height:47%}}
   .tabs{display:flex;flex:0 0 auto;border-bottom:1px solid #2b3742;
     background:linear-gradient(180deg,#1a222b,#151c24);padding:0 4px}
-  .tabs button{flex:1;padding:11px 4px;font-size:11px;font-weight:700;letter-spacing:.045em;
-    text-transform:uppercase;color:var(--dim);position:relative;transition:color .15s}
+  .tabs button{font-family:var(--font-display);flex:1;padding:11px 4px;font-size:12.5px;font-weight:700;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--dim);position:relative;transition:color .15s}
   .tabs button:hover{color:#b9c4d0}
   .tabs button.on{color:#ffd08a}
   .tabs button.on::after{content:"";position:absolute;left:8%;right:8%;bottom:-1px;height:2.5px;
@@ -86,8 +94,9 @@
   .tabs .bdg.warn{background:#5a2420;color:#ffb3a8}
   .nextstep{flex:0 0 auto;padding:9px 12px;background:linear-gradient(180deg,#1d2a22,#182219);
     border-bottom:1px solid #2f4436;cursor:pointer}
-  .nextstep .nsk{font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:#6f9c7e;font-weight:700}
-  .nextstep .nst{font-size:13px;font-weight:700;color:var(--ink);margin-top:2px}
+  .nextstep .nsk{font-family:var(--font-display);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+    color:#6f9c7e;font-weight:700}
+  .nextstep .nst{font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--ink);margin-top:2px}
   .nextstep .nsw{font-size:11.5px;color:#9fb0a4;margin-top:3px;line-height:1.5}
   .nextstep .nsp{height:3px;border-radius:2px;background:#2b3742;margin-top:7px;overflow:hidden}
   .nextstep .nsp i{display:block;height:100%;background:linear-gradient(90deg,#4fc98a,#8fe3b4)}
@@ -99,30 +108,31 @@
   .body::-webkit-scrollbar-thumb{background:#2b3742;border-radius:5px;border:2px solid transparent;background-clip:padding-box}
   .body::-webkit-scrollbar-thumb:hover{background:#3a4756;background-clip:padding-box}
 
-  .card{background:linear-gradient(180deg,#1c242d,#171e26);border:1px solid #2b3541;border-radius:11px;
-    padding:11px;margin-bottom:8px;position:relative;overflow:hidden;
+  .card{background:linear-gradient(180deg,#1d2731,#171e26);border:1px solid #2c3947;border-radius:13px;
+    padding:11px;margin-bottom:8px;position:relative;overflow:hidden;transition:border-color .15s,transform .12s;
     box-shadow:0 1px 0 rgba(255,255,255,.035) inset,0 3px 10px rgba(0,0,0,.28)}
   .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:transparent}
-  .card.warn{border-color:#4d3a1e}   .card.warn::before{background:linear-gradient(180deg,#f0a63c,#8a5c17)}
-  .card.bad{border-color:#4d2622}    .card.bad::before{background:linear-gradient(180deg,#e5675a,#8a2f26)}
-  .card.good::before{background:linear-gradient(180deg,#4fc98a,#1f6f4a)}
+  .card.warn{border-color:#57431f}   .card.warn::before{background:linear-gradient(180deg,#ffab2e,#8a5c17)}
+  .card.bad{border-color:#5a2c26}    .card.bad::before{background:linear-gradient(180deg,#ff5b62,#8a2f26)}
+  .card.good::before{background:linear-gradient(180deg,#3ddb96,#1f6f4a)}
   .row{display:flex;align-items:center;gap:10px}
   .grow{flex:1;min-width:0}
-  .ttl{font-weight:650;font-size:13px}
+  .ttl{font-family:var(--font-display);font-weight:700;font-size:14.5px;letter-spacing:.01em}
   .sub{font-size:11px;color:var(--dim);margin-top:2px;line-height:1.5}
-  .lbl{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#7d8b9a;margin:14px 2px 8px;
-    display:flex;align-items:center;gap:8px}
+  .lbl{font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;
+    color:#8898aa;margin:14px 2px 8px;display:flex;align-items:center;gap:8px}
   .lbl::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,#2b3742,transparent)}
   .lbl:first-child{margin-top:2px}
-  .btn{background:linear-gradient(180deg,#f7bb52,#df9520);color:#1b1206;font-weight:800;font-size:12px;
-    padding:8px 13px;border-radius:9px;white-space:nowrap;
-    box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 2px 8px rgba(224,150,32,.28);transition:transform .1s,filter .15s}
+  .btn{font-family:var(--font-display);background:linear-gradient(180deg,#ffc35e,#f0930f);color:#1b1206;
+    font-weight:700;font-size:13.5px;letter-spacing:.01em;
+    padding:8px 14px;border-radius:10px;white-space:nowrap;
+    box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 2px 8px rgba(240,147,15,.32);transition:transform .1s,filter .15s}
   .btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)}
   .btn:disabled{background:#242d38;color:#5d6b7a;box-shadow:none;cursor:not-allowed}
   .btn.ghost{background:linear-gradient(180deg,#272f3a,#1c242d);border:1px solid #34404d;color:var(--ink);
     font-weight:700;box-shadow:0 1px 0 rgba(255,255,255,.05) inset}
   .btn.danger{background:linear-gradient(180deg,#4a221c,#341714);border:1px solid #5c2b24;color:#ffb3a8;box-shadow:none}
-  .btn.sm{padding:6px 10px;font-size:11px}
+  .btn.sm{padding:6px 11px;font-size:12.5px}
   .pill{display:inline-block;font-size:10px;padding:2px 7px;border-radius:7px;background:#26313d;color:#9aa8b6;
     font-family:ui-monospace,monospace;border:1px solid #2f3b48}
   .pill.g{background:#13301f;color:#7fdba6;border-color:#1e4a31}
@@ -255,7 +265,8 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v9.0</span></div>
+  <div class="brand"><span class="bmark">🚛</span><span class="bword">LINEHAUL</span>
+    <span style="font-family:ui-sans-serif,system-ui,sans-serif;font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v9.1</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat netstat"><div class="k">Net / h</div><div class="v" id="hNet">—</div></div>
@@ -270,23 +281,23 @@
     <svg id="map" preserveAspectRatio="xMidYMid meet">
       <defs>
         <radialGradient id="seaG" cx="50%" cy="38%" r="78%">
-          <stop offset="0" stop-color="#12212e"/><stop offset="55%" stop-color="#0b141d"/>
-          <stop offset="100%" stop-color="#060c12"/>
+          <stop offset="0" stop-color="#1c3f59"/><stop offset="55%" stop-color="#122b3f"/>
+          <stop offset="100%" stop-color="#081826"/>
         </radialGradient>
         <linearGradient id="landG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#2b3742"/><stop offset="100%" stop-color="#1b242d"/>
+          <stop offset="0" stop-color="#3c4a41"/><stop offset="100%" stop-color="#232e28"/>
         </linearGradient>
         <linearGradient id="landMine" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#3a4437"/><stop offset="100%" stop-color="#232c26"/>
+          <stop offset="0" stop-color="#4d6b3e"/><stop offset="100%" stop-color="#28391f"/>
         </linearGradient>
         <linearGradient id="padG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#39485a"/><stop offset="100%" stop-color="#212b36"/>
+          <stop offset="0" stop-color="#4d637c"/><stop offset="100%" stop-color="#28374a"/>
         </linearGradient>
         <linearGradient id="padOn" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#2f4a3c"/><stop offset="100%" stop-color="#1a2a22"/>
+          <stop offset="0" stop-color="#3ea677"/><stop offset="100%" stop-color="#1a4a34"/>
         </linearGradient>
         <linearGradient id="padHome" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#6a4d1c"/><stop offset="100%" stop-color="#3a2a11"/>
+          <stop offset="0" stop-color="#ffab2e"/><stop offset="100%" stop-color="#7a4e0f"/>
         </linearGradient>
         <filter id="coast" x="-30%" y="-30%" width="160%" height="160%">
           <feDropShadow dx="0" dy="1.5" stdDeviation="2.2" flood-color="#04080c" flood-opacity=".85"/>
@@ -1003,7 +1014,7 @@ function spawnLoad(){
    A service is an ordered loop of stops with trucks assigned. Headway --
    how often a truck actually shows up -- is cycle time / trucks, and that
    single number is what makes a sprawling route useless.                  */
-var SVC_COLORS=["#5fa5e0","#4fc98a","#b48ce8","#f0a63c","#e5675a","#59c2c9","#d98cc0","#9fc45a"];
+var SVC_COLORS=["#4fb4f5","#3ddb96","#c9a0ff","#ffb84d","#ff6e76","#4dd0d9","#ef9bd4","#b5e065"];
 function newSvc(){
   var s={id:nextId++, n:"Service "+(S.svcs.length+1), stops:[],
          col:SVC_COLORS[S.svcs.length%SVC_COLORS.length]};
