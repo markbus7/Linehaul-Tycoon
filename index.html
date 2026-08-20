@@ -255,7 +255,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v8.3</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v8.4</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat netstat"><div class="k">Net / h</div><div class="v" id="hNet">—</div></div>
@@ -752,9 +752,12 @@ function truckCan(type,good){
 // Load rules the player sets per vehicle: how full it insists on being before
 // it will leave a stop, and whether it takes anything or holds out for one
 // kind of freight.
-var FILL_OPTS=[{v:0,n:"Leave at once"},{v:0.25,n:"25% full"},{v:0.5,n:"50% full"},{v:1,n:"Full load"}];
+var FILL_OPTS=[{v:1,n:"Full load"},{v:0.5,n:"50% full"},{v:0.25,n:"25% full"},{v:0,n:"Don't wait"}];
 var MAX_HOLD=18;   // game hours: a safety valve so a truck can never be stranded
-function vFill(v){ return v.minFill||0; }
+// Default is a full load: an empty or half-empty truck still burns the same
+// wages and nearly the same fuel, so waiting to fill up is the sane opening
+// position. `null` means "never set", which is what an older save carries.
+function vFill(v){ return v.minFill==null ? 1 : v.minFill; }
 function vPick(v){ return v.pickG||"all"; }
 // goods this vehicle is allowed to load right now, given its own equipment and
 // the freight-type filter the player chose
@@ -867,8 +870,22 @@ Object.keys(GOODS).forEach(function(g){
   CONSUMERS[g]=CITIES.filter(function(c){return (c.in||[]).indexOf(g)>=0;});
 });
 function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+// How much freight a single city will hold waiting for collection. Bigger
+// places generate more trade, and a freight office there wins more still.
+function cityCap(c){ return 4 + Math.round(c.size*0.8) + 2*officeLvl(c.id); }
+function cityWaiting(id){
+  var n=0; for(var i=0;i<S.loads.length;i++){ var l=S.loads[i];
+    if(!l.on && l.at===id) n++; }
+  return n;
+}
 function spawnLoad(){
-  var capLoads=Math.min(44, 6+3*S.veh.length);
+  // Freight used to be capped globally at 6+3*trucks -- 12 loads for the entire
+  // world with a starting fleet, which the game sat against ~84% of the time.
+  // Anything stuck at one city therefore starved every other city of new work.
+  // The ceiling is per city now, so clearing a backlog genuinely makes room for
+  // that city to offer more, with a looser global bound just to keep the load
+  // list and the router bounded.
+  var capLoads=Math.min(90, 14+5*S.veh.length);
   if(S.loads.length>=capLoads) return;
   // Only cities you have unlocked can offer or receive freight. A shipper in a
   // city where you have no presence at all would never call you -- and since an
@@ -910,6 +927,11 @@ function spawnLoad(){
     var near=opnP[g].filter(function(c){return km("duiven",c.id)<520;});
     from = near.length ? pick(near) : pick(opnP[g]);
   } else if(!from) from=pick(opnP[g]);
+  // A city can only have so much freight standing on its dock. Once it is at
+  // its own ceiling it offers nothing more until a truck clears some -- which
+  // is what makes emptying a backlog worth doing, rather than the whole world
+  // sharing one small pool.
+  if(cityWaiting(from.id) >= cityCap(from)) return;
   // prefer a nearby consumer: real freight is mostly regional
   var cands=opnC[g].filter(function(c){return c.id!==from.id;});
   if(!cands.length) return;
@@ -1407,7 +1429,7 @@ function buyTruck(type){
   if(S.cash<T.cost||S.level<T.lvl) return false;
   S.cash-=T.cost; S.spent+=T.cost;
   var home=CITY.duiven;
-  S.veh.push({id:nextId++, type:type, svc:null, si:0, prog:0, dwell:0,
+  S.veh.push({id:nextId++, type:type, svc:null, si:0, prog:0, dwell:0, minFill:1, pickG:"all",
               x:home.x, y:home.y, at:"duiven", cargo:[]});
   return true;
 }
@@ -1525,9 +1547,13 @@ function shouldHold(v,s){
   if((v.held||0)>=MAX_HOLD) return false;
   var capT=tCap(v.type);
   if(vehLoad(v) >= capT*want - 1e-9) return false;
-  var cityId=s.stops[v.si];
+  var cityId=s.stops[v.si], space=capT-vehLoad(v);
   return S.loads.some(function(l){
     if(l.on||l.at!==cityId) return false;
+    // must actually fit in what is left, or waiting achieves nothing: a truck
+    // at 24 of 26t sitting out an 18-hour wait for a 5t load it can never
+    // squeeze in is how "full load" ended up meaning "leave nearly empty".
+    if(l.w>space) return false;
     if(!vehTakes(v,l.g)) return false;
     if(!l.plan) l.plan=planFor(l);
     if(!l.plan||!l.plan.legs[l.step]) return false;
@@ -2877,7 +2903,7 @@ function loadGame(){
   S.veh=(d.veh||[]).map(function(v){
     var home=CITY.duiven;
     return {id:nextId++, type:v.type, svc:v.svc, si:v.si||0, prog:0, dwell:0,
-            minFill:v.minFill||0, pickG:v.pickG||"all", held:0,
+            minFill:(v.minFill==null?1:v.minFill), pickG:v.pickG||"all", held:0,
             x:home.x, y:home.y, at:"duiven", cargo:[]};
   });
   // put each truck back on its loop
@@ -2941,7 +2967,7 @@ window.__lh={ state:function(){return S;}, save:saveGame, load:loadGame, reset:f
     for(var i=0;i<n;i++){ step(dt); acc+=dt;
       var e=0.85/((0.25+0.75*repScore())*(1+0.12*up("sales"))*(1+0.20*projPerk("volume")));
       while(acc>=e){ acc-=e; spawnLoad(); } } },
-  verdict:svcVerdict, vehRate:vehRate, truckCan:truckCan,
+  verdict:svcVerdict, vehRate:vehRate, truckCan:truckCan, cap:tCap,
   unlock:unlockCity, unlockCost:unlockCost, locked:cityLocked };
 requestAnimationFrame(frame);
 })();
