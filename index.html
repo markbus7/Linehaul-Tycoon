@@ -255,7 +255,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v8.6</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v8.7</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat netstat"><div class="k">Net / h</div><div class="v" id="hNet">—</div></div>
@@ -753,10 +753,11 @@ function truckCan(type,good){
 // it will leave a stop, and whether it takes anything or holds out for one
 // kind of freight.
 var FILL_OPTS=[{v:1,n:"Full load"},{v:0.5,n:"50% full"},{v:0.25,n:"25% full"},{v:0,n:"Don't wait"}];
-// "Wait until full" means exactly that -- a truck holds out as long as it
-// takes rather than running half empty. MAX_HOLD is only a backstop against
-// an unforeseen stall, not the intended behaviour.
-var MAX_HOLD=48;
+// "Wait until full" means exactly that -- a truck holds out as long as new
+// freight keeps trickling in, rather than running half empty. It only gives
+// up if a full day passes with nothing new to show for the wait (STALL_GIVEUP),
+// or the player cuts the wait short themselves with the manual override.
+var STALL_GIVEUP=24;
 var MIN_LOAD_T=3;  // spawnLoad never creates a load smaller than this
 // Default is a full load: an empty or half-empty truck still burns the same
 // wages and nearly the same fuel, so waiting to fill up is the sane opening
@@ -1548,7 +1549,7 @@ function assign(v,s){
 }
 function unassign(v){
   v.cargo.forEach(function(l){ l.on=null; l.at=v.at||"duiven"; l.plan=null; });
-  v.cargo=[]; v.svc=null; v.dwell=0; v.prog=0; v.waiting=false; v.held=0;
+  v.cargo=[]; v.svc=null; v.dwell=0; v.prog=0; v.waiting=false; v.held=0; v.sinceGain=0;
   invalidate();
 }
 function vehLoad(v){ var t=0; v.cargo.forEach(function(l){t+=l.w;}); return t; }
@@ -1596,6 +1597,7 @@ function arrive(v,s,tickEarn,tickVEarn){
     S.loads=S.loads.filter(function(x){return x!==l;});
     var h=hist(cityId); h.out++; if(h.first==null) h.first=S.t;
   });
+  if(take.length) v.sinceGain=0;
   v.dwell = dwellAt(cityId,v.type) * (take.length?1:0.35);
 }
 // Should this vehicle sit at its current stop waiting for a fuller load?
@@ -1603,9 +1605,10 @@ function arrive(v,s,tickEarn,tickVEarn){
 // there is freight here it could actually still load. A truck at a city that
 // will never offer it anything -- nothing exported, or nothing its equipment
 // or freight-type filter accepts -- leaves empty rather than blocking the
-// loop, and MAX_HOLD stops any wait becoming indefinite.
+// loop, and STALL_GIVEUP stops a slow trickle turning into a true freeze.
 function shouldHold(v,s){
   v.waiting=false;
+  if(v.forceGo){ v.forceGo=false; return false; }   // player told it to leave now
   var want=vFill(v); if(!want) return false;
   var capT=tCap(v.type), space=capT-vehLoad(v);
   if(vehLoad(v) >= capT*want - 1e-9) return false;   // reached the target fill
@@ -1613,7 +1616,7 @@ function shouldHold(v,s){
   // smaller than MIN_LOAD_T, so once less than that is free, holding out for a
   // perfect 100% would be waiting for something that cannot exist.
   if(space < MIN_LOAD_T) return false;
-  if((v.held||0)>=MAX_HOLD) return false;            // backstop against a stall
+  if((v.sinceGain||0)>=STALL_GIVEUP) return false;   // nothing new in a full day -- give up
   var cityId=s.stops[v.si];
   var hasNow=S.loads.some(function(l){
     if(l.on||l.at!==cityId) return false;
@@ -1624,15 +1627,21 @@ function shouldHold(v,s){
     var leg=l.plan.legs[l.step];
     return leg.svc===s.id && s.stops.indexOf(leg.to)>=0;
   });
-  // Wait as long as it takes -- but only while there is actually something
-  // here to wait for. On a typical loop most stops can never load a given
-  // vehicle at all: of the five starter cities, a general-freight truck can
-  // only ever pick up at Rotterdam and Antwerp, because Duiven ships nothing,
+  // Wait as long as it takes -- genuinely, not just for freight already sitting
+  // on the ground this instant. A stop that this vehicle can ever load from --
+  // it ships a good this vehicle is equipped and set to carry, to somewhere else
+  // on this loop -- is worth waiting at even between spawns; freight keeps
+  // trickling in over time. On a typical loop most stops can never load a given
+  // vehicle at all: of the five starter cities, a general-freight truck can only
+  // ever pick up at Rotterdam and Antwerp, because Duiven ships nothing,
   // Duisburg ships steel that nothing on the loop wants, and Koln ships
-  // chemicals a box trailer cannot carry. Holding at those stops is waiting
-  // for freight that cannot exist, so the truck goes on empty -- which is the
-  // stated exception: if the city has nothing to offer it, it should leave.
-  if(!hasNow) return false;
+  // chemicals a box trailer cannot carry. Holding at those stops is waiting for
+  // freight that cannot exist, so the truck goes on empty -- which is the stated
+  // exception: if the city has nothing to offer it, it should leave.
+  var hasEver=hasNow || svcTradePairs(s).some(function(p){
+    return p.from===cityId && vehTakes(v,p.g);
+  });
+  if(!hasEver) return false;
   v.waiting=true;
   return true;
 }
@@ -1687,7 +1696,7 @@ function step(dt){
     if(v.dwell>0){
       v.dwell-=dt;
       // time spent at this stop while still short of the player's fill target
-      if(vFill(v) && vehLoad(v) < tCap(v.type)*vFill(v)) v.held=(v.held||0)+dt;
+      if(vFill(v) && vehLoad(v) < tCap(v.type)*vFill(v)){ v.held=(v.held||0)+dt; v.sinceGain=(v.sinceGain||0)+dt; }
       if(v.dwell<=0){
         if(shouldHold(v,s)){
           // stay put and try to top up from whatever has arrived since
@@ -1695,7 +1704,7 @@ function step(dt){
           if(v.dwell<=0) v.dwell=0.5;
           return;
         }
-        v.held=0; v.waiting=false; v.si=(v.si+1)%s.stops.length; v.prog=0;
+        v.held=0; v.sinceGain=0; v.waiting=false; v.si=(v.si+1)%s.stops.length; v.prog=0;
       }
       return;
     }
@@ -1806,14 +1815,20 @@ function buildMap(){
     pin.appendChild(el("circle",{class:"cpad",cx:c.x,cy:c.y,r:padR(c),id:"dot-"+c.id}));
     var gy2=el("text",{class:"cglyph",x:c.x,y:c.y+0.4,id:"gl-"+c.id,"font-size":glyphSize(c)});
     gy2.textContent=cityGlyph(c); pin.appendChild(gy2);
-    pin.appendChild(el("circle",{class:"cbadge",cx:c.x+padR(c)*0.82,cy:c.y-padR(c)*0.82,r:3.6,
-      id:"bg-"+c.id,style:"display:none"}));
-    var bt=el("text",{class:"cbadge-t",x:c.x+padR(c)*0.82,y:c.y-padR(c)*0.82+0.2,id:"bt-"+c.id,
-      style:"display:none"}); pin.appendChild(bt);
     g.appendChild(pin);
     g.appendChild(el("rect",{class:"lplate",id:"lp-"+c.id,x:0,y:0,width:0,height:0,rx:3}));
     var t=el("text",{class:"clabel",x:c.x,y:c.y-8,"text-anchor":"middle",id:"lb-"+c.id});
     t.textContent=c.n; g.appendChild(t);
+    // The job-count badge lives in its own group, appended AFTER the label so it
+    // always paints on top -- it used to live inside the pin (painted first),
+    // which put the city name's own background plate right over the number
+    // whenever the label sat in its default spot just above the pin.
+    var bg2=el("g",{class:"cbadgeg",id:"cbg-"+c.id});
+    bg2.appendChild(el("circle",{class:"cbadge",cx:c.x+padR(c)*0.82,cy:c.y-padR(c)*0.82,r:3.6,
+      id:"bg-"+c.id,style:"display:none"}));
+    var bt=el("text",{class:"cbadge-t",x:c.x+padR(c)*0.82,y:c.y-padR(c)*0.82+0.2,id:"bt-"+c.id,
+      style:"display:none"}); bg2.appendChild(bt);
+    g.appendChild(bg2);
     gCity.appendChild(g);
   });
 }
@@ -1827,12 +1842,20 @@ function updatePinScale(){
   if(cam.s===lastPinS) return;
   lastPinS=cam.s;
   var k=pinK();
+  var tr=k===1?"":null;
   CITIES.forEach(function(c){
     var p=$("cp-"+c.id); if(!p) return;
-    var tr=k===1?"":"translate("+c.x.toFixed(1)+" "+c.y.toFixed(1)+") scale("+k.toFixed(4)+
-      ") translate("+(-c.x).toFixed(1)+" "+(-c.y).toFixed(1)+")";
-    if(p.getAttribute("transform")!==tr){
-      if(tr) p.setAttribute("transform",tr); else p.removeAttribute("transform");
+    var t=tr===null?"translate("+c.x.toFixed(1)+" "+c.y.toFixed(1)+") scale("+k.toFixed(4)+
+      ") translate("+(-c.x).toFixed(1)+" "+(-c.y).toFixed(1)+")":tr;
+    if(p.getAttribute("transform")!==t){
+      if(t) p.setAttribute("transform",t); else p.removeAttribute("transform");
+    }
+    // the badge group needs the same fixed-on-screen-size treatment as the pin
+    // it hovers next to, or it would keep growing with the camera past PIN_CAP
+    var bg=$("cbg-"+c.id); if(bg){
+      if(bg.getAttribute("transform")!==t){
+        if(t) bg.setAttribute("transform",t); else bg.removeAttribute("transform");
+      }
     }
   });
 }
@@ -2622,15 +2645,35 @@ function renderFleet(b){
   S.veh.forEach(function(v){
     var T=TRUCKS[v.type], s=v.svc?svcOf(v.svc):null, vr=vehRate(v);
     var d=document.createElement("div"); d.className="card";
+    // Where it actually is right now, in plain terms: parked at a named stop
+    // (loading, or holding out for more), or moving between two named stops --
+    // not just "→ next stop", which reads the same whether it is sitting there
+    // or already gone.
+    var fillPct=s?Math.round(100*vehLoad(v)/T.cap):0;
+    var locHtml="";
+    if(s){
+      if(v.dwell>0){
+        var here=CITY[s.stops[v.si]].n;
+        locHtml=v.waiting
+          ? 'Holding for more freight at <b>'+here+'</b>'
+          : 'At <b>'+here+'</b> · loading';
+      } else {
+        var from=CITY[s.stops[(v.si-1+s.stops.length)%s.stops.length]].n, to=CITY[s.stops[v.si]].n;
+        locHtml='En route to <b>'+to+'</b> <span class="sub">(from '+from+')</span>';
+      }
+    }
     d.innerHTML='<div class="row"><div class="grow"><div class="ttl">'+T.n+
       (s?' <span class="pill" style="background:'+s.col+'22;color:'+s.col+'">'+s.n+'</span>'
         :' <span class="pill">idle</span>')+'</div>'+
-      '<div class="sub">'+(s? vehLoad(v)+'/'+T.cap+'t aboard · → '+(s.stops[v.si]?CITY[s.stops[v.si]].n:'?')
+      '<div class="sub">'+(s? vehLoad(v)+'/'+T.cap+'t aboard ('+fillPct+'% full) · '+locHtml
         : T.cap+'t · parked at Duiven')+'</div>'+
       (s?'<div class="sub" style="margin-top:3px"><span class="pill '+PCLS3[vr.cls]+'" style="font-size:10px">'+vr.word+'</span>'+
         (vr.rate!=null?' <span class="vrate '+vr.cls+'" style="font-size:11px">'+(vr.rate>=0?"+":"−")+eur(Math.abs(vr.rate))+'/h</span>':'')+
-        (vFill(v)&&(v.held||0)>0.05&&vehLoad(v)<tCap(v.type)*vFill(v)
-          ? ' <span class="sub">· holding for a load, '+hrs(Math.max(0,MAX_HOLD-(v.held||0)))+' left</span>':'')+
+        (v.waiting
+          ? ' <span class="sub">· gives up and leaves as-is in '+hrs(Math.max(0,STALL_GIVEUP-(v.sinceGain||0)))+
+            ' if nothing new turns up</span>'+
+            ' <button class="btn sm" id="go-'+v.id+'" style="margin-left:6px;padding:2px 8px;font-size:11px">Depart now</button>'
+          : '')+
         '</div>':'')+
       '<div class="vopt"></div>'+
       '</div></div>';
@@ -2652,11 +2695,13 @@ function renderFleet(b){
         : '<div class="sub" style="margin-top:4px;color:#7f8b99">Takes whatever is ready and leaves straight away. '+
           'Most trips, most freight moved — at the cost of running part loaded.</div>');
     opt.querySelectorAll("[data-fill]").forEach(function(bt){
-      bt.onclick=function(){ v.minFill=parseFloat(bt.getAttribute("data-fill")); v.held=0; render(); };
+      bt.onclick=function(){ v.minFill=parseFloat(bt.getAttribute("data-fill")); v.held=0; v.sinceGain=0; render(); };
     });
     opt.querySelectorAll("[data-pick]").forEach(function(bt){
-      bt.onclick=function(){ v.pickG=bt.getAttribute("data-pick"); v.held=0; render(); };
+      bt.onclick=function(){ v.pickG=bt.getAttribute("data-pick"); v.held=0; v.sinceGain=0; render(); };
     });
+    var goBtn=d.querySelector("#go-"+v.id);
+    if(goBtn) goBtn.onclick=function(){ v.forceGo=true; toast(T.n+" told to leave with whatever it has."); render(); };
     b.appendChild(d);
   });
   var lab2=document.createElement("div"); lab2.className="lbl"; lab2.textContent="Buy";
@@ -2733,13 +2778,12 @@ function renderCity(b){
     '<div class="sub">'+cname(c.c)+(c.port?' · seaport':'')+(c.air?' · air hub':'')+(c.capital?' · capital':'')+
     status+'</div></div></div>'+
     '<div class="sub" style="margin-top:9px;line-height:1.6;color:#c3cbd5">'+c.fact+'</div></div>'+
-    (locked?'':
     '<div class="kv"><div class="k">Ships out</div><div class="v"><div class="goods">'+out+'</div></div></div>'+
     '<div class="kv"><div class="k">Takes in</div><div class="v"><div class="goods">'+inn+'</div></div></div>'+
     waitingHtml(c)+
     '<div class="kv"><div class="k">Trades with</div><div class="v">'+
       (plist.map(function(p){ return (p.dir==="to"?"→ ":"← ")+CITY[p.id].n+' <span class="sub">('+
-        GOODS[p.g].n.toLowerCase()+', '+p.d+'km)</span>'; }).join("<br>")||"—")+'</div></div>')+
+        GOODS[p.g].n.toLowerCase()+', '+p.d+'km)</span>'; }).join("<br>")||"—")+'</div></div>'+
     (locked?
     '<div class="lbl">Unlock this city</div>'+
     '<div class="card"><div class="row"><div class="grow"><div class="ttl">'+c.n+' is not on your map yet</div>'+
