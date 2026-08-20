@@ -255,7 +255,7 @@
 </head>
 <body>
 <header>
-  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v8.8</span></div>
+  <div class="brand">LINEHAUL <span style="font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v8.9</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat netstat"><div class="k">Net / h</div><div class="v" id="hNet">—</div></div>
@@ -1590,6 +1590,23 @@ function unassign(v){
   invalidate();
 }
 function vehLoad(v){ var t=0; v.cargo.forEach(function(l){t+=l.w;}); return t; }
+// Take one piece of cargo off a vehicle and set it down wherever it currently
+// is -- it becomes ordinary freight waiting at that city again, up for grabs
+// by any vehicle (including this one, later) rather than just vanishing.
+// Only possible while the vehicle is actually stopped somewhere: you cannot
+// throw something off a moving truck.
+function unloadCargo(v,idx){
+  if(!(v.dwell>0)) return false;
+  var l=v.cargo[idx]; if(!l) return false;
+  var s=v.svc?svcOf(v.svc):null;
+  var cityId=v.at||(s&&s.stops[v.si]);
+  if(!cityId) return false;
+  v.cargo.splice(idx,1);
+  l.on=null; l.at=cityId; l.plan=null; l.step=0;
+  if(S.loads.indexOf(l)<0) S.loads.push(l);
+  invalidate();
+  return true;
+}
 
 function arrive(v,s,tickEarn,tickVEarn){
   var cityId=s.stops[v.si];
@@ -2726,8 +2743,33 @@ function renderFleet(b){
             ' <button class="btn sm" id="go-'+v.id+'" style="margin-left:6px;padding:2px 8px;font-size:11px">Depart now</button>'
           : '')+
         '</div>':'')+
+      '<div class="cargo"></div>'+
       '<div class="vopt"></div>'+
       '</div></div>';
+    // What it's actually carrying right now, and -- while it's stopped
+    // somewhere -- a way to set any one piece of it back down. Switching what
+    // a truck picks up (below) only changes future pickups; it never touches
+    // cargo already aboard, so this is how you get rid of something that no
+    // longer matches without waiting for it to reach its own destination.
+    var cargoEl=d.querySelector(".cargo");
+    if(s&&v.cargo&&v.cargo.length){
+      var canDrop=v.dwell>0;
+      cargoEl.innerHTML='<div class="optrow">'+v.cargo.map(function(l,i){
+        var label=GOODS[l.g].ic+' '+l.w+'t → '+CITY[l.to].n;
+        return canDrop
+          ? '<button class="optb" data-unload="'+i+'" title="Set this down here instead of carrying it on">'+label+' ✕</button>'
+          : '<span class="good">'+label+'</span>';
+      }).join("")+'</div>';
+      if(canDrop) cargoEl.querySelectorAll("[data-unload]").forEach(function(bt){
+        bt.onclick=function(){
+          var idx=parseInt(bt.getAttribute("data-unload"),10);
+          var l=v.cargo[idx];
+          if(l&&unloadCargo(v,idx)){ toast("Left "+GOODS[l.g].n.toLowerCase()+" at "+CITY[v.at].n+"."); render(); }
+        };
+      });
+    } else if(s){
+      cargoEl.innerHTML='<div class="sub" style="color:#7f8b99">Running empty right now.</div>';
+    }
     // Load rules: how full it insists on being before it leaves, and whether
     // it holds out for one kind of freight.
     var opt=d.querySelector(".vopt");
@@ -2739,6 +2781,8 @@ function renderFleet(b){
       '<button class="optb'+(vPick(v)==="all"?' on':'')+'" data-pick="all">All</button>'+
       carriable.map(function(g){ return '<button class="optb'+(vPick(v)===g?' on':'')+
         '" data-pick="'+g+'" title="'+GOODS[g].n+'">'+GOODS[g].ic+'</button>'; }).join("")+'</div>'+
+      '<div class="sub" style="margin-top:2px;color:#7f8b99">Only changes what it picks up next — anything already '+
+      'aboard rides along as normal. Set it down early with the ✕ above, next time it\'s stopped somewhere.</div>'+
       (vFill(v)? '<div class="sub" style="margin-top:4px;color:#7f8b99">Waits as long as it takes to reach '+
         Math.round(vFill(v)*100)+'% full ('+Math.ceil(tCap(v.type)*vFill(v))+'t), and <b style="color:var(--green)">'+
         'draws no wages while it waits</b> — a parked trailer is not a driver on the clock. Moves on if the stop '+
@@ -3226,7 +3270,7 @@ window.__lh={ state:function(){return S;}, save:saveGame, load:loadGame, reset:f
       var e=0.85/((0.25+0.75*repScore())*(1+0.12*up("sales"))*(1+0.20*projPerk("volume")));
       while(acc>=e){ acc-=e; spawnLoad(); } } },
   verdict:svcVerdict, vehRate:vehRate, truckCan:truckCan, cap:tCap, supply:svcSupply,
-  unlock:unlockCity, unlockCost:unlockCost, locked:cityLocked };
+  unlock:unlockCity, unlockCost:unlockCost, locked:cityLocked, unload:unloadCargo };
 requestAnimationFrame(frame);
 })();
 </script>
