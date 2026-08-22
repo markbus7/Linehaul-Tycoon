@@ -139,6 +139,11 @@
   .pill.r{background:#3a1714;color:#ffa79b;border-color:#5c2a24}
   .pill.a{background:#332512;color:#f3c07a;border-color:#4d3818}
   .pill.b{background:#132534;color:#8ec6f0;border-color:#1e3c52}
+  /* rush freight: pays far over the odds on a much tighter clock */
+  .pill.rushp{background:#4a2d05;color:#ffc76b;border-color:#7a4a08;font-weight:700}
+  .card.rush{border-color:#7a5a12}
+  .card.rush::before{background:linear-gradient(180deg,#ffd07a,#c07f10)}
+  .card.rush .money .amt{color:#ffc76b}
   .svcverdict{margin-top:9px;line-height:1.7}
   .vrate{font-family:ui-monospace,monospace;font-size:11px;font-weight:700;margin-left:6px}
   .vrate.good{color:var(--green)} .vrate.warn{color:var(--amber)} .vrate.bad{color:var(--red)}
@@ -266,9 +271,10 @@
 <body>
 <header>
   <div class="brand"><span class="bmark">🚛</span><span class="bword">LINEHAUL</span>
-    <span style="font-family:ui-sans-serif,system-ui,sans-serif;font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v9.4</span></div>
+    <span style="font-family:ui-sans-serif,system-ui,sans-serif;font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v9.5</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
+  <div class="stat"><div class="k">Flow</div><div class="v" id="hFlow">—</div></div>
   <div class="stat netstat"><div class="k">Net / h</div><div class="v" id="hNet">—</div></div>
   <div class="stat lvlstat"><div class="k">Level</div><div class="v" id="hLvl">1</div>
     <div class="xpbar"><i id="hXp"></i></div></div>
@@ -868,6 +874,7 @@ function fresh(){
     delivered: 0, late: 0, earned: 0, spent: 0,
     hist: {},                        // per-city history -> the mental story
     netHist: [], histStep: 2, lastHistT: 0,   // company net-worth over time -> the "am I winning" chart
+    flow: 0, bestFlow: 0,                     // delivery-rate meter -> pay bonus
     seen: {}, speed: 1, unlocked: unlocked,
     netEma: null, svcEma: {}, svcEarnEma: {}, svcCostEma: {}, svcActiveH: {},  // live profit/loss, company-wide and per service
     vehEma: {}, vehEarnEma: {}, vehCostEma: {}, vehActiveH: {}                 // same, but per truck
@@ -881,6 +888,31 @@ function fresh(){
 // perfectly healthy line flickered between "Profitable" and "Losing money".
 // A full game day spans several deliveries and gives a stable, honest trend.
 var EMA_TAU=24;
+// FLOW -- a delivery meter that every arrival feeds and that leaks away
+// continuously. Keep freight landing and the bonus climbs; let the network
+// stall and it drains. Measured across five network shapes, this game runs at
+// 30-55% on-time, so an *unbroken run* of on-time deliveries was the wrong
+// shape entirely -- the best run any of them managed was 7, which would have
+// made a run-based bonus permanently stuck near zero. Flow instead rewards
+// throughput, which is the thing the player actually builds, while a late
+// arrival still feeds it less than an on-time one.
+// TAU is deliberately longer than a headway: deliveries land in bursts (a truck
+// arrives with three loads at once, then nothing for hours), and at 18h the
+// bonus swung between +4% and +26% depending on which instant you looked. Thirty
+// hours smooths the bursts into a number that tracks the network, not the tick.
+var FLOW_TAU=30, FLOW_STEP=0.04, FLOW_CAP=0.50, FLOW_LATE=0.35;
+var FLOW_MARKS=[0.15,0.25,0.40,0.50];
+function flowMult(){ return 1 + Math.min(FLOW_CAP, FLOW_STEP*(S.flow||0)); }
+function flowPct(){ return Math.round(100*(flowMult()-1)); }
+// Set while the sim is being fast-forwarded (offline catch-up, or the test
+// hook). Everything that pops a toast or animates a label on the map checks
+// this, so hours of simulated events don't all try to render at once.
+var simQuiet=false;
+// Rush freight: about one offer in eleven pays far over the odds for a window
+// roughly half as long. Worth chasing on a tight corridor, a trap on a sprawling
+// one -- and since it is the same shipper either way, failing one only ever
+// bills the ordinary cancellation fee (see pay0 below), never the inflated one.
+var RUSH_CHANCE=0.09, RUSH_PAY=2.6;
 // Hysteresis so the verdict word does not flap around a threshold: it takes a
 // clearly positive rate to earn "Profitable" and a clearly negative one to be
 // called "Losing money", with a wide neutral band in between that a service
@@ -1026,13 +1058,16 @@ function spawnLoad(){
   var d=km(from.id,to.id);
   var G=GOODS[g];
   var wt=Math.max(3, Math.round((4+Math.random()*22) * (G.t==="bulk"?1.5:G.t==="heavy"?1.1:1)));
-  var pay=Math.round(d*wt*G.rate*0.115 + 160);
+  var pay0=Math.round(d*wt*G.rate*0.115 + 160);
   // A window generous enough to be met by a decent network, tight enough that
   // one enormous loop cannot serve it.
   var drive=d/78;
-  var due=S.t + drive*1.8 + 14 + Math.random()*16;
-  S.loads.push({id:nextId++, g:g, from:from.id, to:to.id, w:wt, pay:pay, km:d,
-                born:S.t, due:due, at:from.id, on:null, plan:null, step:0});
+  var rush=Math.random()<RUSH_CHANCE;
+  var pay=rush?Math.round(pay0*RUSH_PAY):pay0;
+  var due=rush ? S.t + drive*1.25 + 4 + Math.random()*4
+               : S.t + drive*1.8  + 14 + Math.random()*16;
+  S.loads.push({id:nextId++, g:g, from:from.id, to:to.id, w:wt, pay:pay, pay0:pay0, km:d,
+                rush:rush?1:0, born:S.t, due:due, at:from.id, on:null, plan:null, step:0});
 }
 
 /* ============================================================ SERVICES
@@ -1369,6 +1404,10 @@ var ACH=[
  {id:"m1",     ic:"\uD83D\uDCB0", n:"First million",     d:"Earn \u20AC1,000,000 in fees",             r:60000,  f:function(){return S.earned>=1e6;},
   p:function(){return [S.earned,1e6];}, fmt:"eur"},
  {id:"rep95",  ic:"\u23F1\uFE0F", n:"Never late",        d:"Hold 95% reputation over 40 deliveries",   r:80000,  f:function(){return (S.recent||[]).length>=40&&repScore()>=0.95;}},
+ {id:"flow25", ic:"\uD83D\uDD25", n:"In the groove",     d:"Reach a flow bonus of +25%",               r:30000,  f:function(){return (S.bestFlow||0)*FLOW_STEP>=0.25;},
+  p:function(){return [Math.round((S.bestFlow||0)*FLOW_STEP*100),25];}},
+ {id:"flow50", ic:"\u26A1",       n:"Conveyor belt",     d:"Max the flow bonus out at +50%",           r:150000, f:function(){return (S.bestFlow||0)*FLOW_STEP>=FLOW_CAP;},
+  p:function(){return [Math.round((S.bestFlow||0)*FLOW_STEP*100),50];}},
  {id:"c10",    ic:"\uD83D\uDCCD", n:"Ten cities",        d:"Deliver into 10 different cities",         r:25000,  f:function(){return citiesDelivered()>=10;},
   p:function(){return [citiesDelivered(),10];}},
  {id:"c25",    ic:"\uD83D\uDDFA\uFE0F", n:"Wide network",     d:"Deliver into 25 different cities",   r:120000, f:function(){return citiesDelivered()>=25;},
@@ -1737,10 +1776,20 @@ function shouldHold(v,s){
 }
 function deliver(l,cityId,svcId,tickEarn,vehId,tickVEarn){
   var onTime = S.t <= l.due;
+  // Flow is settled before the money, so the bonus paid on this load is the
+  // one the header is showing at the moment it lands.
+  var was=flowMult();
+  S.flow=(S.flow||0) + (onTime?1:FLOW_LATE);
+  if(S.flow>(S.bestFlow||0)) S.bestFlow=S.flow;
+  var now=flowMult();
+  FLOW_MARKS.forEach(function(m){
+    if(was-1 < m-1e-9 && now-1 >= m-1e-9)
+      toast("🔥 <b>Flow +"+Math.round(m*100)+"%</b> — your network is moving enough freight to pay a real bonus. Keep it landing.");
+  });
   // Late money falls away fast. Without this, a sprawling route that is late on
   // everything still out-earns a tight one by sheer volume.
   var over = S.t - l.due;
-  var base = Math.round(l.pay*payMult());
+  var base = Math.round(l.pay*payMult()*flowMult());
   var pay = onTime ? base : Math.round(base*0.28*Math.max(0,1-over/12));
   gainXP(Math.max(4,Math.round(base/120))+(onTime?10:0));
   S.cash += pay; S.earned += pay; S.delivered++;
@@ -1760,6 +1809,9 @@ function deliver(l,cityId,svcId,tickEarn,vehId,tickVEarn){
 }
 function step(dt){
   S.t += dt;
+  // Flow leaks continuously, so the bonus is a readout of how much freight is
+  // landing *now* -- stop delivering and it drains back to nothing on its own.
+  if(S.flow) S.flow *= Math.exp(-dt/FLOW_TAU);
   // per-service and per-vehicle € this tick, for the profit readouts
   var tickEarn={}, tickCost={}, tickVEarn={}, tickVCost={}, costTotal=0;
   function chargeCost(svcId,vehId,amt){
@@ -1825,7 +1877,10 @@ function step(dt){
       // work you had no way to accept.
       var couldHave = !!(l.plan || planFor(l));
       if(couldHave){
-        var fee=Math.round(l.pay*0.4);
+        // billed on the ordinary rate for the load, not the rush premium -- the
+        // shipper is out the same freight either way, and a failed rush job
+        // should be a missed windfall, not an outsized punishment
+        var fee=Math.round((l.pay0||l.pay)*0.4);
         S.cash-=fee; S.spent+=fee; rep(0);
         costTotal+=fee;
         hist(l.from).late++;
@@ -2136,6 +2191,7 @@ function drawVehs(){
     if(e2.g.parentNode) e2.g.parentNode.removeChild(e2.g); delete vehEls[k]; } }
 }
 function pipFly(cityId,txt,col){
+  if(simQuiet) return;   // ditto: no flying money labels for deliveries already in the past
   var c=CITY[cityId]; if(!c) return;
   var t=el("text",{x:c.x,y:c.y-14,"text-anchor":"middle",fill:col||"#4fc98a",
     "font-size":11,"font-weight":700,"pointer-events":"none"});
@@ -2355,6 +2411,7 @@ function setTab(t){ tab=t; Array.prototype.forEach.call($("tabs").children,funct
 $("tabs").addEventListener("click",function(e){ var b=e.target.closest("button"); if(b) setTab(b.dataset.tab); });
 
 function toast(html){
+  if(simQuiet) return;   // catch-up simulation: don't replay hours of popups at once
   var t=document.createElement("div"); t.className="toast"; t.innerHTML=html;
   $("toasts").appendChild(t);
   setTimeout(function(){ t.style.transition="opacity .4s"; t.style.opacity=0;
@@ -2418,13 +2475,14 @@ function renderLoads(b){
     var pl=planLine(l);
     var left=l.due-S.t;
     var d=document.createElement("div");
-    d.className="card ld"+(pl.cls==="none"||pl.cls==="late"?" bad":pl.cls==="tight"?" warn":" good");
+    d.className="card ld"+(l.rush?" rush":"")+(pl.cls==="none"||pl.cls==="late"?" bad":pl.cls==="tight"?" warn":" good");
     var urg = left<6 ? "r" : left<16 ? "a" : "";
     d.innerHTML=
       '<div class="row">'+
         '<div class="gtile">'+G.ic+'</div>'+
         '<div class="grow">'+
           '<div class="ttl">'+G.n+' <span class="wt">'+l.w+'t</span>'+
+            (l.rush?' <span class="pill rushp">⚡ rush</span>':'')+
             (G.req?' <span class="pill b">'+({reefer:"reefer",tank:"tanker",car:"transporter"}[G.req])+'</span>':'')+'</div>'+
           '<div class="route2">'+flag(from.c)+' <b>'+from.n+'</b>'+
             '<span class="ar">→</span>'+flag(to.c)+' <b>'+to.n+'</b></div>'+
@@ -3085,6 +3143,11 @@ function updateHeader(){
   var ot=Math.round(repScore()*100);
   var e=$("hOnTime"); e.textContent=(S.recent&&S.recent.length)?ot+"%":"—";
   e.className="v "+(ot<75?"bad":"ok");
+  // Flow is the number you watch climb -- show the bonus it is paying, so
+  // letting the network stall costs something you can name.
+  var st=$("hFlow"), p=flowPct();
+  st.textContent = p ? "🔥 +"+p+"%" : "—";
+  st.className = "v "+(p>=25?"ok":p?"warn2":"");
 }
 
 /* ============================================================ HELP */
@@ -3215,6 +3278,7 @@ function serialise(){
   return {v:1, cash:S.cash, t:S.t, xp:S.xp, level:S.level, upg:S.upg, ach:S.ach, chain:S.chain,
     depot:S.depot, office:S.office, hist:S.hist, recent:S.recent, unlocked:S.unlocked, stepsDone:S.stepsDone, proj:S.proj, projDone:S.projDone,
     netHist:S.netHist, histStep:S.histStep, lastHistT:S.lastHistT,
+    flow:S.flow, bestFlow:S.bestFlow,
     delivered:S.delivered, late:S.late, earned:S.earned, cancelled:S.cancelled,
     fuel:S.fuel, wages:S.wages, spent:S.spent,
     svcs:S.svcs.map(function(x){return {id:x.id,n:x.n,stops:x.stops,col:x.col};}),
@@ -3234,9 +3298,11 @@ function loadGame(){
   S=fresh();
   ["cash","t","xp","level","upg","ach","chain","depot","office","hist","recent",
    "delivered","late","earned","cancelled","fuel","wages","spent","stepsDone","proj","projDone",
-   "netHist","histStep","lastHistT"].forEach(function(k){
+   "netHist","histStep","lastHistT","flow","bestFlow"].forEach(function(k){
     if(d[k]!==undefined&&d[k]!==null) S[k]=d[k];
   });
+  // how long the tab was actually closed, for the catch-up run at boot
+  if(d.saved) awaySecs=Math.max(0,(Date.now()-d.saved)/1000);
   // saves from before city unlocking existed have no `unlocked` field -- grandfather
   // those players into full access rather than retroactively locking a network
   // they already built.
@@ -3270,22 +3336,77 @@ function resetGame(){
   location.reload();
 }
 
+/* ============================================================ AWAY
+   The network does not stop when the tab does. On coming back, the sim is
+   fast-forwarded over the time you were gone -- but at a fraction of live
+   speed and against a hard ceiling, so leaving the tab open overnight can
+   never out-earn actually playing. Under a couple of minutes away is
+   treated as a refresh and skipped entirely.                              */
+var awaySecs=0;
+var AWAY_MIN_S=120, AWAY_RATE=0.15, AWAY_MAX_H=480;
+function runAway(){
+  if(awaySecs<AWAY_MIN_S) return null;
+  var h=Math.min(AWAY_MAX_H, awaySecs*HOURS_PER_SEC*AWAY_RATE);
+  if(h<1) return null;
+  var cash0=S.cash, del0=S.delivered, t0=S.t;
+  // Coarser than a live frame: this is catch-up, and a day of simulation has
+  // to finish inside a page load, not look smooth doing it.
+  var dt=0.2, n=Math.round(h/dt), acc=0;
+  simQuiet=true;
+  try{
+    for(var i=0;i<n;i++){
+      step(dt); acc+=dt;
+      var every=0.85/((0.25+0.75*repScore())*(1+0.12*up("sales"))*(1+0.20*projPerk("volume")));
+      while(acc>=every){ acc-=every; spawnLoad(); }
+    }
+  } finally { simQuiet=false; }
+  var made=S.cash-cash0;
+  // A network that loses money should not be able to bankrupt you while you
+  // are not even watching. The hours still happened -- the loss does not.
+  var heldBack=0;
+  if(made<0){ heldBack=-made; S.cash=cash0; made=0; }
+  return {hours:S.t-t0, cash:made, delivered:S.delivered-del0, heldBack:heldBack};
+}
+function showAway(r){
+  var days=r.hours/24;
+  var span=days>=1 ? (Math.round(days*10)/10)+" day"+(Math.round(days*10)/10===1?"":"s") : hrs(r.hours);
+  var body='<p>Your network kept running for <em>'+span+'</em> while you were gone.</p>'+
+    '<div class="row" style="gap:6px;margin:12px 0">'+
+    '<div class="kv mini" style="flex:1;margin:0"><div class="k">Delivered</div>'+
+      '<div class="v mono">'+r.delivered+'</div></div>'+
+    '<div class="kv mini" style="flex:1;margin:0"><div class="k">Earned</div>'+
+      '<div class="v mono" style="color:var(--green)">+'+eur(r.cash)+'</div></div>'+
+    '<div class="kv mini" style="flex:1;margin:0"><div class="k">Flow</div>'+
+      '<div class="v mono">+'+flowPct()+'%</div></div></div>';
+  if(r.heldBack>0) body+='<p style="color:#ffb3a8">This network is <em>running at a loss</em> — it would have '+
+    'burned '+eur(r.heldBack)+' while you were away. You have not been charged for it, but fix the red '+
+    'routes before that becomes real money.</p>';
+  body+='<p class="sub" style="color:#7f8b99">Away time runs at a fraction of live speed and tops out at '+
+    Math.round(AWAY_MAX_H/24)+' days, so playing always beats leaving.</p>';
+  openModal("While you were away", body);
+}
+
 /* ============================================================ BOOT */
 var loaded=loadGame();
 if(!loaded) S=fresh();
 buildMap(); fitAll(); refreshCities(); drawSvcs();
+var away=null;
 if(!loaded){
   buyTruck(1); buyTruck(1); S.cash=260000; S.spent=0;
 }else{
-  toast("Welcome back — day "+(Math.floor(S.t/24)+1)+", "+S.svcs.length+" service"+
+  // catch the network up over the time the tab was shut before anything renders
+  away=runAway();
+  if(!away) toast("Welcome back — day "+(Math.floor(S.t/24)+1)+", "+S.svcs.length+" service"+
         (S.svcs.length===1?"":"s")+", "+S.veh.length+" trucks.");
+  refreshCities(); drawSvcs();
 }
 // The guide has to trigger off "has this player actually seen it", not off
 // "does a save exist" -- an autosave fires every 5s and on every tab-hide, so
 // someone who closed the tab mid-guide on their very first visit would get a
 // save file before ever clicking through, and then never see it again.
 var seenGuide=false; try{ seenGuide=localStorage.getItem("lh-seen-guide")==="1"; }catch(e){}
-if(!seenGuide) setTimeout(function(){ showGuide(0); }, 400);
+if(away) setTimeout(function(){ showAway(away); }, 300);
+else if(!seenGuide) setTimeout(function(){ showGuide(0); }, 400);
 else if(!loaded) toast("Freight is waiting and <b>nothing moves it yet</b>. Open <b>Services</b> and build a loop.");
 for(var i=0;i<4;i++) spawnLoad();
 setTab(loaded?"loads":"loads");
@@ -3310,11 +3431,15 @@ window.__lh={ state:function(){return S;}, save:saveGame, load:loadGame, reset:f
   // drive the sim directly, for balance measurement without waiting real time
   sim:function(hours,dt){ dt=dt||0.05; var n=Math.round(hours/dt), every=0.85;
     var acc=0;
-    for(var i=0;i<n;i++){ step(dt); acc+=dt;
-      var e=0.85/((0.25+0.75*repScore())*(1+0.12*up("sales"))*(1+0.20*projPerk("volume")));
-      while(acc>=e){ acc-=e; spawnLoad(); } } },
+    simQuiet=true;
+    try{
+      for(var i=0;i<n;i++){ step(dt); acc+=dt;
+        var e=0.85/((0.25+0.75*repScore())*(1+0.12*up("sales"))*(1+0.20*projPerk("volume")));
+        while(acc>=e){ acc-=e; spawnLoad(); } }
+    } finally { simQuiet=false; } },
   verdict:svcVerdict, vehRate:vehRate, truckCan:truckCan, cap:tCap, supply:svcSupply,
-  unlock:unlockCity, unlockCost:unlockCost, locked:cityLocked, unload:unloadCargo };
+  unlock:unlockCity, unlockCost:unlockCost, locked:cityLocked, unload:unloadCargo,
+  flowMult:flowMult, away:function(s){ awaySecs=s; return runAway(); } };
 requestAnimationFrame(frame);
 })();
 </script>
