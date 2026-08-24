@@ -271,7 +271,7 @@
 <body>
 <header>
   <div class="brand"><span class="bmark">🚛</span><span class="bword">LINEHAUL</span>
-    <span style="font-family:ui-sans-serif,system-ui,sans-serif;font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v9.5</span></div>
+    <span style="font-family:ui-sans-serif,system-ui,sans-serif;font-weight:600;letter-spacing:.02em;font-size:10px;color:var(--dim2)">NETWORK v10.0</span></div>
   <div class="stat"><div class="k">Cash</div><div class="v money" id="hCash">—</div></div>
   <div class="stat"><div class="k">On time</div><div class="v ok" id="hOnTime">—</div></div>
   <div class="stat"><div class="k">Flow</div><div class="v" id="hFlow">—</div></div>
@@ -800,6 +800,10 @@ var FILL_OPTS=[{v:1,n:"Full load"},{v:0.5,n:"50% full"},{v:0.25,n:"25% full"},{v
 // up if a full day passes with nothing new to show for the wait (STALL_GIVEUP),
 // or the player cuts the wait short themselves with the manual override.
 var STALL_GIVEUP=24;
+// Outer bounds on holding for a fuller load. HOLD_MIN_H keeps a short top-up
+// wait available even on a very frequent line; HOLD_MARGIN is the cushion left
+// on cargo already aboard so "just made it" isn't a coin flip.
+var HOLD_MIN_H=1, HOLD_MARGIN=0.5;
 var MIN_LOAD_T=3;  // spawnLoad never creates a load smaller than this
 // Default is a full load: an empty or half-empty truck still burns the same
 // wages and nearly the same fuel, so waiting to fill up is the sane opening
@@ -1735,6 +1739,32 @@ function arrive(v,s,tickEarn,tickVEarn){
 // will never offer it anything -- nothing exported, or nothing its equipment
 // or freight-type filter accepts -- leaves empty rather than blocking the
 // loop, and STALL_GIVEUP stops a slow trickle turning into a true freeze.
+// How much longer this truck may sit here before waiting starts costing more
+// than a fuller trailer is worth. Two bounds, both of them things a real
+// dispatcher actually weighs:
+//   1. nothing already aboard may go late because we sat here, and
+//   2. never sit longer than the gap between trucks on this line -- past that
+//      point the truck is not adding capacity by filling up, it is subtracting
+//      it by not circulating, and the freight waiting at every other stop pays
+//      for it.
+// Returns hours remaining; <=0 means go now. One source of truth, so the Fleet
+// tab's countdown and the sim can never disagree.
+function holdSlack(v,s){
+  var slack=Infinity;
+  v.cargo.forEach(function(l){
+    var leg=l.plan&&l.plan.legs[l.step];
+    var toId=leg?leg.to:l.to;
+    var j=s.stops.indexOf(toId); if(j<0) return;
+    slack=Math.min(slack, (l.due-S.t) - rideH(s,v.si,j,v.type));
+  });
+  return slack;
+}
+function holdBudget(v,s){
+  var cap=Math.min(STALL_GIVEUP, Math.max(HOLD_MIN_H, headway(s)));
+  var left=cap-(v.held||0);
+  if(v.cargo.length) left=Math.min(left, holdSlack(v,s)-HOLD_MARGIN);
+  return left;
+}
 function shouldHold(v,s){
   v.waiting=false;
   if(v.forceGo){ v.forceGo=false; return false; }   // player told it to leave now
@@ -1746,6 +1776,7 @@ function shouldHold(v,s){
   // perfect 100% would be waiting for something that cannot exist.
   if(space < MIN_LOAD_T) return false;
   if((v.sinceGain||0)>=STALL_GIVEUP) return false;   // nothing new in a full day -- give up
+  if(holdBudget(v,s)<=0) return false;               // waiting now costs the line more than it pays
   var cityId=s.stops[v.si];
   var hasNow=S.loads.some(function(l){
     if(l.on||l.at!==cityId) return false;
@@ -2840,8 +2871,10 @@ function renderFleet(b){
       (s?'<div class="sub" style="margin-top:3px"><span class="pill '+PCLS3[vr.cls]+'" style="font-size:10px">'+vr.word+'</span>'+
         (vr.rate!=null?' <span class="vrate '+vr.cls+'" style="font-size:11px">'+(vr.rate>=0?"+":"−")+eur(Math.abs(vr.rate))+'/h</span>':'')+
         (v.waiting
-          ? ' <span class="sub">· gives up and leaves as-is in '+hrs(Math.max(0,STALL_GIVEUP-(v.sinceGain||0)))+
-            ' if nothing new turns up</span>'+
+          ? ' <span class="sub">· leaves in '+hrs(Math.max(0,holdBudget(v,s)))+
+            (v.cargo.length&&holdSlack(v,s)-HOLD_MARGIN < Math.min(STALL_GIVEUP,Math.max(HOLD_MIN_H,headway(s)))-(v.held||0)
+              ? ' — any longer and what is aboard goes late'
+              : ' — longer than that and the line waits on it')+'</span>'+
             ' <button class="btn sm" id="go-'+v.id+'" style="margin-left:6px;padding:2px 8px;font-size:11px">Depart now</button>'
           : '')+
         '</div>':'')+
@@ -2885,10 +2918,11 @@ function renderFleet(b){
         '" data-pick="'+g+'" title="'+GOODS[g].n+'">'+GOODS[g].ic+'</button>'; }).join("")+'</div>'+
       '<div class="sub" style="margin-top:2px;color:#7f8b99">Only changes what it picks up next — anything already '+
       'aboard rides along as normal. Set it down early with the ✕ above, next time it\'s stopped somewhere.</div>'+
-      (vFill(v)? '<div class="sub" style="margin-top:4px;color:#7f8b99">Waits as long as it takes to reach '+
+      (vFill(v)? '<div class="sub" style="margin-top:4px;color:#7f8b99">Holds out for '+
         Math.round(vFill(v)*100)+'% full ('+Math.ceil(tCap(v.type)*vFill(v))+'t), and <b style="color:var(--green)">'+
-        'draws no wages while it waits</b> — a parked trailer is not a driver on the clock. Moves on if the stop '+
-        'has nothing left it can load.</div>'
+        'draws no wages while it waits</b> — a parked trailer is not a driver on the clock. It will not wait so long '+
+        'that freight <b>already aboard</b> goes late, or longer than the gap between trucks on this line — past that '+
+        'it stops adding capacity and starts subtracting it.</div>'
         : '<div class="sub" style="margin-top:4px;color:#7f8b99">Takes whatever is ready and leaves straight away. '+
           'Most trips, most freight moved — at the cost of running part loaded.</div>');
     opt.querySelectorAll("[data-fill]").forEach(function(bt){
