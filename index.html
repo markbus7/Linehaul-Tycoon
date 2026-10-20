@@ -20,7 +20,7 @@
     --hair:rgba(255,255,255,.06);--hair2:rgba(255,255,255,.1);
     --ink:#e9eef4;--ink2:#c3ccd7;--dim:#8794a4;--dim2:#5a6676;
     --amber:#f7b441;--amber2:#ffd27a;--green:#34d399;--red:#f87171;--blue:#60a5fa;--violet:#c4a1ff;
-    --sea:#0a1824;--land:#1b242d;--landln:#2b3743;
+    --sea:#c8dae5;--land:#1b242d;--landln:#2b3743;
     --font-ui:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     --font-display:"Space Grotesk","Inter",ui-sans-serif,system-ui,sans-serif;
     --font-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
@@ -97,7 +97,7 @@
   main{flex:1;display:flex;min-height:0}
   @media(max-width:900px){main{flex-direction:column}}
   .mapwrap{flex:1;position:relative;background:var(--sea);min-height:0;overflow:hidden;touch-action:none}
-  .mapwrap::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;
+  .mapwrap::after{content:none;position:absolute;inset:0;pointer-events:none;z-index:2;
     background:radial-gradient(120% 100% at 50% 45%,transparent 60%,rgba(2,5,9,.6) 100%)}
   svg{width:100%;height:100%;display:block;-webkit-user-select:none;user-select:none;touch-action:none}
 
@@ -173,54 +173,54 @@
   .empty b{color:var(--ink)}
 
   /* ---------------------------------------------------------- map furniture */
-  .land{stroke:#41525f;stroke-width:.6;stroke-opacity:.9;vector-effect:non-scaling-stroke;
+  .land{stroke:#d3cbbd;stroke-width:.7;stroke-opacity:1;vector-effect:non-scaling-stroke;
         stroke-linejoin:round;transition:fill .6s ease}
-  .land.mine{fill:url(#landMine);stroke:#3c6b60}
-  .grat{stroke:#5f86a8;stroke-width:.5;opacity:.07;vector-effect:non-scaling-stroke;fill:none}
-  .svccase{fill:none;stroke:#04080d;stroke-width:8;opacity:.8;stroke-linejoin:round;
+  .land.mine{fill:url(#landMine);stroke:#b5d3bc}
+  .grat{stroke:#9db8c8;stroke-width:.5;opacity:.0;vector-effect:non-scaling-stroke;fill:none}
+  .svccase{fill:none;stroke:#fff;stroke-width:9;opacity:.95;stroke-linejoin:round;
            stroke-linecap:round;vector-effect:non-scaling-stroke}
-  .svcline{fill:none;stroke-width:4.5;opacity:1;stroke-linejoin:round;stroke-linecap:round;
+  .svcline{fill:none;stroke-width:5;opacity:1;stroke-linejoin:round;stroke-linecap:round;
            vector-effect:non-scaling-stroke;cursor:pointer}
   .svcflow{fill:none;stroke-width:2;opacity:.85;stroke-linecap:round;vector-effect:non-scaling-stroke;
            stroke-dasharray:1 13;animation:flow 1.4s linear infinite}
   @keyframes flow{to{stroke-dashoffset:-14}}
   .cshadow{display:none}
-  .cpad{fill:#0b1118;stroke:#c3ccd7;stroke-width:1.6;vector-effect:non-scaling-stroke;
+  .cpad{fill:#fff;stroke:#2b2e33;stroke-width:1.6;vector-effect:non-scaling-stroke;
         cursor:pointer;transition:stroke .3s}
-  .cpad.served{fill:#fff;stroke:#0b1118;stroke-width:2}
-  .cpad.home{fill:var(--amber);stroke:#0b1118;stroke-width:2}
-  .cpad.sel{stroke:#fff;stroke-width:2.6}
+  .cpad.served{fill:#fff;stroke:#16181b;stroke-width:2.6}
+  .cpad.home{fill:#f59e0b;stroke:#16181b;stroke-width:2.6}
+  .cpad.sel{stroke:#2563eb;stroke-width:3}
   .cpad.addable{stroke-dasharray:2.5 2;cursor:pointer}
   .cpad.inedit{cursor:pointer}
   /* locked cities are just quiet waypoints on the chart -- a small hollow dot,
      no glyph -- so the handful of places you actually run stand out */
-  .cpad.locked{fill:#5b6878;stroke:none;opacity:.9}
-  .cpad.locked.sel{stroke:#fff;stroke-width:1.6;opacity:1}
+  .cpad.locked{fill:#b9b2a5;stroke:none;opacity:1}
+  .cpad.locked.sel{stroke:#2563eb;stroke-width:1.6;opacity:1}
   .cpin.locked .cshadow,.cpin.locked .cglyph{display:none}
-  .clabel.locked{opacity:1;fill:#6f7c8c;font-weight:500;font-size:9px}
+  .clabel.locked{opacity:1;fill:#9a9384;font-weight:500;font-size:9px}
   .lplate.locked{display:none}
   .editpreview{fill:none;stroke-width:2.2;stroke-dasharray:1 6;stroke-linecap:round;opacity:.9;
     vector-effect:non-scaling-stroke;pointer-events:none}
   /* route colour tells you how a service is doing at a glance -- green pays,
      amber is treading water, red is losing money and dashed to make sure it
      doesn't rely on colour alone. Tap the line for the full breakdown. */
-  .svcline.perf-good{stroke:var(--green)}
-  .svcline.perf-warn{stroke:var(--amber)}
-  .svcline.perf-bad{stroke:var(--red);stroke-dasharray:6 5;opacity:.85}
+  .svcline.perf-good{stroke:#14a06b}
+  .svcline.perf-warn{stroke:#f08c00}
+  .svcline.perf-bad{stroke:#e03e45;stroke-dasharray:6 5;opacity:.85}
   .cglyph{display:none}
   .chalo{fill:rgba(52,211,153,.12);stroke:var(--green);stroke-width:1.2;opacity:0;vector-effect:non-scaling-stroke}
   .chalo{display:none}
   .chalo.on{opacity:0;animation:halo 2.2s ease-in-out infinite;will-change:opacity}
   @keyframes halo{0%{opacity:.6}70%{opacity:.1}100%{opacity:.6}}
-  .cbadge{fill:var(--amber);stroke:none}
-  .cbadge-t{fill:#1a1205;font-family:var(--font-mono);font-size:6px;font-weight:700;text-anchor:middle;
+  .cbadge{fill:#16181b;stroke:none}
+  .cbadge-t{fill:#fff;font-family:var(--font-mono);font-size:6px;font-weight:700;text-anchor:middle;
             dominant-baseline:central;pointer-events:none}
   .lplate{display:none}
   .cring{fill:none;stroke:#4a5a6a;stroke-width:1;opacity:.5;vector-effect:non-scaling-stroke}
   .cinv{fill:none;stroke:var(--amber);stroke-width:1.2;opacity:.75;stroke-dasharray:2 2;vector-effect:non-scaling-stroke}
-  .clabel{fill:#c3ccd7;font-family:var(--font-ui);font-size:9.5px;font-weight:500;letter-spacing:.01em;
-    pointer-events:none;paint-order:stroke;stroke:#070b11;stroke-width:2.6px;stroke-linejoin:round}
-  .clabel.served{fill:#fff;font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:9px}
+  .clabel{fill:#5d5a53;font-family:var(--font-ui);font-size:9.5px;font-weight:500;letter-spacing:.01em;
+    pointer-events:none;paint-order:stroke;stroke:#f4f1ea;stroke-width:3px;stroke-linejoin:round}
+  .clabel.served{fill:#16181b;font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:9px}
   .clabel.hide{display:none}
   .veh{pointer-events:none}
   .load-pip{fill:var(--amber);pointer-events:none}
@@ -305,7 +305,7 @@
   .mapctl{position:absolute;right:14px;bottom:14px;display:flex;flex-direction:column;z-index:7;
     background:rgba(13,17,23,.82);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
     border:1px solid var(--hair2);border-radius:3px;overflow:hidden;box-shadow:0 12px 30px -12px rgba(0,0,0,.7)}
-  .mapctl button{width:38px;height:38px;font-size:17px;color:var(--ink2);display:grid;place-items:center;transition:background .15s,color .15s}
+  .mapctl button{width:38px;height:38px;font-size:17px;color:var(--ink);display:grid;place-items:center;transition:background .15s,color .15s}
   .mapctl button+button{border-top:1px solid var(--hair)}
   .mapctl button:hover{background:rgba(255,255,255,.06);color:var(--amber2)}
 </style>
@@ -331,8 +331,8 @@
     <svg id="map" preserveAspectRatio="xMidYMid meet">
       <defs>
         <radialGradient id="seaG" cx="50%" cy="42%" r="80%">
-          <stop offset="0" stop-color="#112c42"/><stop offset="50%" stop-color="#0b1e2e"/>
-          <stop offset="100%" stop-color="#060f18"/>
+          <stop offset="0" stop-color="#d9e7ef"/><stop offset="60%" stop-color="#cfe0ea"/>
+          <stop offset="100%" stop-color="#c2d6e2"/>
         </radialGradient>
         <!-- Political-map palette: each country picks one of these eight by a
              graph colouring computed at build time (genworld4.js), so no two
@@ -341,31 +341,31 @@
              nudged warm/cool -- so borders still read but the map stays a calm
              backdrop and your own network is the colourful thing on it. -->
         <linearGradient id="landC0" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#26323c"/><stop offset="100%" stop-color="#26323c" stop-opacity=".92"/>
+          <stop offset="0" stop-color="#f4f1ea"/><stop offset="100%" stop-color="#f4f1ea"/>
         </linearGradient>
         <linearGradient id="landC1" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#2b333a"/><stop offset="100%" stop-color="#2b333a" stop-opacity=".92"/>
+          <stop offset="0" stop-color="#efebe2"/><stop offset="100%" stop-color="#efebe2"/>
         </linearGradient>
         <linearGradient id="landC2" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#24303b"/><stop offset="100%" stop-color="#24303b" stop-opacity=".92"/>
+          <stop offset="0" stop-color="#f2eee6"/><stop offset="100%" stop-color="#f2eee6"/>
         </linearGradient>
         <linearGradient id="landC3" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#2c323d"/><stop offset="100%" stop-color="#2c323d" stop-opacity=".92"/>
+          <stop offset="0" stop-color="#ece8de"/><stop offset="100%" stop-color="#ece8de"/>
         </linearGradient>
         <linearGradient id="landC4" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#2a3136"/><stop offset="100%" stop-color="#2a3136" stop-opacity=".92"/>
+          <stop offset="0" stop-color="#f3efe7"/><stop offset="100%" stop-color="#f3efe7"/>
         </linearGradient>
         <linearGradient id="landC5" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#253039"/><stop offset="100%" stop-color="#253039" stop-opacity=".92"/>
+          <stop offset="0" stop-color="#eeeae1"/><stop offset="100%" stop-color="#eeeae1"/>
         </linearGradient>
         <linearGradient id="landC6" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#2d343a"/><stop offset="100%" stop-color="#2d343a" stop-opacity=".92"/>
+          <stop offset="0" stop-color="#f1ece3"/><stop offset="100%" stop-color="#f1ece3"/>
         </linearGradient>
         <linearGradient id="landC7" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#27323a"/><stop offset="100%" stop-color="#27323a" stop-opacity=".92"/>
+          <stop offset="0" stop-color="#ebe7dd"/><stop offset="100%" stop-color="#ebe7dd"/>
         </linearGradient>
         <linearGradient id="landMine" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#22403d"/><stop offset="100%" stop-color="#1d3734"/>
+          <stop offset="0" stop-color="#e2f0e4"/><stop offset="100%" stop-color="#e2f0e4"/>
         </linearGradient>
         <radialGradient id="padG" cx="40%" cy="32%" r="75%">
           <stop offset="0" stop-color="#2c3a4a"/><stop offset="100%" stop-color="#121a24"/>
@@ -2060,9 +2060,9 @@ function buildMap(){
     // which put the city name's own background plate right over the number
     // whenever the label sat in its default spot just above the pin.
     var bg2=el("g",{class:"cbadgeg",id:"cbg-"+c.id});
-    bg2.appendChild(el("rect",{class:"cbadge",x:c.x+2.6,y:c.y-8.4,width:6,height:5.4,
+    bg2.appendChild(el("rect",{class:"cbadge",x:c.x+2.4,y:c.y+1.2,width:6,height:5.4,
       id:"bg-"+c.id,style:"display:none"}));
-    var bt=el("text",{class:"cbadge-t",x:c.x+5.6,y:c.y-5.6,id:"bt-"+c.id,
+    var bt=el("text",{class:"cbadge-t",x:c.x+5.4,y:c.y+3.9,id:"bt-"+c.id,
       style:"display:none"}); bg2.appendChild(bt);
     g.appendChild(bg2);
     gCity.appendChild(g);
