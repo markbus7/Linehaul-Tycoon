@@ -173,9 +173,9 @@
   .empty b{color:var(--ink)}
 
   /* ---------------------------------------------------------- map furniture */
-  .land{stroke:#b6ae9f;stroke-width:.7;stroke-opacity:1;vector-effect:non-scaling-stroke;
+  .land{stroke:#a39a8b;stroke-width:.7;stroke-opacity:1;vector-effect:non-scaling-stroke;
         stroke-linejoin:round;transition:fill .6s ease}
-  .land.mine{fill:url(#landMine);stroke:#9dbaa5}
+  .land.mine{fill:url(#landMine);stroke:#6fa27e}
   .grat{stroke:#9db8c8;stroke-width:.5;opacity:.0;vector-effect:non-scaling-stroke;fill:none}
   .svccase{fill:none;stroke:#efece5;stroke-width:9;opacity:.9;stroke-linejoin:round;
            stroke-linecap:round;vector-effect:non-scaling-stroke}
@@ -337,35 +337,36 @@
         <!-- Political-map palette: each country picks one of these eight by a
              graph colouring computed at build time (genworld4.js), so no two
              countries that actually share a border end up the same colour.
-             The eight are deliberately close cousins -- one cool slate family,
-             nudged warm/cool -- so borders still read but the map stays a calm
-             backdrop and your own network is the colourful thing on it. -->
+             Eight muted pastels at the same lightness: different enough that
+             every country reads as its own place, soft enough that your routes
+             stay the boldest thing on the map. No greens here -- green is
+             reserved for the countries you operate in (landMine). -->
         <linearGradient id="landC0" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#d6d1c6"/><stop offset="100%" stop-color="#d6d1c6"/>
+          <stop offset="0" stop-color="#dccfae"/><stop offset="100%" stop-color="#dccfae"/>
         </linearGradient>
         <linearGradient id="landC1" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#d1ccc0"/><stop offset="100%" stop-color="#d1ccc0"/>
+          <stop offset="0" stop-color="#d8bba8"/><stop offset="100%" stop-color="#d8bba8"/>
         </linearGradient>
         <linearGradient id="landC2" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#d4cfc4"/><stop offset="100%" stop-color="#d4cfc4"/>
+          <stop offset="0" stop-color="#d5b8c0"/><stop offset="100%" stop-color="#d5b8c0"/>
         </linearGradient>
         <linearGradient id="landC3" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#cec9bd"/><stop offset="100%" stop-color="#cec9bd"/>
+          <stop offset="0" stop-color="#c6bdd6"/><stop offset="100%" stop-color="#c6bdd6"/>
         </linearGradient>
         <linearGradient id="landC4" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#d5d0c5"/><stop offset="100%" stop-color="#d5d0c5"/>
+          <stop offset="0" stop-color="#b9c6d8"/><stop offset="100%" stop-color="#b9c6d8"/>
         </linearGradient>
         <linearGradient id="landC5" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#d0cbbf"/><stop offset="100%" stop-color="#d0cbbf"/>
+          <stop offset="0" stop-color="#d2cec4"/><stop offset="100%" stop-color="#d2cec4"/>
         </linearGradient>
         <linearGradient id="landC6" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#d3cec2"/><stop offset="100%" stop-color="#d3cec2"/>
+          <stop offset="0" stop-color="#e0c9a0"/><stop offset="100%" stop-color="#e0c9a0"/>
         </linearGradient>
         <linearGradient id="landC7" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#cdc8bc"/><stop offset="100%" stop-color="#cdc8bc"/>
+          <stop offset="0" stop-color="#c9b6a8"/><stop offset="100%" stop-color="#c9b6a8"/>
         </linearGradient>
         <linearGradient id="landMine" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#bfd4c4"/><stop offset="100%" stop-color="#bfd4c4"/>
+          <stop offset="0" stop-color="#a8cdb0"/><stop offset="100%" stop-color="#a8cdb0"/>
         </linearGradient>
         <radialGradient id="padG" cx="40%" cy="32%" r="75%">
           <stop offset="0" stop-color="#2c3a4a"/><stop offset="100%" stop-color="#121a24"/>
