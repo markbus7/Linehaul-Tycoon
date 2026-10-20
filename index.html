@@ -97,8 +97,8 @@
   main{flex:1;display:flex;min-height:0}
   @media(max-width:900px){main{flex-direction:column}}
   .mapwrap{flex:1;position:relative;background:var(--sea);min-height:0;overflow:hidden;touch-action:none}
-  .mapwrap::after{content:none;position:absolute;inset:0;pointer-events:none;z-index:2;
-    background:radial-gradient(120% 100% at 50% 45%,transparent 60%,rgba(2,5,9,.6) 100%)}
+  .mapwrap::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;opacity:.35;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .4  0 0 0 0 .33  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");}
   svg{width:100%;height:100%;display:block;-webkit-user-select:none;user-select:none;touch-action:none}
 
   /* --------------------------------------------------------------- sidebar */
@@ -175,8 +175,13 @@
   /* ---------------------------------------------------------- map furniture */
   .land{stroke:#a39a8b;stroke-width:.7;stroke-opacity:1;vector-effect:non-scaling-stroke;
         stroke-linejoin:round;transition:fill .6s ease}
+  .coast{fill:none;stroke:#bcd3df;stroke-width:7;stroke-linejoin:round;vector-effect:non-scaling-stroke;pointer-events:none}
+  .geolbl{fill:#3d3428;fill-opacity:.38;font-family:var(--font-ui);font-weight:600;letter-spacing:.32em;
+    text-anchor:middle;dominant-baseline:central;pointer-events:none}
+  .sealbl{fill:#4f7389;fill-opacity:.75;font-family:Georgia,"Times New Roman",serif;font-style:italic;
+    letter-spacing:.12em;text-anchor:middle;dominant-baseline:central;pointer-events:none}
   .land.mine{fill:url(#landMine);stroke:#6fa27e}
-  .grat{stroke:#9db8c8;stroke-width:.5;opacity:.0;vector-effect:non-scaling-stroke;fill:none}
+  .grat{stroke:#6f8fa3;stroke-width:.5;opacity:.28;vector-effect:non-scaling-stroke;fill:none}
   .svccase{fill:none;stroke:#efece5;stroke-width:9;opacity:.9;stroke-linejoin:round;
            stroke-linecap:round;vector-effect:non-scaling-stroke}
   .svcline{fill:none;stroke-width:5;opacity:1;stroke-linejoin:round;stroke-linecap:round;
@@ -390,7 +395,7 @@
       </defs>
       <rect id="seaRect" x="-4000" y="-4000" width="12000" height="12000" fill="url(#seaG)"/>
       <g id="gWorld">
-        <g id="gLand"></g><g id="gGrat"></g><g id="gSvc"></g><g id="gSvcFlow"></g>
+        <g id="gCoast"></g><g id="gLand"></g><g id="gGrat"></g><g id="gGeoLbl"></g><g id="gSvc"></g><g id="gSvcFlow"></g>
         <g id="gCity"></g><g id="gVeh"></g>
       </g>
     </svg>
@@ -2025,7 +2030,7 @@ function step(dt){
 var NS="http://www.w3.org/2000/svg";
 function el(t,a){ var e=document.createElementNS(NS,t); for(var k in a) e.setAttribute(k,a[k]); return e; }
 var $=function(i){return document.getElementById(i);};
-var svg=$("map"), gWorld=$("gWorld"), gLand=$("gLand"), gGrat=$("gGrat"), gSvc=$("gSvc"),
+var svg=$("map"), gWorld=$("gWorld"), gLand=$("gLand"), gCoast=$("gCoast"), gGrat=$("gGrat"), gSvc=$("gSvc"),
     gSvcFlow=$("gSvcFlow"), gCity=$("gCity"), gVeh=$("gVeh");
 svg.setAttribute("viewBox","0 0 "+VW+" "+VH);
 var cam={s:1,tx:0,ty:0}, selCity=null;
@@ -2035,7 +2040,12 @@ function buildMap(){
     var p=el("path",{class:"land",d:sh.d,fill:"url(#landC"+(sh.c||0)+")"});
     if(sh.iso) p.setAttribute("data-iso",sh.iso);
     gLand.appendChild(p);
+    // the same outline again, underneath, as a wide pale stroke: inland it is
+    // hidden by the land fills on top, at the coast it shows as the band of
+    // shallow water a printed atlas draws along every shoreline
+    gCoast.appendChild(el("path",{class:"coast",d:sh.d}));
   });
+  buildGeoLabels();
   // faint graticule for depth, so the sea is not an empty void
   for(var gl=-10;gl<=26;gl+=4){ var gx=px(gl);
     gGrat.appendChild(el("line",{class:"grat",x1:gx,y1:-400,x2:gx,y2:VH+400})); }
@@ -2067,6 +2077,43 @@ function buildMap(){
       style:"display:none"}); bg2.appendChild(bt);
     g.appendChild(bg2);
     gCity.appendChild(g);
+  });
+}
+// Atlas lettering: spaced capitals for countries, italic for seas. Sized in
+// world units so it grows and shrinks with the map like a printed one.
+// Hand-placed where a bounding-box centre would land in the wrong spot
+// (Norway, Italy, Russia, Croatia...); anything else big enough falls back
+// to its bounding-box centre, and small countries without a spot go unlabelled.
+var GEO_LBL={
+  "France":[2.4,46.6,3.6],"Germany":[10.3,51.4,3.4],"Spain":[-3.7,40.1,3.6],"Portugal":[-8.1,39.7,2],
+  "Italy":[12.9,42.8,2.8],"United Kingdom":[-1.9,53.4,2.6],"Ireland":[-8,53.1,2.2],"Norway":[9.6,61.8,2.8],
+  "Sweden":[15.8,63.2,3],"Finland":[26.2,63.6,3],"Denmark":[9.3,56.1,1.8],"Poland":[19.3,52.1,3.2],
+  "Czechia":[15.4,49.8,2],"Austria":[14.4,47.5,2],"Switzerland":[8.1,46.75,1.6],"Hungary":[19.4,47.15,2],
+  "Romania":[24.9,45.9,2.8],"Bulgaria":[25.3,42.75,2],"Greece":[22,39.6,2.2],"Turkey":[35,39.1,3.6],
+  "Ukraine":[31.4,49.1,3.6],"Belarus":[28,53.6,2.6],"Russia":[44,57,5],"Lithuania":[23.9,55.3,1.6],
+  "Latvia":[25.2,56.9,1.6],"Estonia":[25.8,58.7,1.6],"Netherlands":[5.7,52.5,1.6],"Belgium":[4.6,50.6,1.5],
+  "Slovakia":[19.5,48.75,1.6],"Croatia":[16.2,45.5,1.5],"Serbia":[20.8,44,1.7],"Morocco":[-6.3,31.8,3],
+  "Algeria":[2.6,28.3,4],"Tunisia":[9.4,34,1.8],"Libya":[17.5,27,4],"Egypt":[29.6,26.4,3.6],
+  "Iceland":[-18.7,64.9,2.2],"Kazakhstan":[67,48,5],"Canada":[-100,58,7],"United States of America":[-99,39,7],
+  "Brazil":[-52,-10,7],"China":[102,35,7],"India":[79,22,5.5],"Australia":[134,-25,7],
+  "Saudi Arabia":[44.5,24,4.2],"Iran":[54,32.5,4]};
+var SEA_LBL=[["Atlantic Ocean",-27,44,5.5],["North Sea",3.4,56.2,2.6],["Baltic Sea",19.4,57.6,2.4],
+  ["Mediterranean Sea",17.5,35.3,3.2],["Bay of Biscay",-5.2,45.4,1.9],["Black Sea",34.2,43.2,2.4],
+  ["Norwegian Sea",2.5,66.5,2.6],["Indian Ocean",75,-18,6],["Pacific Ocean",160,8,6]];
+function buildGeoLabels(){
+  var gL=$("gGeoLbl");
+  Array.prototype.forEach.call(gLand.children,function(p,i){
+    var sh=MAP.shapes[i], at=GEO_LBL[sh.n], x,y,fs;
+    if(at){ x=px(at[0]); y=py(at[1]); fs=at[2]; }
+    else{ var b; try{ b=p.getBBox(); }catch(e){ return; }
+      if(b.width<60||b.height<30) return;
+      x=b.x+b.width/2; y=b.y+b.height/2; fs=Math.min(5,Math.max(2.4,b.width/26)); }
+    var t=el("text",{class:"geolbl",x:x,y:y,"font-size":fs.toFixed(2)});
+    t.textContent=sh.n.toUpperCase(); gL.appendChild(t);
+  });
+  SEA_LBL.forEach(function(a){
+    var t=el("text",{class:"sealbl",x:px(a[1]),y:py(a[2]),"font-size":a[3]});
+    t.textContent=a[0]; gL.appendChild(t);
   });
 }
 // Pin geometry is plain world-space size, same as it always was, up to the zoom
